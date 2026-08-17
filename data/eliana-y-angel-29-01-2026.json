@@ -1,0 +1,19 @@
+{
+  "nombre": "eliana y angel",
+  "subtitulo": "fiesta de casamiento",
+  "fechaEvento": "2026-01-29T20:00",
+  "fechaTexto": "29 de enero",
+  "horarioTexto": "20 a 5 hs.",
+  "lugarNombre": "PORVENIR SALÓN",
+  "lugarDireccion": "RUTA 52 CANNING",
+  "googleMapsUrl": "https://maps.app.goo.gl/feW3svnDo4X5KdFM9",
+  "googleCalendarUrl": "https://maps.app.goo.gl/feW3svnDo4X5KdFM9",
+  "confirmacionLimite": "23 DE DICIEMBRE",
+  "contactosRSVP": [
+    {
+      "nombre": "1157339281",
+      "telefono": ""
+    }
+  ],
+  "id": "eliana-y-angel-29-01-2026"
+}

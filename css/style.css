@@ -1,0 +1,437 @@
+.live-preview {
+    width: 100%;
+    max-width: 360px;
+    min-height: 740px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    border-radius: 28px;
+    background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    box-shadow: 0 18px 35px rgba(15, 23, 42, 0.12);
+}
+
+.preview-shell {
+    width: 100%;
+    max-width: 320px;
+    background: white;
+    border-radius: 28px;
+    overflow: hidden;
+    border: 4px solid #f4bfd3;
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+    text-align: center;
+}
+
+.preview-header {
+    background: #fff1f7;
+    padding: 2rem 1.25rem 1.5rem;
+}
+
+.preview-header h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    margin: 0;
+    color: #d93b81;
+}
+
+.preview-header p {
+    margin-top: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #ef7aa3;
+}
+
+.preview-button {
+    display: inline-block;
+    margin-top: 1rem;
+    background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    padding: 0.7rem 1.25rem;
+    border-radius: 999px;
+    text-decoration: none;
+    box-shadow: 0 10px 20px rgba(236, 72, 153, 0.2);
+}
+
+.preview-button.secondary {
+    margin-top: 1rem;
+}
+
+.preview-countdown {
+    padding: 1.4rem 1rem;
+    background: #fff7fb;
+    border-top: 1px solid #f4bfd3;
+    border-bottom: 1px solid #f4bfd3;
+}
+
+.preview-countdown p {
+    margin: 0 0 0.8rem;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #ef7aa3;
+}
+
+.preview-timer-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.preview-timer-grid div {
+    background: white;
+    border-radius: 12px;
+    padding: 0.5rem 0.25rem;
+    border: 1px solid #f4bfd3;
+}
+
+.preview-timer-grid span {
+    display: block;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #d93b81;
+}
+
+.preview-timer-grid small {
+    display: block;
+    font-size: 0.56rem;
+    text-transform: uppercase;
+    color: #a3a3a3;
+}
+
+.preview-details {
+    padding: 1.4rem 1rem 0.6rem;
+    color: #4b2f38;
+}
+
+.preview-details p {
+    margin: 0.5rem 0;
+}
+
+.preview-details #previewFechaTexto,
+.preview-details #previewHorarioTexto,
+.preview-details #previewLugarNombre {
+    font-weight: 800;
+}
+
+.preview-rsvp {
+    background: rgba(255, 244, 247, 0.8);
+    padding: 1rem 1rem 1.2rem;
+}
+
+.preview-rsvp p {
+    margin: 0 0 0.8rem;
+    font-size: 0.7rem;
+    color: #4b5563;
+}
+
+.preview-rsvp-buttons {
+    display: flex;
+    justify-content: center;
+}
+
+.preview-rsvp-button {
+    width: 100%;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%);
+    color: white;
+    font-weight: 800;
+    font-size: 0.72rem;
+    padding: 0.8rem 1rem;
+    box-shadow: 0 10px 20px rgba(236, 72, 153, 0.22);
+}
+
+#livePreview[data-theme="elegante"] .preview-shell {
+    border-color: #b6924a;
+    box-shadow: 0 16px 32px rgba(122, 94, 40, 0.12);
+}
+
+#livePreview[data-theme="elegante"] .preview-header {
+    background: #f7f0e4;
+}
+
+#livePreview[data-theme="elegante"] .preview-header h1,
+#livePreview[data-theme="elegante"] .preview-timer-grid span,
+#livePreview[data-theme="elegante"] #previewLugarNombre {
+    color: #1d1713;
+}
+
+#livePreview[data-theme="elegante"] .preview-header p,
+#livePreview[data-theme="elegante"] .preview-countdown p,
+#livePreview[data-theme="elegante"] #previewHorarioTexto {
+    color: #7a5a2c;
+}
+
+#livePreview[data-theme="elegante"] .preview-button,
+#livePreview[data-theme="elegante"] .preview-rsvp-button {
+    background: linear-gradient(135deg, #b68a40 0%, #8a6733 100%);
+}
+
+#livePreview[data-theme="elegante"] .preview-details,
+#livePreview[data-theme="elegante"] .preview-rsvp {
+    background: rgba(248, 241, 228, 0.85);
+    color: #1d1713;
+}
+
+#livePreview[data-theme="elegante"] .preview-countdown,
+#livePreview[data-theme="elegante"] .preview-timer-grid div {
+    background: #fbf7f0;
+    border-color: #d9c396;
+}
+
+#livePreview[data-theme="minimal"] .preview-shell {
+    border-color: #9bb7d0;
+    box-shadow: 0 16px 32px rgba(30, 64, 175, 0.08);
+}
+
+#livePreview[data-theme="minimal"] .preview-header {
+    background: #edf3fb;
+}
+
+#livePreview[data-theme="minimal"] .preview-header h1,
+#livePreview[data-theme="minimal"] .preview-timer-grid span,
+#livePreview[data-theme="minimal"] #previewLugarNombre {
+    color: #10233d;
+}
+
+#livePreview[data-theme="minimal"] .preview-header p,
+#livePreview[data-theme="minimal"] .preview-countdown p,
+#livePreview[data-theme="minimal"] #previewHorarioTexto {
+    color: #3d6a9d;
+}
+
+#livePreview[data-theme="minimal"] .preview-button,
+#livePreview[data-theme="minimal"] .preview-rsvp-button {
+    background: linear-gradient(135deg, #1d3557 0%, #2a4f7a 100%);
+}
+
+#livePreview[data-theme="minimal"] .preview-countdown,
+#livePreview[data-theme="minimal"] .preview-timer-grid div,
+#livePreview[data-theme="minimal"] .preview-rsvp {
+    background: #f4f8ff;
+    border-color: #bfd3eb;
+}
+
+body {
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+body[data-theme="infantil"] {
+    background: linear-gradient(135deg, #fff2f7 0%, #ffe4ee 100%);
+    color: #4b2f38;
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+body[data-theme="infantil"] main {
+    background: #ffffff;
+    border-color: #f4bfd3;
+    box-shadow: 0 20px 40px rgba(255, 162, 194, 0.18);
+}
+
+body[data-theme="infantil"] #nombre {
+    color: #d93b81;
+    letter-spacing: 0.12em;
+}
+
+body[data-theme="infantil"] #subtitulo {
+    color: #ef7aa3;
+}
+
+body[data-theme="infantil"] #btnCalendar,
+body[data-theme="infantil"] #btnMaps,
+body[data-theme="infantil"] .rsvp-button.infantil {
+    background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%);
+    color: #fff;
+}
+
+body[data-theme="infantil"] #timer .bg-white,
+body[data-theme="infantil"] #timer>div {
+    background: #fff7fb;
+    border: 1px solid #f4bfd3;
+}
+
+body[data-theme="elegante"] {
+    background: linear-gradient(135deg, #f7f0e4 0%, #efe0bc 100%);
+    color: #1f1b1a;
+    font-family: Georgia, "Times New Roman", serif;
+}
+
+body[data-theme="elegante"] main {
+    background: rgba(255, 250, 244, 0.98);
+    border-color: #b6924a;
+    box-shadow: 0 24px 50px rgba(122, 94, 40, 0.18);
+}
+
+body[data-theme="elegante"] #nombre,
+body[data-theme="elegante"] #subtitulo,
+body[data-theme="elegante"] #fechaTexto,
+body[data-theme="elegante"] #lugarNombre {
+    color: #1d1713;
+    letter-spacing: 0.08em;
+}
+
+body[data-theme="elegante"] #subtitulo,
+body[data-theme="elegante"] #horarioTexto,
+body[data-theme="elegante"] #confirmacionLimite {
+    color: #7a5a2c;
+}
+
+body[data-theme="elegante"] #btnCalendar,
+body[data-theme="elegante"] #btnMaps,
+body[data-theme="elegante"] .rsvp-button.elegante {
+    background: linear-gradient(135deg, #b68a40 0%, #8a6733 100%);
+    color: #fffaf5;
+    border: 1px solid rgba(80, 59, 27, 0.2);
+}
+
+body[data-theme="elegante"] #timer>div {
+    background: #f8f1e4;
+    border: 1px solid #d9c396;
+}
+
+body[data-theme="minimal"] {
+    background: linear-gradient(135deg, #edf3fb 0%, #dfeaf8 100%);
+    color: #10233d;
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+body[data-theme="minimal"] main {
+    background: #f9fbff;
+    border-color: #9bb7d0;
+    box-shadow: 0 18px 40px rgba(30, 64, 175, 0.1);
+}
+
+body[data-theme="minimal"] #nombre {
+    color: #10233d;
+    letter-spacing: 0.08em;
+}
+
+body[data-theme="minimal"] #subtitulo {
+    color: #3d6a9d;
+}
+
+body[data-theme="minimal"] #btnCalendar,
+body[data-theme="minimal"] #btnMaps,
+body[data-theme="minimal"] .rsvp-button.minimal {
+    background: linear-gradient(135deg, #1d3557 0%, #2a4f7a 100%);
+    color: #f8fbff;
+}
+
+body[data-theme="minimal"] #timer>div {
+    background: #edf5ff;
+    border: 1px solid #bfd3eb;
+}
+
+.rsvp-button {
+    border: none;
+}
+
+body[data-theme="infantil"] main {
+    background: #ffffff;
+    border-color: #f4bfd3;
+    box-shadow: 0 20px 40px rgba(255, 162, 194, 0.18);
+}
+
+body[data-theme="infantil"] #nombre {
+    color: #d93b81;
+    letter-spacing: 0.12em;
+}
+
+body[data-theme="infantil"] #subtitulo {
+    color: #ef7aa3;
+}
+
+body[data-theme="infantil"] #btnCalendar,
+body[data-theme="infantil"] #btnMaps,
+body[data-theme="infantil"] .rsvp-button.infantil {
+    background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%);
+    color: #fff;
+}
+
+body[data-theme="infantil"] #timer .bg-white,
+body[data-theme="infantil"] #timer>div {
+    background: #fff7fb;
+    border: 1px solid #f4bfd3;
+}
+
+body[data-theme="elegante"] {
+    background: linear-gradient(135deg, #f7f0e4 0%, #efe0bc 100%);
+    color: #1f1b1a;
+    font-family: Georgia, "Times New Roman", serif;
+}
+
+body[data-theme="elegante"] main {
+    background: rgba(255, 250, 244, 0.98);
+    border-color: #b6924a;
+    box-shadow: 0 24px 50px rgba(122, 94, 40, 0.18);
+}
+
+body[data-theme="elegante"] #nombre,
+body[data-theme="elegante"] #subtitulo,
+body[data-theme="elegante"] #fechaTexto,
+body[data-theme="elegante"] #lugarNombre {
+    color: #1d1713;
+    letter-spacing: 0.08em;
+}
+
+body[data-theme="elegante"] #subtitulo,
+body[data-theme="elegante"] #horarioTexto,
+body[data-theme="elegante"] #confirmacionLimite {
+    color: #7a5a2c;
+}
+
+body[data-theme="elegante"] #btnCalendar,
+body[data-theme="elegante"] #btnMaps,
+body[data-theme="elegante"] .rsvp-button.elegante {
+    background: linear-gradient(135deg, #b68a40 0%, #8a6733 100%);
+    color: #fffaf5;
+    border: 1px solid rgba(80, 59, 27, 0.2);
+}
+
+body[data-theme="elegante"] #timer>div {
+    background: #f8f1e4;
+    border: 1px solid #d9c396;
+}
+
+body[data-theme="minimal"] {
+    background: linear-gradient(135deg, #edf3fb 0%, #dfeaf8 100%);
+    color: #10233d;
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+body[data-theme="minimal"] main {
+    background: #f9fbff;
+    border-color: #9bb7d0;
+    box-shadow: 0 18px 40px rgba(30, 64, 175, 0.1);
+}
+
+body[data-theme="minimal"] #nombre {
+    color: #10233d;
+    letter-spacing: 0.08em;
+}
+
+body[data-theme="minimal"] #subtitulo {
+    color: #3d6a9d;
+}
+
+body[data-theme="minimal"] #btnCalendar,
+body[data-theme="minimal"] #btnMaps,
+body[data-theme="minimal"] .rsvp-button.minimal {
+    background: linear-gradient(135deg, #1d3557 0%, #2a4f7a 100%);
+    color: #f8fbff;
+}
+
+body[data-theme="minimal"] #timer>div {
+    background: #edf5ff;
+    border: 1px solid #bfd3eb;
+}
+
+.rsvp-button {
+    border: none;
+}

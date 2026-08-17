@@ -1,0 +1,20 @@
+{
+  "nombre": "ELI",
+  "subtitulo": "CASAMIENTO",
+  "tema": "elegante",
+  "fechaEvento": "2026-08-16T21:53",
+  "fechaTexto": "21",
+  "horarioTexto": "21A 3 HS",
+  "lugarNombre": "SALON PONP",
+  "lugarDireccion": "654 ALGERIAA",
+  "googleMapsUrl": "https://maps.app.goo.gl/g1Vzp7iNStG48wJ28",
+  "googleCalendarUrl": "https://maps.app.goo.gl/g1Vzp7iNStG48wJ28",
+  "confirmacionLimite": "23 DICIEMBRE",
+  "contactosRSVP": [
+    {
+      "nombre": "ELI 1157339281",
+      "telefono": "ANGUS"
+    }
+  ],
+  "id": "eli-16-08-2026"
+}

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invitación Digital</title>
+    <!-- Tailwind CSS para diseño moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="bg-pink-50 text-gray-800 font-sans min-h-screen flex flex-col items-center justify-between p-4">
+
+    <!-- Botón de Música Flotante -->
+    <button id="btnMusic" onclick="toggleMusic()"
+        class="fixed top-4 right-4 bg-white/80 backdrop-blur shadow-md px-4 py-2 rounded-full font-bold text-pink-600 text-sm z-50">
+        🎵 Música
+    </button>
+    <audio id="bg-music" src="assets/musica.mp3" loop></audio>
+
+    <!-- Tarjeta Principal de la Invitación -->
+    <main
+        class="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden my-6 text-center border-4 border-pink-200">
+
+        <!-- Hero / Encabezado -->
+        <div class="bg-pink-100 p-8 flex flex-col items-center">
+            <h1 id="nombre" class="text-4xl font-extrabold text-pink-600 tracking-wider">MOIRA</h1>
+            <p id="subtitulo" class="text-lg text-pink-400 font-semibold mt-2">¡MIS 2 AÑITOS!</p>
+            <a id="btnCalendar" href="#" target="_blank"
+                class="mt-4 bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-6 rounded-full text-sm shadow transition">
+                AGENDAR EVENTO
+            </a>
+        </div>
+
+        <!-- Cuenta Regresiva -->
+        <div class="p-6 bg-pink-50 border-y border-pink-100">
+            <p class="text-xs font-bold text-pink-400 uppercase tracking-widest mb-3">Faltan:</p>
+            <div id="timer" class="grid grid-cols-4 gap-2 text-center">
+                <div class="bg-white p-2 rounded-lg shadow-sm">
+                    <span id="dias" class="block text-2xl font-bold text-pink-600">00</span>
+                    <span class="text-[10px] text-gray-400 uppercase">Días</span>
+                </div>
+                <div class="bg-white p-2 rounded-lg shadow-sm">
+                    <span id="horas" class="block text-2xl font-bold text-pink-600">00</span>
+                    <span class="text-[10px] text-gray-400 uppercase">Hs</span>
+                </div>
+                <div class="bg-white p-2 rounded-lg shadow-sm">
+                    <span id="minutos" class="block text-2xl font-bold text-pink-600">00</span>
+                    <span class="text-[10px] text-gray-400 uppercase">Min</span>
+                </div>
+                <div class="bg-white p-2 rounded-lg shadow-sm">
+                    <span id="segundos" class="block text-2xl font-bold text-pink-600">00</span>
+                    <span class="text-[10px] text-gray-400 uppercase">Seg</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detalles del Evento -->
+        <div class="p-6 space-y-3">
+            <p id="fechaTexto" class="text-lg font-bold text-gray-700"></p>
+            <p id="horarioTexto" class="text-md font-semibold text-gray-600"></p>
+            <p id="lugarNombre" class="text-md font-bold text-pink-500 mt-2"></p>
+            <p id="lugarDireccion" class="text-sm text-gray-500"></p>
+
+            <div class="pt-2">
+                <a id="btnMaps" href="#" target="_blank"
+                    class="inline-block bg-pink-500 hover:bg-pink-600 text-white font-bold py-2.5 px-6 rounded-full text-sm shadow transition">
+                    CÓMO LLEGAR
+                </a>
+            </div>
+        </div>
+
+        <!-- RSVP / Confirmación -->
+        <div class="p-6 bg-pink-100/50 space-y-4">
+            <p id="confirmacionLimite" class="text-xs text-gray-500 font-medium"></p>
+            <div id="rsvpContainer" class="flex flex-col gap-2">
+                <!-- Los botones de WhatsApp se generan automáticamente aquí -->
+            </div>
+        </div>
+
+    </main>
+
+    <script src="js/main.js"></script>
+</body>
+
+</html>

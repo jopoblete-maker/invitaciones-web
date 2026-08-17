@@ -1,0 +1,19 @@
+{
+  "nombre": "Moira",
+  "subtitulo": "¡Mis 2 años!",
+  "fechaEvento": "2026-12-20T13:00:00",
+  "fechaTexto": "20 DE DICIEMBRE",
+  "horarioTexto": "DE 13 A 16 HS",
+  "lugarNombre": "SALÓN DE FIRESTONE",
+  "lugarDireccion": "Colectora y Camino de cintura. Llavallol.",
+  "googleMapsUrl": "https://maps.google.com",
+  "googleCalendarUrl": "https://calendar.google.com",
+  "confirmacionLimite": "10 de Diciembre",
+  "contactosRSVP": [
+    {
+      "nombre": "VICTORIA",
+      "telefono": "5491100000000"
+    }
+  ],
+  "id": "moira-20-12-2026"
+}

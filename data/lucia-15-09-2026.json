@@ -1,0 +1,20 @@
+{
+  "nombre": "Lucia",
+  "subtitulo": "Cumpleaños",
+  "tema": "minimal",
+  "fechaEvento": "2026-09-15T18:00:00",
+  "fechaTexto": "15 DE SEPTIEMBRE",
+  "horarioTexto": "DE 18 A 21 HS",
+  "lugarNombre": "Café Central",
+  "lugarDireccion": "Av. Siempre Viva 123",
+  "googleMapsUrl": "https://maps.google.com",
+  "googleCalendarUrl": "https://calendar.google.com",
+  "confirmacionLimite": "10 de Septiembre",
+  "contactosRSVP": [
+    {
+      "nombre": "Marta",
+      "telefono": "5491100000000"
+    }
+  ],
+  "id": "lucia-15-09-2026"
+}
