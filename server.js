@@ -3,105 +3,94 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = process.env.PORT || 3000;
+const DATA_FILE = path.join(__dirname, 'data.json');
 
-const publicDir = __dirname;
-const dataDir = path.join(__dirname, 'data');
+// Middleware para parsear JSON
+app.use(express.json());
 
-if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+// Servir archivos estáticos (HTML, CSS, JS, imágenes)
+app.use(express.static(__dirname));
+
+// Función auxiliar para leer datos
+function readData() {
+    try {
+        if (!fs.existsSync(DATA_FILE)) {
+            fs.writeFileSync(DATA_FILE, JSON.stringify({ invitaciones: [] }, null, 2));
+        }
+        const content = fs.readFileSync(DATA_FILE, 'utf-8');
+        return JSON.parse(content);
+    } catch (err) {
+        console.error('Error leyendo data.json:', err);
+        return { invitaciones: [] };
+    }
 }
 
-app.use(express.json({ limit: '1mb' }));
-app.use(express.static(publicDir, {
-    index: 'index.html',
-    extensions: ['html']
-}));
-
-function slugify(value) {
-    return value
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9\s-]/g, '')
-        .trim()
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-');
+// Función auxiliar para guardar datos
+function saveData(data) {
+    try {
+        fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    } catch (err) {
+        console.error('Error guardando en data.json:', err);
+    }
 }
 
-function buildInvitationId(nombre, fechaEvento) {
-    const baseName = slugify(nombre || 'invitacion');
-    const fecha = new Date(fechaEvento || Date.now());
-    const day = String(fecha.getDate()).padStart(2, '0');
-    const month = String(fecha.getMonth() + 1).padStart(2, '0');
-    const year = fecha.getFullYear();
+// Ruta principal (si entran a la raíz '/')
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin.html'));
+});
 
-    return `${baseName}-${day}-${month}-${year}`;
-}
+// API: Obtener todas las invitaciones
+app.get('/api/invitaciones', (req, res) => {
+    const data = readData();
+    res.json(data.invitaciones);
+});
 
-app.post('/api/invitaciones', (req, res) => {
-    const payload = req.body;
+// API: Obtener una invitación por ID
+app.get('/api/invitaciones/:id', (req, res) => {
+    const { id } = req.params;
+    const data = readData();
+    const item = data.invitaciones.find((i) => i.id === id);
 
-    if (!payload || typeof payload !== 'object') {
-        return res.status(400).json({ error: 'Se requiere un JSON válido del evento.' });
+    if (!item) {
+        return res.status(404).json({ ok: false, message: 'Invitación no encontrada' });
     }
 
-    const nombre = payload.nombre || 'invitacion';
-    const fechaEvento = payload.fechaEvento || new Date().toISOString();
-    const id = buildInvitationId(nombre, fechaEvento);
-    const filePath = path.join(dataDir, `${id}.json`);
+    res.json({ ok: true, invitación: item });
+});
 
-    const cleanedPayload = {
-        ...payload,
-        nombre,
-        fechaEvento,
-        id
-    };
+// API: Crear una nueva invitación
+app.post('/api/invitaciones', (req, res) => {
+    const data = readData();
+    const newInv = req.body;
 
-    fs.writeFile(filePath, JSON.stringify(cleanedPayload, null, 2), 'utf8', (error) => {
-        if (error) {
-            console.error('Error guardando invitación:', error);
-            return res.status(500).json({ error: 'No se pudo guardar la invitación.' });
-        }
+    if (!newInv.id) {
+        return res.status(400).json({ ok: false, message: 'Falta el ID de la invitación' });
+    }
 
-        const invitationUrl = `/invitacion?id=${encodeURIComponent(id)}`;
-        return res.status(201).json({
-            ok: true,
-            id,
-            url: invitationUrl,
-            fullUrl: `${req.protocol}://${req.get('host')}${invitationUrl}`
-        });
+    // Si ya existe, actualiza; si no, agrega
+    const index = data.invitaciones.findIndex((i) => i.id === newInv.id);
+    if (index !== -1) {
+        data.invitaciones[index] = newInv;
+    } else {
+        data.invitaciones.push(newInv);
+    }
+
+    saveData(data);
+
+    // Generar URL completa dinámica según el servidor de Render o localhost
+    const host = req.get('host');
+    const protocol = req.protocol;
+    const fullUrl = `${protocol}://${host}/invitacion.html?id=${newInv.id}`;
+
+    res.json({
+        ok: true,
+        id: newInv.id,
+        url: fullUrl
     });
 });
 
-app.get('/invitacion', (req, res) => {
-    const id = req.query.id;
-
-    if (!id) {
-        return res.sendFile(path.join(publicDir, 'index.html'));
-    }
-
-    const filePath = path.join(dataDir, `${id}.json`);
-
-    if (!fs.existsSync(filePath)) {
-        return res.status(404).send('Invitación no encontrada');
-    }
-
-    return res.sendFile(path.join(publicDir, 'index.html'));
-});
-
-app.get('/api/invitaciones/:id', (req, res) => {
-    const { id } = req.params;
-    const filePath = path.join(dataDir, `${id}.json`);
-
-    if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: 'Invitación no encontrada.' });
-    }
-
-    const file = fs.readFileSync(filePath, 'utf8');
-    return res.json(JSON.parse(file));
-});
-
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Servidor iniciado en http://0.0.0.0:${PORT}`);
+// Iniciar servidor
+app.listen(PORT, () => {
+    console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
