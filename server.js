@@ -6,13 +6,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'data.json');
 
-// Middleware para parsear JSON
+// Middleware para procesar JSON
 app.use(express.json());
 
-// Servir archivos estáticos (HTML, CSS, JS, imágenes)
+// Servir todos los archivos estáticos de la carpeta raíz
 app.use(express.static(__dirname));
 
-// Función auxiliar para leer datos
+// Función para leer data.json
 function readData() {
     try {
         if (!fs.existsSync(DATA_FILE)) {
@@ -26,7 +26,7 @@ function readData() {
     }
 }
 
-// Función auxiliar para guardar datos
+// Función para guardar en data.json
 function saveData(data) {
     try {
         fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
@@ -35,18 +35,17 @@ function saveData(data) {
     }
 }
 
-// Ruta principal (si entran a la raíz '/')
-app.get('/', (req, res) => {
+// Rutas explícitas para el Panel Admin
+app.get(['/', '/admin', '/admin.html'], (req, res) => {
     res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-// API: Obtener todas las invitaciones
+// APIs
 app.get('/api/invitaciones', (req, res) => {
     const data = readData();
     res.json(data.invitaciones);
 });
 
-// API: Obtener una invitación por ID
 app.get('/api/invitaciones/:id', (req, res) => {
     const { id } = req.params;
     const data = readData();
@@ -59,7 +58,6 @@ app.get('/api/invitaciones/:id', (req, res) => {
     res.json({ ok: true, invitación: item });
 });
 
-// API: Crear una nueva invitación
 app.post('/api/invitaciones', (req, res) => {
     const data = readData();
     const newInv = req.body;
@@ -68,7 +66,6 @@ app.post('/api/invitaciones', (req, res) => {
         return res.status(400).json({ ok: false, message: 'Falta el ID de la invitación' });
     }
 
-    // Si ya existe, actualiza; si no, agrega
     const index = data.invitaciones.findIndex((i) => i.id === newInv.id);
     if (index !== -1) {
         data.invitaciones[index] = newInv;
@@ -78,7 +75,6 @@ app.post('/api/invitaciones', (req, res) => {
 
     saveData(data);
 
-    // Generar URL completa dinámica según el servidor de Render o localhost
     const host = req.get('host');
     const protocol = req.protocol;
     const fullUrl = `${protocol}://${host}/invitacion.html?id=${newInv.id}`;
@@ -92,5 +88,5 @@ app.post('/api/invitaciones', (req, res) => {
 
 // Iniciar servidor
 app.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    console.log(`Servidor activo en el puerto ${PORT}`);
 });
