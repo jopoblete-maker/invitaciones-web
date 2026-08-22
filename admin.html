@@ -3,315 +3,244 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Creador de Invitaciones - Panel Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Panel Creador de Invitaciones</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 700px;
+            background: #fff;
+            padding: 25px;
+            margin: 0 auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h1,
+        h2 {
+            color: #333;
+            text-align: center;
+        }
+
+        .seccion {
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #eee;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input[type="text"],
+        input[type="url"],
+        input[type="date"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        .grid-colores {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+        }
+
+        input[type="color"] {
+            width: 100%;
+            height: 40px;
+            border: none;
+            cursor: pointer;
+            border-radius: 6px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #25d366;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        button:hover {
+            background: #1eb857;
+        }
+
+        #link-generado {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f7ed;
+            border: 1px solid #25d366;
+            border-radius: 6px;
+            text-align: center;
+        }
+    </style>
 </head>
 
-<body class="bg-slate-100 text-slate-800 font-sans p-4 md:p-8">
+<body>
 
-    <div class="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-[1.3fr_0.7fr] gap-6">
-        <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-slate-200">
-            <header class="mb-8 border-b pb-4">
-                <h1 class="text-2xl font-bold text-slate-900">Configurador de Invitación</h1>
-                <p class="text-sm text-slate-500">Ingresa los datos del evento para generar el archivo JSON o la vista
-                    previa.</p>
-            </header>
+    <div class="container">
+        <h1>Creador de Invitación Personalizada</h1>
 
-            <form id="inviteForm" class="space-y-6">
+        <form id="form-invitacion">
+            <div class="seccion">
+                <h2>1. Datos Principales</h2>
+                <label>ID Unico del Evento (ej: moira-2-anios):</label>
+                <input type="text" id="eventId" required placeholder="moira-2-anios">
 
-                <!-- Sección: Datos del Festejado -->
-                <div class="space-y-4">
-                    <h2 class="text-lg font-semibold text-pink-600 border-b pb-1">1. Informacion Principal</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Nombre
-                                Festejado/a</label>
-                            <input type="text" id="nombre" required placeholder="Ej. MOIRA"
-                                class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Subtítulo /
-                                Ocasión</label>
-                            <input type="text" id="subtitulo" required placeholder="Ej. ¡MIS 2 AÑITOS!"
-                                class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm">
-                        </div>
-                    </div>
+                <label>Nombre del Cumpleañero/a:</label>
+                <input type="text" id="nombre" required placeholder="Moira">
 
-                    <div class="mt-4">
-                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Tema visual</label>
-                        <select id="tema"
-                            class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm bg-white">
-                            <option value="elegante">Elegante / Casamiento</option>
-                            <option value="infantil" selected>Infantil / Rosa</option>
-                            <option value="minimal">Minimalista / Azul</option>
-                        </select>
-                    </div>
-                </div>
+                <label>Subtítulo / Edades:</label>
+                <input type="text" id="subtitulo" placeholder="¡MIS 2 AÑITOS!">
 
-                <!-- Sección: Fecha y Lugar -->
-                <div class="space-y-4">
-                    <h2 class="text-lg font-semibold text-pink-600 border-b pb-1">2. Cita y Ubicación</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Fecha y Hora
-                                Evento</label>
-                            <input type="datetime-local" id="fechaEvento" required
-                                class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Fecha en Texto</label>
-                            <input type="text" id="fechaTexto" required placeholder="Ej. 20 DE DICIEMBRE"
-                                class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm">
-                        </div>
-                    </div>
+                <label>Fecha del Evento:</label>
+                <input type="date" id="fecha" required>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Horario Visible</label>
-                            <input type="text" id="horarioTexto" required placeholder="Ej. DE 13 A 16 HS"
-                                class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Nombre del
-                                Lugar</label>
-                            <input type="text" id="lugarNombre" required placeholder="Ej. SALÓN DE FIRESTONE"
-                                class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm">
-                        </div>
-                    </div>
+                <label>Horario:</label>
+                <input type="text" id="horario" placeholder="DE 13 A 16 HS">
 
+                <label>Lugar / Salón:</label>
+                <input type="text" id="lugar" placeholder="SALÓN DE FIRESTONE">
+
+                <label>Ubicación / Dirección:</label>
+                <input type="text" id="direccion" placeholder="Colectora y Camino de cintura, Llavallol">
+
+                <label>Enlace de Google Maps (Cómo Llegar):</label>
+                <input type="url" id="linkMaps" placeholder="https://maps.google.com/...">
+            </div>
+
+            <div class="seccion">
+                <h2>2. Temática y Estilos Visuales</h2>
+                <div class="grid-colores">
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Dirección Completa</label>
-                        <input type="text" id="lugarDireccion" required
-                            placeholder="Ej. Colectora y Camino de cintura. Llavallol."
-                            class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm">
+                        <label>Color Fondo:</label>
+                        <input type="color" id="colorFondo" value="#d4effc">
                     </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">URL Google Maps</label>
-                            <input type="url" id="googleMapsUrl" required placeholder="https://maps.google.com/..."
-                                class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">URL Google
-                                Calendar</label>
-                            <input type="url" id="googleCalendarUrl" required
-                                placeholder="https://calendar.google.com/..."
-                                class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Sección: Confirmaciones -->
-                <div class="space-y-4">
-                    <h2 class="text-lg font-semibold text-pink-600 border-b pb-1">3. Confirmación (RSVP)</h2>
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Fecha Límite
-                            Confirmación</label>
-                        <input type="text" id="confirmacionLimite" required placeholder="Ej. 10 de Diciembre"
-                            class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm">
+                        <label>Color Botones:</label>
+                        <input type="color" id="colorBoton" value="#8ecae6">
                     </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Contacto 1
-                                (Nombre)</label>
-                            <input type="text" id="contacto1Nombre" required placeholder="Ej. VICTORIA"
-                                class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Contacto 1 (Teléfono
-                                con
-                                código)</label>
-                            <input type="text" id="contacto1Tel" required placeholder="Ej. 5491100000000"
-                                class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm">
-                        </div>
+                    <div>
+                        <label>Color Texto:</label>
+                        <input type="color" id="colorTexto" value="#0369a1">
                     </div>
                 </div>
 
-                <!-- Acciones -->
-                <div class="pt-4 flex flex-col md:flex-row gap-4">
-                    <button type="button" onclick="generarInvitacion()"
-                        class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-lg text-sm transition">
-                        🚀 Generar invitación
-                    </button>
-                </div>
+                <label>Fuente Tipográfica:</label>
+                <select id="fuente">
+                    <option value="'Fredoka', sans-serif">Infantil / Divertida (Fredoka)</option>
+                    <option value="'Comic Neue', cursive">Cómics (Comic Neue)</option>
+                    <option value="'Montserrat', sans-serif">Moderna / Elegante (Montserrat)</option>
+                </select>
+            </div>
 
-                <div id="resultadoLink" class="hidden mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                    <p class="text-xs font-bold uppercase tracking-wide text-emerald-700 mb-2">Enlace generado</p>
-                    <div class="flex flex-col md:flex-row md:items-center gap-3">
-                        <input id="linkInvitacion" type="text" readonly
-                            class="w-full border border-emerald-200 bg-white p-2.5 rounded-lg text-sm text-slate-700">
-                        <button type="button" onclick="copiarLink()"
-                            class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-4 rounded-lg text-sm transition">
-                            Copiar
-                        </button>
-                    </div>
-                </div>
+            <div class="seccion">
+                <h2>3. Imágenes de Personajes y Multimedia</h2>
+                <label>URL Personajes Banner Principal (PNG transparente):</label>
+                <input type="url" id="personajeHeader" placeholder="https://.../frozen-header.png">
 
-            </form>
+                <label>URL Personaje Separador (ej: Olaf):</label>
+                <input type="url" id="personajeSeparador" placeholder="https://.../olaf.png">
+
+                <label>URLs Galería de Fotos (Separadas por coma):</label>
+
+                <textarea id="galeriaFotos" rows="3"
+                    placeholder="https://.../foto1.jpg, https://.../foto2.jpg"></textarea>
+
+                <label>URL Música de Fondo (MP3):</label>
+                <input type="url" id="musica" placeholder="https://.../cancion.mp3">
+            </div>
+
+            <div class="seccion">
+                <h2>4. Confirmación por WhatsApp</h2>
+                <label>Teléfono 1 (sin +):</label>
+                <input type="text" id="whatsapp1" placeholder="5491112345678">
+                <label>Nombre Contacto 1:</label>
+                <input type="text" id="nombreContacto1" placeholder="Victoria">
+
+                <label>Teléfono 2 (Opcional):</label>
+                <input type="text" id="whatsapp2" placeholder="5491118765432">
+                <label>Nombre Contacto 2:</label>
+                <input type="text" id="nombreContacto2" placeholder="Cory">
+            </div>
+
+            <button type="submit">Guardar y Generar Invitación</button>
+        </form>
+
+        <div id="link-generado">
+            <p>¡Invitación creada con éxito!</p>
+            <a id="url-final" href="#" target="_blank" style="font-weight: bold; color: #007bff;">Ver Invitación</a>
         </div>
-
-        <aside class="bg-white rounded-2xl shadow-xl p-5 border border-slate-200 h-fit sticky top-4">
-            <div class="flex items-center justify-between gap-3 mb-4">
-                <div>
-                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Vista previa</p>
-                    <h2 class="text-xl font-bold text-slate-900">Invitación en vivo</h2>
-                </div>
-                <button type="button" id="previewRefresh"
-                    class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3 py-2 rounded-lg transition">
-                    Vista previa
-                </button>
-            </div>
-
-            <div class="flex justify-center">
-                <div id="livePreview" data-theme="infantil" class="live-preview">
-                    <div class="preview-shell">
-                        <div class="preview-header">
-                            <h1 id="previewNombre">MOIRA</h1>
-                            <p id="previewSubtitulo">¡MIS 2 AÑITOS!</p>
-                            <a id="previewCalendar" href="#" class="preview-button">AGENDAR EVENTO</a>
-                        </div>
-
-                        <div class="preview-countdown">
-                            <p>Faltan:</p>
-                            <div class="preview-timer-grid">
-                                <div><span>00</span><small>Días</small></div>
-                                <div><span>00</span><small>Hs</small></div>
-                                <div><span>00</span><small>Min</small></div>
-                                <div><span>00</span><small>Seg</small></div>
-                            </div>
-                        </div>
-
-                        <div class="preview-details">
-                            <p id="previewFechaTexto">🎉 20 DE DICIEMBRE</p>
-                            <p id="previewHorarioTexto">⏰ DE 13 A 16 HS</p>
-                            <p id="previewLugarNombre">📍 SALÓN DE FIRESTONE</p>
-                            <p id="previewLugarDireccion">Colectora y Camino de cintura. Llavallol.</p>
-                            <a id="previewMaps" href="#" class="preview-button secondary">CÓMO LLEGAR</a>
-                        </div>
-
-                        <div class="preview-rsvp">
-                            <p id="previewConfirmacionLimite">Confirmar asistencia antes del 10 de Diciembre</p>
-                            <div class="preview-rsvp-buttons">
-                                <button type="button" class="preview-rsvp-button">CONFIRMAR</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </aside>
     </div>
 
     <script>
-        function getPreviewData() {
-            return {
-                nombre: document.getElementById('nombre').value || 'MOIRA',
-                subtitulo: document.getElementById('subtitulo').value || '¡MIS 2 AÑITOS!',
-                tema: document.getElementById('tema').value || 'infantil',
-                fechaEvento: document.getElementById('fechaEvento').value || '2026-12-20T13:00:00',
-                fechaTexto: document.getElementById('fechaTexto').value || '20 DE DICIEMBRE',
-                horarioTexto: document.getElementById('horarioTexto').value || 'DE 13 A 16 HS',
-                lugarNombre: document.getElementById('lugarNombre').value || 'SALÓN DE FIRESTONE',
-                lugarDireccion: document.getElementById('lugarDireccion').value || 'Colectora y Camino de cintura. Llavallol.',
-                googleMapsUrl: document.getElementById('googleMapsUrl').value || '#',
-                googleCalendarUrl: document.getElementById('googleCalendarUrl').value || '#',
-                confirmacionLimite: document.getElementById('confirmacionLimite').value || '10 de Diciembre',
-                contactoNombre: document.getElementById('contacto1Nombre').value || 'VICTORIA',
-                contactoTelefono: document.getElementById('contacto1Tel').value || '5491100000000'
-            };
-        }
+        document.getElementById('form-invitacion').addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-        function renderPreview() {
-            const data = getPreviewData();
-            const preview = document.getElementById('livePreview');
-            preview.setAttribute('data-theme', data.tema);
-
-            document.getElementById('previewNombre').textContent = data.nombre.toUpperCase();
-            document.getElementById('previewSubtitulo').textContent = data.subtitulo;
-            document.getElementById('previewFechaTexto').textContent = `🎉 ${data.fechaTexto}`;
-            document.getElementById('previewHorarioTexto').textContent = `⏰ ${data.horarioTexto}`;
-            document.getElementById('previewLugarNombre').textContent = `📍 ${data.lugarNombre}`;
-            document.getElementById('previewLugarDireccion').textContent = data.lugarDireccion;
-            document.getElementById('previewConfirmacionLimite').textContent = `Confirmar asistencia antes del ${data.confirmacionLimite}`;
-            document.getElementById('previewCalendar').href = data.googleCalendarUrl;
-            document.getElementById('previewMaps').href = data.googleMapsUrl;
-
-            const whatsappLink = `https://wa.me/${data.contactoTelefono}?text=${encodeURIComponent(`¡Hola ${data.contactoNombre}! Confirmo mi asistencia para el cumpleaños de ${data.nombre}.`)}`;
-            const previewButton = document.querySelector('.preview-rsvp-button');
-            previewButton.textContent = `CONFIRMAR CON ${data.contactoNombre.toUpperCase()}`;
-            previewButton.onclick = () => window.open(whatsappLink, '_blank');
-        }
-
-        const previewFields = document.querySelectorAll('input, select');
-        previewFields.forEach((field) => {
-            field.addEventListener('input', renderPreview);
-            field.addEventListener('change', renderPreview);
-        });
-
-        document.getElementById('previewRefresh').addEventListener('click', renderPreview);
-        renderPreview();
-
-        function getConfigFromForm() {
-            return {
+            const data = {
+                id: document.getElementById('eventId').value.trim(),
                 nombre: document.getElementById('nombre').value,
                 subtitulo: document.getElementById('subtitulo').value,
-                tema: document.getElementById('tema').value,
-                fechaEvento: document.getElementById('fechaEvento').value,
-                fechaTexto: document.getElementById('fechaTexto').value,
-                horarioTexto: document.getElementById('horarioTexto').value,
-                lugarNombre: document.getElementById('lugarNombre').value,
-                lugarDireccion: document.getElementById('lugarDireccion').value,
-                googleMapsUrl: document.getElementById('googleMapsUrl').value,
-                googleCalendarUrl: document.getElementById('googleCalendarUrl').value,
-                confirmacionLimite: document.getElementById('confirmacionLimite').value,
-                contactosRSVP: [
-                    {
-                        nombre: document.getElementById('contacto1Nombre').value,
-                        telefono: document.getElementById('contacto1Tel').value
-                    }
-                ]
-            };
-        }
-
-        async function generarInvitacion() {
-            const config = getConfigFromForm();
-
-            try {
-                const response = await fetch('/api/invitaciones', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(config)
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(result.error || 'No se pudo generar la invitación.');
+                fecha: document.getElementById('fecha').value,
+                horario: document.getElementById('horario').value,
+                lugar: document.getElementById('lugar').value,
+                direccion: document.getElementById('direccion').value,
+                linkMaps: document.getElementById('linkMaps').value,
+                estilos: {
+                    colorFondo: document.getElementById('colorFondo').value,
+                    colorBoton: document.getElementById('colorBoton').value,
+                    colorTexto: document.getElementById('colorTexto').value,
+                    fuente: document.getElementById('fuente').value
+                },
+                multimedia: {
+                    personajeHeader: document.getElementById('personajeHeader').value,
+                    personajeSeparador: document.getElementById('personajeSeparador').value,
+                    galeria: document.getElementById('galeriaFotos').value.split(',').map(url => url.trim()).filter(url => url),
+                    musica: document.getElementById('musica').value
+                },
+                confirmacion: {
+                    tel1: document.getElementById('whatsapp1').value,
+                    nombre1: document.getElementById('nombreContacto1').value,
+                    tel2: document.getElementById('whatsapp2').value,
+                    nombre2: document.getElementById('nombreContacto2').value
                 }
+            };
 
-                const link = `${window.location.origin}${result.url}`;
-                const output = document.getElementById('resultadoLink');
-                const input = document.getElementById('linkInvitacion');
+            const res = await fetch('/api/eventos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
 
-                input.value = link;
-                output.classList.remove('hidden');
-            } catch (error) {
-                alert(error.message || 'Hubo un error al generar la invitación.');
+            if (res.ok) {
+                const url = `${window.location.origin}/invitacion.html?id=${data.id}`;
+                document.getElementById('url-final').href = url;
+                document.getElementById('url-final').innerText = url;
+                document.getElementById('link-generado').style.display = 'block';
             }
-        }
-
-        function copiarLink() {
-            const input = document.getElementById('linkInvitacion');
-            input.select();
-            input.setSelectionRange(0, input.value.length);
-            navigator.clipboard.writeText(input.value)
-                .then(() => alert('Enlace copiado al portapapeles.'))
-                .catch(() => alert('No se pudo copiar automáticamente. Selecciona el enlace y cópialo manualmente.'));
-        }
+        });
     </script>
 </body>
 

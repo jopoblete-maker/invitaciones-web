@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invitación Digital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&family=Fredoka:wght@500;700&family=Montserrat:wght@600;800&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+            padding: 20px 15px;
+            box-sizing: border-box;
+        }
+
+        .header-img {
+            width: 80%;
+            max-width: 250px;
+            margin-top: 10px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin: 10px 0 0 0;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            margin-top: 5px;
+            opacity: 0.9;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            color: white;
+            margin: 10px 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        .separador-img {
+            width: 120px;
+            margin: 20px auto;
+            display: block;
+        }
+
+        .galeria {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .galeria img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+
+        .musica-btn {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            font-size: 20px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+
+    <button class="musica-btn" onclick="toggleAudio()">🎵</button>
+    <audio id="audio-fondo" loop></audio>
+
+    <div class="container">
+        <h1 id="txt-nombre"></h1>
+        <h2 id="txt-subtitulo"></h2>
+
+        <img id="img-header" class="header-img" src="" alt="" style="display:none;">
+
+        <div style="margin: 25px 0;">
+            <a id="btn-agendar" class="btn" href="#">AGENDAR EVENTO</a>
+        </div>
+
+        <p id="txt-fecha" style="font-size: 1.4rem; font-weight: bold; margin-bottom: 5px;"></p>
+        <p id="txt-horario" style="margin: 0;"></p>
+        <p id="txt-lugar" style="font-weight: bold; margin-top: 10px;"></p>
+        <p id="txt-direccion" style="font-size: 0.9rem; opacity: 0.8;"></p>
+
+        <a id="btn-maps" class="btn" href="#" target="_blank" style="display:none;">CÓMO LLEGAR</a>
+
+        <img id="img-separador" class="separador-img" src="" alt="" style="display:none;">
+
+        <div id="galeria-contenedor" class="galeria"></div>
+
+        <div id="confirmacion-seccion" style="margin-top: 30px;">
+            <p style="font-weight: bold;">CONFIRMAR ASISTENCIA:</p>
+            <a id="btn-wa1" class="btn" href="#" target="_blank" style="display:none;"></a>
+            <a id="btn-wa2" class="btn" href="#" target="_blank" style="display:none;"></a>
+        </div>
+    </div>
+
+    <script>
+        let reproduciendo = false;
+        const audio = document.getElementById('audio-fondo');
+
+        function toggleAudio() {
+            if (reproduciendo) {
+                audio.pause();
+            } else {
+                audio.play();
+            }
+            reproduciendo = !reproduciendo;
+        }
+
+        async function cargarInvitacion() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            if (!id) return alert('No se especificó ningún ID de invitación');
+
+            const res = await fetch(`/api/eventos/${id}`);
+            if (!res.ok) return alert('Invitación no encontrada');
+
+            const data = await res.json();
+
+            // Aplicar estilos dinámicos del usuario
+            document.body.style.backgroundColor = data.estilos.colorFondo;
+            document.body.style.color = data.estilos.colorTexto;
+            document.body.style.fontFamily = data.estilos.fuente;
+
+            const botones = document.querySelectorAll('.btn');
+            botones.forEach(btn => btn.style.backgroundColor = data.estilos.colorBoton);
+
+            // Llenar Textos
+            document.getElementById('txt-nombre').innerText = data.nombre;
+            document.getElementById('txt-subtitulo').innerText = data.subtitulo;
+            document.getElementById('txt-fecha').innerText = `📅 ${data.fecha}`;
+            document.getElementById('txt-horario').innerText = `⏰ ${data.horario}`;
+            document.getElementById('txt-lugar').innerText = `📍 ${data.lugar}`;
+            document.getElementById('txt-direccion').innerText = data.direccion;
+
+            // Links e Imágenes
+            if (data.linkMaps) {
+                const btnMaps = document.getElementById('btn-maps');
+                btnMaps.href = data.linkMaps;
+                btnMaps.style.display = 'inline-block';
+            }
+
+            if (data.multimedia.personajeHeader) {
+                const imgH = document.getElementById('img-header');
+                imgH.src = data.multimedia.personajeHeader;
+                imgH.style.display = 'inline-block';
+            }
+
+            if (data.multimedia.personajeSeparador) {
+                const imgS = document.getElementById('img-separador');
+                imgS.src = data.multimedia.personajeSeparador;
+                imgS.style.display = 'block';
+            }
+
+            if (data.multimedia.musica) {
+                audio.src = data.multimedia.musica;
+            }
+
+            // Cargar Galería
+            const galeriaDiv = document.getElementById('galeria-contenedor');
+            if (data.multimedia.galeria && data.multimedia.galeria.length > 0) {
+                data.multimedia.galeria.forEach(url => {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    galeriaDiv.appendChild(img);
+                });
+            }
+
+            // Botones WhatsApp
+            if (data.confirmacion.tel1) {
+                const btn1 = document.getElementById('btn-wa1');
+                btn1.href = `https://wa.me/${data.confirmacion.tel1}?text=Hola!%20Confirmo%20asistencia%20para%20${data.nombre}`;
+                btn1.innerText = `CONFIRMAR CON ${data.confirmacion.nombre1.toUpperCase()}`;
+                btn1.style.display = 'inline-block';
+            }
+
+            if (data.confirmacion.tel2) {
+                const btn2 = document.getElementById('btn-wa2');
+                btn2.href = `https://wa.me/${data.confirmacion.tel2}?text=Hola!%20Confirmo%20asistencia%20para%20${data.nombre}`;
+                btn2.innerText = `CONFIRMAR CON ${data.confirmacion.nombre2.toUpperCase()}`;
+                btn2.style.display = 'inline-block';
+            }
+        }
+
+        cargarInvitacion();
+    </script>
+</body>
+
+</html>
