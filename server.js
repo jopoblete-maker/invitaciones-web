@@ -6,13 +6,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'data.json');
 
-// Middleware para procesar JSON
+// Middleware para parsear contenido JSON
 app.use(express.json());
 
-// Servir todos los archivos estáticos de la carpeta raíz
+// Servir archivos estáticos (CSS, JS, imágenes, etc.) desde la raíz
 app.use(express.static(__dirname));
 
-// Función para leer data.json
+// Función auxiliar para leer data.json de manera segura
 function readData() {
     try {
         if (!fs.existsSync(DATA_FILE)) {
@@ -26,7 +26,7 @@ function readData() {
     }
 }
 
-// Función para guardar en data.json
+// Función auxiliar para guardar en data.json
 function saveData(data) {
     try {
         fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
@@ -35,17 +35,23 @@ function saveData(data) {
     }
 }
 
-// Rutas explícitas para el Panel Admin
-app.get(['/', '/admin', '/admin.html'], (req, res) => {
+// RUTA PRINCIPAL (/): Carga directamente el panel de administración
+app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-// APIs
+// Ruta explícita por si ingresan escribiendo /admin.html
+app.get('/admin.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
+// API: Obtener todas las invitaciones
 app.get('/api/invitaciones', (req, res) => {
     const data = readData();
     res.json(data.invitaciones);
 });
 
+// API: Obtener una invitación por ID
 app.get('/api/invitaciones/:id', (req, res) => {
     const { id } = req.params;
     const data = readData();
@@ -58,6 +64,7 @@ app.get('/api/invitaciones/:id', (req, res) => {
     res.json({ ok: true, invitación: item });
 });
 
+// API: Crear o actualizar una invitación
 app.post('/api/invitaciones', (req, res) => {
     const data = readData();
     const newInv = req.body;
