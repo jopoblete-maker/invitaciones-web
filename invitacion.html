@@ -44,6 +44,33 @@
             opacity: 0.9;
         }
 
+        /* Contador Regresivo */
+        .contador-box {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .contador-item {
+            background: rgba(255, 255, 255, 0.6);
+            padding: 10px;
+            border-radius: 8px;
+            min-width: 60px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .contador-num {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: block;
+        }
+
+        .contador-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+
         .btn {
             display: inline-block;
             padding: 12px 25px;
@@ -107,8 +134,17 @@
 
         <img id="img-header" class="header-img" src="" alt="" style="display:none;">
 
-        <div style="margin: 25px 0;">
-            <a id="btn-agendar" class="btn" href="#">AGENDAR EVENTO</a>
+        <!-- Bloque Contador -->
+        <p style="font-weight: bold; margin-top: 20px; margin-bottom: 5px;">FALTAN:</p>
+        <div class="contador-box">
+            <div class="contador-item"><span id="cd-dias" class="contador-num">00</span><span
+                    class="contador-label">Días</span></div>
+            <div class="contador-item"><span id="cd-horas" class="contador-num">00</span><span
+                    class="contador-label">Hs</span></div>
+            <div class="contador-item"><span id="cd-minutos" class="contador-num">00</span><span
+                    class="contador-label">Min</span></div>
+            <div class="contador-item"><span id="cd-segundos" class="contador-num">00</span><span
+                    class="contador-label">Seg</span></div>
         </div>
 
         <p id="txt-fecha" style="font-size: 1.4rem; font-weight: bold; margin-bottom: 5px;"></p>
@@ -134,25 +170,35 @@
         const audio = document.getElementById('audio-fondo');
 
         function toggleAudio() {
-            if (reproduciendo) {
-                audio.pause();
-            } else {
-                audio.play();
-            }
+            if (reproduciendo) { audio.pause(); } else { audio.play(); }
             reproduciendo = !reproduciendo;
+        }
+
+        function iniciarContador(fechaTarget) {
+            const destino = new Date(fechaTarget).getTime();
+            setInterval(() => {
+                const ahora = new Date().getTime();
+                const diferencia = destino - ahora;
+
+                if (diferencia > 0) {
+                    document.getElementById('cd-dias').innerText = Math.floor(diferencia / (1000 * 60 * 60 * 24));
+                    document.getElementById('cd-horas').innerText = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    document.getElementById('cd-minutos').innerText = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
+                    document.getElementById('cd-segundos').innerText = Math.floor((diferencia % (1000 * 60)) / 1000);
+                }
+            }, 1000);
         }
 
         async function cargarInvitacion() {
             const params = new URLSearchParams(window.location.search);
             const id = params.get('id');
-            if (!id) return alert('No se especificó ningún ID de invitación');
+            if (!id) return alert('No se especificó ningún ID');
 
             const res = await fetch(`/api/eventos/${id}`);
             if (!res.ok) return alert('Invitación no encontrada');
 
             const data = await res.json();
 
-            // Aplicar estilos dinámicos del usuario
             document.body.style.backgroundColor = data.estilos.colorFondo;
             document.body.style.color = data.estilos.colorTexto;
             document.body.style.fontFamily = data.estilos.fuente;
@@ -160,7 +206,6 @@
             const botones = document.querySelectorAll('.btn');
             botones.forEach(btn => btn.style.backgroundColor = data.estilos.colorBoton);
 
-            // Llenar Textos
             document.getElementById('txt-nombre').innerText = data.nombre;
             document.getElementById('txt-subtitulo').innerText = data.subtitulo;
             document.getElementById('txt-fecha').innerText = `📅 ${data.fecha}`;
@@ -168,7 +213,8 @@
             document.getElementById('txt-lugar').innerText = `📍 ${data.lugar}`;
             document.getElementById('txt-direccion').innerText = data.direccion;
 
-            // Links e Imágenes
+            if (data.fecha) iniciarContador(data.fecha);
+
             if (data.linkMaps) {
                 const btnMaps = document.getElementById('btn-maps');
                 btnMaps.href = data.linkMaps;
@@ -187,11 +233,8 @@
                 imgS.style.display = 'block';
             }
 
-            if (data.multimedia.musica) {
-                audio.src = data.multimedia.musica;
-            }
+            if (data.multimedia.musica) audio.src = data.multimedia.musica;
 
-            // Cargar Galería
             const galeriaDiv = document.getElementById('galeria-contenedor');
             if (data.multimedia.galeria && data.multimedia.galeria.length > 0) {
                 data.multimedia.galeria.forEach(url => {
@@ -201,7 +244,6 @@
                 });
             }
 
-            // Botones WhatsApp
             if (data.confirmacion.tel1) {
                 const btn1 = document.getElementById('btn-wa1');
                 btn1.href = `https://wa.me/${data.confirmacion.tel1}?text=Hola!%20Confirmo%20asistencia%20para%20${data.nombre}`;
