@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 
 // Reemplaza con tus datos de Supabase que copiaste anteriormente
 const SUPABASE_URL = 'https://jqewkmebhdyrjeawdmon.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_7ONq9y6XAqsLebFDUmUDVw_2Ok5063b';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxZXdrbWViaGR5cmplYXdkbW9uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0NDc2OTMsImV4cCI6MjEwMzAyMzY5M30.bwBlacPpsOQSMKc3JBv9loS2pL_chyZr0wnKmK6EWqw';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
