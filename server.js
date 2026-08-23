@@ -5,34 +5,37 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configura tu clave de acceso al panel
-const ADMIN_PASSWORD = 'TU_CLAVE_SECRETA_AQUI'; // <--- Cambia esto por la clave que quieras
+// Configura la clave que le darás a tus clientes cuando te paguen
+const ADMIN_PASSWORD = 'invitacion2026'; // <--- Cambia esto por la contraseña que quieras usar
 
+// Configuración de Supabase
 const SUPABASE_URL = 'https://jqewkmebhdyrjeawdmon.supabase.co';
-const SUPABASE_KEY = 'TU_CLAVE_ANON_REAL_DE_SUPABASE'; // <--- Tu clave anon que pegaste antes
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxZXdrbWViaGR5cmplYXdkbW9uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0NDc2OTMsImV4cCI6MjEwMzAyMzY5M30.bwBlacPpsOQSMKc3JBv9loS2pL_chyZr0wnKmK6EWqw'; // <--- Reemplaza con tu clave anon de Supabase
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Aumentamos el límite para permitir subir imágenes locales (Base64)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(__dirname));
 
+// Ruta principal para abrir el panel de administración
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-// Guardar o actualizar evento (Con validaciones de seguridad)
+// Endpoint para guardar o actualizar la invitación
 app.post('/api/eventos', async (req, res) => {
     try {
         const { password, ...evento } = req.body;
 
-        // 1. Validar la clave secreta
+        // 1. Validar clave de acceso
         if (password !== ADMIN_PASSWORD) {
-            return res.status(401).json({ error: 'Clave de acceso incorrecta.' });
+            return res.status(401).json({ error: 'Clave de acceso incorrecta. Verifica el código entregado.' });
         }
 
         if (!evento.id) {
-            return res.status(400).json({ error: 'Debes definir un ID para la invitación.' });
+            return res.status(400).json({ error: 'Debes ingresar un ID para el evento.' });
         }
 
         // 2. Verificar si el ID ya existe en Supabase
@@ -40,30 +43,31 @@ app.post('/api/eventos', async (req, res) => {
             .from('eventos')
             .select('id')
             .eq('id', evento.id)
-            .single();
+            .maybeSingle();
 
-        // Si ya existe y no envías una bandera de confirmación, bloquea la acción
+        // Si el ID ya existe y no se autorizó sobrescribir
         if (existente && !req.body.overwrite) {
             return res.status(409).json({
-                error: `El ID "${evento.id}" ya existe. Elige otro ID para no sobrescribir la invitación de otro cliente.`
+                error: `El ID "${evento.id}" ya está registrado. Por favor, elige otro ID diferente.`
             });
         }
 
-        // 3. Guardar en Supabase
+        // 3. Guardar evento en Supabase
         const { error } = await supabase
             .from('eventos')
             .upsert({ id: evento.id, datos: evento });
 
         if (error) throw error;
+
         res.json({ success: true, id: evento.id });
 
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Error al guardar en la base de datos.' });
+        console.error('Error al guardar:', err);
+        res.status(500).json({ error: 'Ocurrió un error en el servidor al guardar los datos.' });
     }
 });
 
-// Obtener evento
+// Endpoint para leer la invitación desde el frontend (invitacion.html)
 app.get('/api/eventos/:id', async (req, res) => {
     try {
         const { data, error } = await supabase
@@ -72,11 +76,17 @@ app.get('/api/eventos/:id', async (req, res) => {
             .eq('id', req.params.id)
             .single();
 
-        if (error || !data) return res.status(404).json({ error: 'Evento no encontrado' });
+        if (error || !data) {
+            return res.status(404).json({ error: 'Invitación no encontrada' });
+        }
+
         res.json(data.datos);
     } catch (err) {
-        res.status(500).json({ error: 'Error al leer la base de datos' });
+        console.error('Error al leer:', err);
+        res.status(500).json({ error: 'Error al consultar la base de datos' });
     }
 });
 
-app.listen(PORT, () => console.log(`Servidor activo en puerto ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`Servidor iniciado correctamente en el puerto ${PORT}`);
+});
