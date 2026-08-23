@@ -1,54 +1,58 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, 'data.json');
 
-app.use(express.json({ limit: '10mb' }));
+// Reemplaza con tus datos de Supabase que copiaste anteriormente
+const SUPABASE_URL = 'https://jqewkmebhdyrjeawdmon.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_7ONq9y6XAqsLebFDUmUDVw_2Ok5063b';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Aumentamos el limite para soportar audios e imagenes en Base64
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(__dirname));
 
-// Asegurar archivo de datos
-if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify([]));
-}
-
-// Redirigir la raíz al administrador
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-// Endpoint para guardar/actualizar eventos
-app.post('/api/eventos', (req, res) => {
+// Guardar o actualizar evento
+app.post('/api/eventos', async (req, res) => {
     try {
-        const nuevoEvento = req.body;
-        let eventos = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+        const evento = req.body;
+        const { data, error } = await supabase
+            .from('eventos')
+            .upsert({ id: evento.id, datos: evento });
 
-        const index = eventos.findIndex(e => e.id === nuevoEvento.id);
-        if (index !== -1) {
-            eventos[index] = nuevoEvento;
-        } else {
-            eventos.push(nuevoEvento);
+        if (error) {
+            console.error('Error Supabase:', error);
+            throw error;
         }
-
-        fs.writeFileSync(DATA_FILE, JSON.stringify(eventos, null, 2));
-        res.json({ success: true, id: nuevoEvento.id });
+        res.json({ success: true, id: evento.id });
     } catch (err) {
-        res.status(500).json({ error: 'Error al guardar el evento' });
+        console.error(err);
+        res.status(500).json({ error: 'Error al guardar en la base de datos' });
     }
 });
 
-// Endpoint para obtener evento por ID
-app.get('/api/eventos/:id', (req, res) => {
+// Obtener evento
+app.get('/api/eventos/:id', async (req, res) => {
     try {
-        const eventos = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-        const evento = eventos.find(e => e.id === req.params.id);
-        if (!evento) return res.status(404).json({ error: 'Evento no encontrado' });
-        res.json(evento);
+        const { data, error } = await supabase
+            .from('eventos')
+            .select('datos')
+            .eq('id', req.params.id)
+            .single();
+
+        if (error || !data) return res.status(404).json({ error: 'Evento no encontrado' });
+        res.json(data.datos);
     } catch (err) {
-        res.status(500).json({ error: 'Error al leer los datos' });
+        res.status(500).json({ error: 'Error al leer la base de datos' });
     }
 });
 
-app.listen(PORT, () => console.log(`Servidor iniciado en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
