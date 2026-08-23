@@ -5,261 +5,252 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invitación Digital</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&family=Fredoka:wght@500;700&family=Montserrat:wght@600;800&display=swap"
-        rel="stylesheet">
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .container {
-            max-width: 480px;
-            margin: 0 auto;
-            min-height: 100vh;
-            padding: 20px 15px;
+        * {
             box-sizing: border-box;
         }
 
-        .header-img {
-            width: 80%;
-            max-width: 250px;
-            margin-top: 10px;
+        body {
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            background-color: #ffffff;
+            color: #333333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        img.media-img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+
+        .hero-img {
+            max-height: 250px;
+            object-fit: contain;
         }
 
         h1 {
-            font-size: 3rem;
-            margin: 10px 0 0 0;
-            text-transform: uppercase;
+            margin: 10px 0 5px 0;
+            font-size: 2rem;
         }
 
         h2 {
+            margin: 0 0 15px 0;
             font-size: 1.2rem;
-            margin-top: 5px;
+            font-weight: 400;
             opacity: 0.9;
         }
 
-        /* Contador Regresivo */
-        .contador-box {
+        .info-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+
+        .countdown {
             display: flex;
             justify-content: center;
             gap: 10px;
             margin: 20px 0;
         }
 
-        .contador-item {
-            background: rgba(255, 255, 255, 0.6);
+        .time-card {
+            background: #f1f3f5;
             padding: 10px;
             border-radius: 8px;
             min-width: 60px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
-        .contador-num {
-            font-size: 1.5rem;
-            font-weight: bold;
+        .time-card span {
             display: block;
+            font-size: 1.2rem;
+            font-weight: bold;
         }
 
-        .contador-label {
+        .time-card label {
             font-size: 0.7rem;
-            text-transform: uppercase;
+            color: #666;
         }
 
         .btn {
-            display: inline-block;
-            padding: 12px 25px;
-            border-radius: 25px;
-            text-decoration: none;
-            font-weight: bold;
-            color: white;
-            margin: 10px 5px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-            transition: transform 0.2s;
-        }
-
-        .btn:hover {
-            transform: scale(1.05);
-        }
-
-        .separador-img {
-            width: 120px;
-            margin: 20px auto;
             display: block;
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 1rem;
+            cursor: pointer;
         }
 
-        .galeria {
+        .gallery {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 10px;
             margin: 20px 0;
         }
 
-        .galeria img {
+        .gallery img {
             width: 100%;
-            height: 180px;
+            height: 120px;
             object-fit: cover;
-            border-radius: 12px;
+            border-radius: 8px;
         }
 
-        .musica-btn {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            background: rgba(255, 255, 255, 0.8);
-            border: none;
-            border-radius: 50%;
-            width: 45px;
-            height: 45px;
-            cursor: pointer;
-            font-size: 20px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        audio {
+            width: 100%;
+            margin: 15px 0;
         }
     </style>
 </head>
 
 <body>
 
-    <button class="musica-btn" onclick="toggleAudio()">🎵</button>
-    <audio id="audio-fondo" loop></audio>
-
-    <div class="container">
-        <h1 id="txt-nombre"></h1>
-        <h2 id="txt-subtitulo"></h2>
-
-        <img id="img-header" class="header-img" src="" alt="" style="display:none;">
-
-        <!-- Bloque Contador -->
-        <p style="font-weight: bold; margin-top: 20px; margin-bottom: 5px;">FALTAN:</p>
-        <div class="contador-box">
-            <div class="contador-item"><span id="cd-dias" class="contador-num">00</span><span
-                    class="contador-label">Días</span></div>
-            <div class="contador-item"><span id="cd-horas" class="contador-num">00</span><span
-                    class="contador-label">Hs</span></div>
-            <div class="contador-item"><span id="cd-minutos" class="contador-num">00</span><span
-                    class="contador-label">Min</span></div>
-            <div class="contador-item"><span id="cd-segundos" class="contador-num">00</span><span
-                    class="contador-label">Seg</span></div>
-        </div>
-
-        <p id="txt-fecha" style="font-size: 1.4rem; font-weight: bold; margin-bottom: 5px;"></p>
-        <p id="txt-horario" style="margin: 0;"></p>
-        <p id="txt-lugar" style="font-weight: bold; margin-top: 10px;"></p>
-        <p id="txt-direccion" style="font-size: 0.9rem; opacity: 0.8;"></p>
-
-        <a id="btn-maps" class="btn" href="#" target="_blank" style="display:none;">CÓMO LLEGAR</a>
-
-        <img id="img-separador" class="separador-img" src="" alt="" style="display:none;">
-
-        <div id="galeria-contenedor" class="galeria"></div>
-
-        <div id="confirmacion-seccion" style="margin-top: 30px;">
-            <p style="font-weight: bold;">CONFIRMAR ASISTENCIA:</p>
-            <a id="btn-wa1" class="btn" href="#" target="_blank" style="display:none;"></a>
-            <a id="btn-wa2" class="btn" href="#" target="_blank" style="display:none;"></a>
-        </div>
+    <div class="container" id="app">
+        <div id="loading">Cargando invitación...</div>
     </div>
 
     <script>
-        let reproduciendo = false;
-        const audio = document.getElementById('audio-fondo');
+        async function cargarInvitacion() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
 
-        function toggleAudio() {
-            if (reproduciendo) { audio.pause(); } else { audio.play(); }
-            reproduciendo = !reproduciendo;
+            if (!id) {
+                document.getElementById('app').innerHTML = '<h2>ID de invitación no especificado.</h2>';
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/eventos/${id}`);
+                if (!res.ok) throw new Error('No se encontró la invitación');
+
+                const data = await res.json();
+                renderizarPagina(data);
+            } catch (err) {
+                document.getElementById('app').innerHTML = '<h2>Invitación no encontrada</h2>';
+            }
+        }
+
+        function renderizarPagina(d) {
+            // Aplicar estilos personalizados
+            if (d.estilos) {
+                if (d.estilos.colorFondo) document.body.style.backgroundColor = d.estilos.colorFondo;
+                if (d.estilos.colorTexto) document.body.style.color = d.estilos.colorTexto;
+            }
+
+            const btnColor = (d.estilos && d.estilos.colorBoton) ? d.estilos.colorBoton : '#28a745';
+
+            let html = '';
+
+            // Imagen Header
+            if (d.multimedia && d.multimedia.personajeHeader) {
+                html += `<img src="${d.multimedia.personajeHeader}" class="media-img hero-img" alt="Header">`;
+            }
+
+            // Nombre y Subtítulo
+            html += `<h1>${d.nombre || ''}</h1>`;
+            html += `<h2>${d.subtitulo || ''}</h2>`;
+
+            // Audio / Música
+            if (d.multimedia && d.multimedia.musica) {
+                html += `<audio controls autoplay loop src="${d.multimedia.musica}"></audio>`;
+            }
+
+            // Datos del Evento
+            html += `
+      <div class="info-box">
+        <p><strong>📅 Fecha:</strong> ${d.fecha || ''}</p>
+        <p><strong>⏰ Horario:</strong> ${d.horario || ''}</p>
+        <p><strong>📍 Lugar:</strong> ${d.lugar || ''}</p>
+        <p><strong>🏠 Dirección:</strong> ${d.direccion || ''}</p>
+      </div>
+    `;
+
+            // Botón de Google Maps
+            if (d.linkMaps) {
+                html += `<a href="${d.linkMaps}" target="_blank" class="btn" style="background:${btnColor}">🗺️ Cómo Llegar (Google Maps)</a>`;
+            }
+
+            // Imagen Separadora
+            if (d.multimedia && d.multimedia.personajeSeparador) {
+                html += `<img src="${d.multimedia.personajeSeparador}" class="media-img hero-img" alt="Separador">`;
+            }
+
+            // Contador Regresivo
+            html += `
+      <h3>FALTAN:</h3>
+      <div class="countdown">
+        <div class="time-card"><span id="dias">00</span><label>DÍAS</label></div>
+        <div class="time-card"><span id="horas">00</span><label>HS</label></div>
+        <div class="time-card"><span id="minutos">00</span><label>MIN</label></div>
+        <div class="time-card"><span id="segundos">00</span><label>SEG</label></div>
+      </div>
+    `;
+
+            // Galería
+            if (d.multimedia && d.multimedia.galeria && d.multimedia.galeria.length > 0) {
+                html += `<h3>Galería de Fotos</h3><div class="gallery">`;
+                d.multimedia.galeria.forEach(img => {
+                    html += `<img src="${img}" alt="Foto Galería">`;
+                });
+                html += `</div>`;
+            }
+
+            // Botones de Confirmación WhatsApp
+            if (d.confirmacion) {
+                html += `<h3>CONFIRMAR ASISTENCIA:</h3>`;
+                if (d.confirmacion.tel1) {
+                    const msg1 = encodeURIComponent(`¡Hola ${d.confirmacion.nombre1 || ''}! Quiero confirmar mi asistencia al evento de ${d.nombre}.`);
+                    html += `<a href="https://wa.me/${d.confirmacion.tel1}?text=${msg1}" target="_blank" class="btn" style="background:#25D366">📲 Confirmar con ${d.confirmacion.nombre1 || 'Contacto 1'}</a>`;
+                }
+                if (d.confirmacion.tel2) {
+                    const msg2 = encodeURIComponent(`¡Hola ${d.confirmacion.nombre2 || ''}! Quiero confirmar mi asistencia al evento de ${d.nombre}.`);
+                    html += `<a href="https://wa.me/${d.confirmacion.tel2}?text=${msg2}" target="_blank" class="btn" style="background:#25D366">📲 Confirmar con ${d.confirmacion.nombre2 || 'Contacto 2'}</a>`;
+                }
+            }
+
+            document.getElementById('app').innerHTML = html;
+
+            // Iniciar Contador
+            if (d.fecha) iniciarContador(d.fecha);
         }
 
         function iniciarContador(fechaTarget) {
-            const destino = new Date(fechaTarget).getTime();
+            const targetDate = new Date(fechaTarget).getTime();
             setInterval(() => {
-                const ahora = new Date().getTime();
-                const diferencia = destino - ahora;
+                const now = new Date().getTime();
+                const diff = targetDate - now;
 
-                if (diferencia > 0) {
-                    document.getElementById('cd-dias').innerText = Math.floor(diferencia / (1000 * 60 * 60 * 24));
-                    document.getElementById('cd-horas').innerText = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    document.getElementById('cd-minutos').innerText = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
-                    document.getElementById('cd-segundos').innerText = Math.floor((diferencia % (1000 * 60)) / 1000);
+                if (diff > 0) {
+                    const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+                    if (document.getElementById('dias')) document.getElementById('dias').innerText = d < 10 ? '0' + d : d;
+                    if (document.getElementById('horas')) document.getElementById('horas').innerText = h < 10 ? '0' + h : h;
+                    if (document.getElementById('minutos')) document.getElementById('minutos').innerText = m < 10 ? '0' + m : m;
+                    if (document.getElementById('segundos')) document.getElementById('segundos').innerText = s < 10 ? '0' + s : s;
                 }
             }, 1000);
         }
 
-        async function cargarInvitacion() {
-            const params = new URLSearchParams(window.location.search);
-            const id = params.get('id');
-            if (!id) return alert('No se especificó ningún ID');
-
-            const res = await fetch(`/api/eventos/${id}`);
-            if (!res.ok) return alert('Invitación no encontrada');
-
-            const data = await res.json();
-
-            document.body.style.backgroundColor = data.estilos.colorFondo;
-            document.body.style.color = data.estilos.colorTexto;
-            document.body.style.fontFamily = data.estilos.fuente;
-
-            const botones = document.querySelectorAll('.btn');
-            botones.forEach(btn => btn.style.backgroundColor = data.estilos.colorBoton);
-
-            document.getElementById('txt-nombre').innerText = data.nombre;
-            document.getElementById('txt-subtitulo').innerText = data.subtitulo;
-            document.getElementById('txt-fecha').innerText = `📅 ${data.fecha}`;
-            document.getElementById('txt-horario').innerText = `⏰ ${data.horario}`;
-            document.getElementById('txt-lugar').innerText = `📍 ${data.lugar}`;
-            document.getElementById('txt-direccion').innerText = data.direccion;
-
-            if (data.fecha) iniciarContador(data.fecha);
-
-            if (data.linkMaps) {
-                const btnMaps = document.getElementById('btn-maps');
-                btnMaps.href = data.linkMaps;
-                btnMaps.style.display = 'inline-block';
-            }
-
-            if (data.multimedia.personajeHeader) {
-                const imgH = document.getElementById('img-header');
-                imgH.src = data.multimedia.personajeHeader;
-                imgH.style.display = 'inline-block';
-            }
-
-            if (data.multimedia.personajeSeparador) {
-                const imgS = document.getElementById('img-separador');
-                imgS.src = data.multimedia.personajeSeparador;
-                imgS.style.display = 'block';
-            }
-
-            if (data.multimedia.musica) audio.src = data.multimedia.musica;
-
-            const galeriaDiv = document.getElementById('galeria-contenedor');
-            if (data.multimedia.galeria && data.multimedia.galeria.length > 0) {
-                data.multimedia.galeria.forEach(url => {
-                    const img = document.createElement('img');
-                    img.src = url;
-                    galeriaDiv.appendChild(img);
-                });
-            }
-
-            if (data.confirmacion.tel1) {
-                const btn1 = document.getElementById('btn-wa1');
-                btn1.href = `https://wa.me/${data.confirmacion.tel1}?text=Hola!%20Confirmo%20asistencia%20para%20${data.nombre}`;
-                btn1.innerText = `CONFIRMAR CON ${data.confirmacion.nombre1.toUpperCase()}`;
-                btn1.style.display = 'inline-block';
-            }
-
-            if (data.confirmacion.tel2) {
-                const btn2 = document.getElementById('btn-wa2');
-                btn2.href = `https://wa.me/${data.confirmacion.tel2}?text=Hola!%20Confirmo%20asistencia%20para%20${data.nombre}`;
-                btn2.innerText = `CONFIRMAR CON ${data.confirmacion.nombre2.toUpperCase()}`;
-                btn2.style.display = 'inline-block';
-            }
-        }
-
-        cargarInvitacion();
+        window.onload = cargarInvitacion;
     </script>
 </body>
 
