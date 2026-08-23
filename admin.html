@@ -3,244 +3,376 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Creador de Invitaciones</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 680px;
+            margin: 30px auto;
+            padding: 0 15px;
             background: #f0f2f5;
-            margin: 0;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 700px;
-            background: #fff;
-            padding: 25px;
-            margin: 0 auto;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        h1,
-        h2 {
             color: #333;
-            text-align: center;
         }
 
-        .seccion {
-            background: #fafafa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #eee;
+        .card {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        h2 {
+            text-align: center;
+            color: #1a202c;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.8rem;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2b6cb0;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+            margin-top: 25px;
+            margin-bottom: 15px;
         }
 
         label {
             display: block;
-            margin-top: 10px;
-            font-weight: bold;
-            color: #555;
+            margin-top: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #4a5568;
         }
 
         input[type="text"],
-        input[type="url"],
         input[type="date"],
-        select,
-        textarea {
+        select {
             width: 100%;
-            padding: 10px;
+            padding: 10px 12px;
             margin-top: 5px;
-            border: 1px solid #ccc;
+            border: 1px solid #cbd5e0;
             border-radius: 6px;
-            box-sizing: border-box;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
         }
 
-        .grid-colores {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #3182ce;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            margin-top: 6px;
+            padding: 6px;
+            background: #f7fafc;
+            border: 1px dashed #cbd5e0;
+            border-radius: 6px;
+            font-size: 0.85rem;
         }
 
         input[type="color"] {
             width: 100%;
-            height: 40px;
-            border: none;
-            cursor: pointer;
+            height: 42px;
+            margin-top: 5px;
+            border: 1px solid #cbd5e0;
             border-radius: 6px;
+            cursor: pointer;
+            background: white;
         }
 
-        button {
+        .row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .row>div {
+            flex: 1;
+        }
+
+        .file-hint {
+            font-size: 0.78rem;
+            color: #718096;
+            margin-top: 4px;
+            display: block;
+        }
+
+        .btn-submit {
             width: 100%;
-            padding: 12px;
-            background: #25d366;
+            background: #319795;
             color: white;
-            font-weight: bold;
-            font-size: 16px;
             border: none;
-            border-radius: 6px;
+            padding: 14px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            margin-top: 30px;
             cursor: pointer;
-            margin-top: 15px;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(49, 151, 149, 0.3);
+            transition: background 0.2s, transform 0.1s;
         }
 
-        button:hover {
-            background: #1eb857;
+        .btn-submit:hover {
+            background: #2c7a7b;
         }
 
-        #link-generado {
-            display: none;
+        .btn-submit:active {
+            transform: scale(0.99);
+        }
+
+        .result-box {
             margin-top: 20px;
             padding: 15px;
-            background: #e7f7ed;
-            border: 1px solid #25d366;
-            border-radius: 6px;
-            text-align: center;
+            background: #e6fffa;
+            border: 1px solid #b2f5ea;
+            border-radius: 8px;
+            display: none;
+            word-break: break-all;
+        }
+
+        .result-box a {
+            color: #234e52;
+            font-weight: bold;
+            text-decoration: underline;
         }
     </style>
 </head>
 
 <body>
 
-    <div class="container">
-        <h1>Creador de Invitación Personalizada</h1>
+    <div class="card">
+        <h2>Creador de Invitación Personalizada</h2>
 
-        <form id="form-invitacion">
-            <div class="seccion">
-                <h2>1. Datos Principales</h2>
-                <label>ID Unico del Evento (ej: moira-2-anios):</label>
-                <input type="text" id="eventId" required placeholder="moira-2-anios">
+        <!-- 1. DATOS PRINCIPALES -->
+        <div class="section-title">1. Datos Principales del Evento</div>
 
-                <label>Nombre del Cumpleañero/a:</label>
-                <input type="text" id="nombre" required placeholder="Moira">
+        <label for="id-evento">ID Único del Evento (ej: luis-50):</label>
+        <input type="text" id="id-evento" placeholder="luis-50" required>
 
-                <label>Subtítulo / Edades:</label>
-                <input type="text" id="subtitulo" placeholder="¡MIS 2 AÑITOS!">
+        <label for="nombre">Nombre del Cumpleañero/a:</label>
+        <input type="text" id="nombre" placeholder="Luis">
 
-                <label>Fecha del Evento:</label>
-                <input type="date" id="fecha" required>
+        <label for="subtitulo">Subtítulo / Edades:</label>
+        <input type="text" id="subtitulo" placeholder="¡Mis 60 Años!">
 
-                <label>Horario:</label>
-                <input type="text" id="horario" placeholder="DE 13 A 16 HS">
-
-                <label>Lugar / Salón:</label>
-                <input type="text" id="lugar" placeholder="SALÓN DE FIRESTONE">
-
-                <label>Ubicación / Dirección:</label>
-                <input type="text" id="direccion" placeholder="Colectora y Camino de cintura, Llavallol">
-
-                <label>Enlace de Google Maps (Cómo Llegar):</label>
-                <input type="url" id="linkMaps" placeholder="https://maps.google.com/...">
+        <div class="row">
+            <div>
+                <label for="fecha">Fecha del Evento:</label>
+                <input type="date" id="fecha">
             </div>
-
-            <div class="seccion">
-                <h2>2. Temática y Estilos Visuales</h2>
-                <div class="grid-colores">
-                    <div>
-                        <label>Color Fondo:</label>
-                        <input type="color" id="colorFondo" value="#d4effc">
-                    </div>
-                    <div>
-                        <label>Color Botones:</label>
-                        <input type="color" id="colorBoton" value="#8ecae6">
-                    </div>
-                    <div>
-                        <label>Color Texto:</label>
-                        <input type="color" id="colorTexto" value="#0369a1">
-                    </div>
-                </div>
-
-                <label>Fuente Tipográfica:</label>
-                <select id="fuente">
-                    <option value="'Fredoka', sans-serif">Infantil / Divertida (Fredoka)</option>
-                    <option value="'Comic Neue', cursive">Cómics (Comic Neue)</option>
-                    <option value="'Montserrat', sans-serif">Moderna / Elegante (Montserrat)</option>
-                </select>
+            <div>
+                <label for="horario">Horario:</label>
+                <input type="text" id="horario" placeholder="13:00 a 17:00 hs">
             </div>
+        </div>
 
-            <div class="seccion">
-                <h2>3. Imágenes de Personajes y Multimedia</h2>
-                <label>URL Personajes Banner Principal (PNG transparente):</label>
-                <input type="url" id="personajeHeader" placeholder="https://.../frozen-header.png">
+        <label for="lugar">Lugar / Salón:</label>
+        <input type="text" id="lugar" placeholder="Salón Stadium">
 
-                <label>URL Personaje Separador (ej: Olaf):</label>
-                <input type="url" id="personajeSeparador" placeholder="https://.../olaf.png">
+        <label for="direccion">Ubicación / Dirección:</label>
+        <input type="text" id="direccion" placeholder="Las Heras 474">
 
-                <label>URLs Galería de Fotos (Separadas por coma):</label>
+        <label for="link-maps">Enlace de Google Maps (Cómo Llegar):</label>
+        <input type="text" id="link-maps" placeholder="https://maps.app.goo.gl/...">
 
-                <textarea id="galeriaFotos" rows="3"
-                    placeholder="https://.../foto1.jpg, https://.../foto2.jpg"></textarea>
+        <!-- 2. TEMÁTICA Y ESTILOS -->
+        <div class="section-title">2. Temática y Estilos Visuales</div>
 
-                <label>URL Música de Fondo (MP3):</label>
-                <input type="url" id="musica" placeholder="https://.../cancion.mp3">
+        <div class="row">
+            <div>
+                <label for="color-fondo">Color Fondo:</label>
+                <input type="color" id="color-fondo" value="#ffffff">
             </div>
-
-            <div class="seccion">
-                <h2>4. Confirmación por WhatsApp</h2>
-                <label>Teléfono 1 (sin +):</label>
-                <input type="text" id="whatsapp1" placeholder="5491112345678">
-                <label>Nombre Contacto 1:</label>
-                <input type="text" id="nombreContacto1" placeholder="Victoria">
-
-                <label>Teléfono 2 (Opcional):</label>
-                <input type="text" id="whatsapp2" placeholder="5491118765432">
-                <label>Nombre Contacto 2:</label>
-                <input type="text" id="nombreContacto2" placeholder="Cory">
+            <div>
+                <label for="color-boton">Color Botones:</label>
+                <input type="color" id="color-boton" value="#3182ce">
             </div>
+            <div>
+                <label for="color-texto">Color Texto:</label>
+                <input type="color" id="color-texto" value="#2d3748">
+            </div>
+        </div>
 
-            <button type="submit">Guardar y Generar Invitación</button>
-        </form>
+        <label for="fuente">Fuente Tipográfica:</label>
+        <select id="fuente">
+            <option value="'Montserrat', sans-serif">Moderna / Elegante (Montserrat)</option>
+            <option value="'Comic Neue', cursive">Cómics (Comic Neue)</option>
+            <option value="'Fredoka', sans-serif">Divertida (Fredoka)</option>
+        </select>
 
-        <div id="link-generado">
-            <p>¡Invitación creada con éxito!</p>
-            <a id="url-final" href="#" target="_blank" style="font-weight: bold; color: #007bff;">Ver Invitación</a>
+        <!-- 3. MULTIMEDIA Y ARCHIVOS -->
+        <div class="section-title">3. Imágenes de Personajes y Multimedia</div>
+
+        <label>Banner Principal (PNG transparente o Foto Header):</label>
+        <input type="file" id="file-header" accept="image/*">
+        <input type="text" id="url-header" placeholder="O pega la URL directa de la imagen">
+
+        <label>Personaje Separador (ej: Olaf / Ícono):</label>
+        <input type="file" id="file-separador" accept="image/*">
+        <input type="text" id="url-separador" placeholder="O pega la URL directa de la imagen">
+
+        <label>Galería de Fotos:</label>
+        <input type="file" id="file-galeria" accept="image/*" multiple>
+        <span class="file-hint">Puedes seleccionar varias fotos juntas desde tu PC/Celular.</span>
+        <input type="text" id="url-galeria" placeholder="O pega URLs separadas por coma">
+
+        <label>Música de Fondo (Audio MP3):</label>
+        <input type="file" id="file-musica" accept="audio/*">
+        <input type="text" id="url-musica" placeholder="O pega la URL directa del audio (.mp3)">
+
+        <!-- 4. CONFIRMACIÓN WHATSAPP -->
+        <div class="section-title">4. Confirmación por WhatsApp</div>
+
+        <div class="row">
+            <div>
+                <label for="tel1">Teléfono 1 (sin + ni 0, ej: 5491157339281):</label>
+                <input type="text" id="tel1" placeholder="5491157339281">
+            </div>
+            <div>
+                <label for="nombre1">Nombre Contacto 1:</label>
+                <input type="text" id="nombre1" placeholder="Victoria">
+            </div>
+        </div>
+
+        <div class="row">
+            <div>
+                <label for="tel2">Teléfono 2 (Opcional):</label>
+                <input type="text" id="tel2" placeholder="5491157339281">
+            </div>
+            <div>
+                <label for="nombre2">Nombre Contacto 2:</label>
+                <input type="text" id="nombre2" placeholder="Cory">
+            </div>
+        </div>
+
+        <button class="btn-submit" onclick="guardarInvitacion()">Guardar y Generar Invitación</button>
+
+        <div id="result-box" class="result-box">
+            ✅ ¡Invitación guardada exitosamente!<br>
+            <strong>Enlace de la Invitación:</strong><br>
+            <a id="result-link" href="#" target="_blank"></a>
         </div>
     </div>
 
     <script>
-        document.getElementById('form-invitacion').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        // Convierte un archivo local cargado desde el dispositivo a cadena Base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
 
-            const data = {
-                id: document.getElementById('eventId').value.trim(),
-                nombre: document.getElementById('nombre').value,
-                subtitulo: document.getElementById('subtitulo').value,
+        async function guardarInvitacion() {
+            const id = document.getElementById('id-evento').value.trim();
+            if (!id) {
+                alert('Por favor ingresa un ID único para el evento (ej: luis-50)');
+                return;
+            }
+
+            // Procesar Header
+            let headerUrl = document.getElementById('url-header').value.trim();
+            const fileHeader = document.getElementById('file-header').files[0];
+            if (fileHeader) {
+                headerUrl = await fileToBase64(fileHeader);
+            }
+
+            // Procesar Separador
+            let separadorUrl = document.getElementById('url-separador').value.trim();
+            const fileSeparador = document.getElementById('file-separador').files[0];
+            if (fileSeparador) {
+                separadorUrl = await fileToBase64(fileSeparador);
+            }
+
+            // Procesar Música
+            let musicaUrl = document.getElementById('url-musica').value.trim();
+            const fileMusica = document.getElementById('file-musica').files[0];
+            if (fileMusica) {
+                musicaUrl = await fileToBase64(fileMusica);
+            }
+
+            // Procesar Galería
+            let galeriaUrls = [];
+            const rawGaleriaUrl = document.getElementById('url-galeria').value.trim();
+            if (rawGaleriaUrl) {
+                galeriaUrls = rawGaleriaUrl.split(',').map(u => u.trim());
+            }
+
+            const filesGaleria = document.getElementById('file-galeria').files;
+            if (filesGaleria.length > 0) {
+                for (let file of filesGaleria) {
+                    const b64 = await fileToBase64(file);
+                    galeriaUrls.push(b64);
+                }
+            }
+
+            // Armado del objeto completo de datos
+            const eventoData = {
+                id: id,
+                nombre: document.getElementById('nombre').value.trim(),
+                subtitulo: document.getElementById('subtitulo').value.trim(),
                 fecha: document.getElementById('fecha').value,
-                horario: document.getElementById('horario').value,
-                lugar: document.getElementById('lugar').value,
-                direccion: document.getElementById('direccion').value,
-                linkMaps: document.getElementById('linkMaps').value,
+                horario: document.getElementById('horario').value.trim(),
+                lugar: document.getElementById('lugar').value.trim(),
+                direccion: document.getElementById('direccion').value.trim(),
+                linkMaps: document.getElementById('link-maps').value.trim(),
                 estilos: {
-                    colorFondo: document.getElementById('colorFondo').value,
-                    colorBoton: document.getElementById('colorBoton').value,
-                    colorTexto: document.getElementById('colorTexto').value,
+                    colorFondo: document.getElementById('color-fondo').value,
+                    colorBoton: document.getElementById('color-boton').value,
+                    colorTexto: document.getElementById('color-texto').value,
                     fuente: document.getElementById('fuente').value
                 },
                 multimedia: {
-                    personajeHeader: document.getElementById('personajeHeader').value,
-                    personajeSeparador: document.getElementById('personajeSeparador').value,
-                    galeria: document.getElementById('galeriaFotos').value.split(',').map(url => url.trim()).filter(url => url),
-                    musica: document.getElementById('musica').value
+                    personajeHeader: headerUrl,
+                    personajeSeparador: separadorUrl,
+                    galeria: galeriaUrls,
+                    musica: musicaUrl
                 },
                 confirmacion: {
-                    tel1: document.getElementById('whatsapp1').value,
-                    nombre1: document.getElementById('nombreContacto1').value,
-                    tel2: document.getElementById('whatsapp2').value,
-                    nombre2: document.getElementById('nombreContacto2').value
+                    tel1: document.getElementById('tel1').value.trim().replace('+', ''),
+                    nombre1: document.getElementById('nombre1').value.trim(),
+                    tel2: document.getElementById('tel2').value.trim().replace('+', ''),
+                    nombre2: document.getElementById('nombre2').value.trim()
                 }
             };
 
-            const res = await fetch('/api/eventos', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
+            try {
+                const res = await fetch('/api/eventos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(eventoData)
+                });
 
-            if (res.ok) {
-                const url = `${window.location.origin}/invitacion.html?id=${data.id}`;
-                document.getElementById('url-final').href = url;
-                document.getElementById('url-final').innerText = url;
-                document.getElementById('link-generado').style.display = 'block';
+                if (res.ok) {
+                    const finalUrl = `${window.location.origin}/invitacion.html?id=${id}`;
+                    const resultBox = document.getElementById('result-box');
+                    const resultLink = document.getElementById('result-link');
+
+                    resultLink.href = finalUrl;
+                    resultLink.innerText = finalUrl;
+                    resultBox.style.display = 'block';
+
+                    resultBox.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    alert('Ocurrió un error al guardar los datos en el servidor.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error de conexión al guardar la invitación.');
             }
-        });
+        }
     </script>
 </body>
 
