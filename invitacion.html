@@ -4,254 +4,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#b88746">
     <title>Invitación Digital</title>
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            padding: 20px;
-            text-align: center;
-            background-color: #ffffff;
-            color: #333333;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-            padding: 20px;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        img.media-img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 10px;
-            margin: 15px 0;
-        }
-
-        .hero-img {
-            max-height: 250px;
-            object-fit: contain;
-        }
-
-        h1 {
-            margin: 10px 0 5px 0;
-            font-size: 2rem;
-        }
-
-        h2 {
-            margin: 0 0 15px 0;
-            font-size: 1.2rem;
-            font-weight: 400;
-            opacity: 0.9;
-        }
-
-        .info-box {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 15px 0;
-        }
-
-        .countdown {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin: 20px 0;
-        }
-
-        .time-card {
-            background: #f1f3f5;
-            padding: 10px;
-            border-radius: 8px;
-            min-width: 60px;
-        }
-
-        .time-card span {
-            display: block;
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-
-        .time-card label {
-            font-size: 0.7rem;
-            color: #666;
-        }
-
-        .btn {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-weight: bold;
-            text-decoration: none;
-            font-size: 1rem;
-            cursor: pointer;
-        }
-
-        .gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 10px;
-            margin: 20px 0;
-        }
-
-        .gallery img {
-            width: 100%;
-            height: 120px;
-            object-fit: cover;
-            border-radius: 8px;
-        }
-
-        audio {
-            width: 100%;
-            margin: 15px 0;
-        }
-    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Lato:wght@400;700;900&family=Mountains+of+Christmas:wght@700&family=Playfair+Display:wght@600;700;800&family=Quicksand:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/invitacion.css">
 </head>
 
 <body>
+    <div class="page-vignette" aria-hidden="true"></div>
 
-    <div class="container" id="app">
-        <div id="loading">Cargando invitación...</div>
-    </div>
+    <button id="btnMusic" class="music-button is-hidden is-paused" type="button" aria-label="Reproducir música">
+        <svg class="music-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="currentColor" d="M9 18V5l12-2v13h-2V7.35l-8 1.33V18a3 3 0 1 1-2 0Z" />
+        </svg>
+        <span>Música</span>
+    </button>
+    <audio id="bgMusic" loop></audio>
 
-    <script>
-        async function cargarInvitacion() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const id = urlParams.get('id');
+    <main class="invitation-shell" id="app" aria-live="polite">
+        <section class="state-panel">
+            <p>Cargando invitación...</p>
+        </section>
+    </main>
 
-            if (!id) {
-                document.getElementById('app').innerHTML = '<h2>ID de invitación no especificado.</h2>';
-                return;
-            }
-
-            try {
-                const res = await fetch(`/api/eventos/${id}`);
-                if (!res.ok) throw new Error('No se encontró la invitación');
-
-                const data = await res.json();
-                renderizarPagina(data);
-            } catch (err) {
-                document.getElementById('app').innerHTML = '<h2>Invitación no encontrada</h2>';
-            }
-        }
-
-        function renderizarPagina(d) {
-            // Aplicar estilos personalizados
-            if (d.estilos) {
-                if (d.estilos.colorFondo) document.body.style.backgroundColor = d.estilos.colorFondo;
-                if (d.estilos.colorTexto) document.body.style.color = d.estilos.colorTexto;
-            }
-
-            const btnColor = (d.estilos && d.estilos.colorBoton) ? d.estilos.colorBoton : '#28a745';
-
-            let html = '';
-
-            // Imagen Header
-            if (d.multimedia && d.multimedia.personajeHeader) {
-                html += `<img src="${d.multimedia.personajeHeader}" class="media-img hero-img" alt="Header">`;
-            }
-
-            // Nombre y Subtítulo
-            html += `<h1>${d.nombre || ''}</h1>`;
-            html += `<h2>${d.subtitulo || ''}</h2>`;
-
-            // Audio / Música
-            if (d.multimedia && d.multimedia.musica) {
-                html += `<audio controls autoplay loop src="${d.multimedia.musica}"></audio>`;
-            }
-
-            // Datos del Evento
-            html += `
-      <div class="info-box">
-        <p><strong>📅 Fecha:</strong> ${d.fecha || ''}</p>
-        <p><strong>⏰ Horario:</strong> ${d.horario || ''}</p>
-        <p><strong>📍 Lugar:</strong> ${d.lugar || ''}</p>
-        <p><strong>🏠 Dirección:</strong> ${d.direccion || ''}</p>
-      </div>
-    `;
-
-            // Botón de Google Maps
-            if (d.linkMaps) {
-                html += `<a href="${d.linkMaps}" target="_blank" class="btn" style="background:${btnColor}">🗺️ Cómo Llegar (Google Maps)</a>`;
-            }
-
-            // Imagen Separadora
-            if (d.multimedia && d.multimedia.personajeSeparador) {
-                html += `<img src="${d.multimedia.personajeSeparador}" class="media-img hero-img" alt="Separador">`;
-            }
-
-            // Contador Regresivo
-            html += `
-      <h3>FALTAN:</h3>
-      <div class="countdown">
-        <div class="time-card"><span id="dias">00</span><label>DÍAS</label></div>
-        <div class="time-card"><span id="horas">00</span><label>HS</label></div>
-        <div class="time-card"><span id="minutos">00</span><label>MIN</label></div>
-        <div class="time-card"><span id="segundos">00</span><label>SEG</label></div>
-      </div>
-    `;
-
-            // Galería
-            if (d.multimedia && d.multimedia.galeria && d.multimedia.galeria.length > 0) {
-                html += `<h3>Galería de Fotos</h3><div class="gallery">`;
-                d.multimedia.galeria.forEach(img => {
-                    html += `<img src="${img}" alt="Foto Galería">`;
-                });
-                html += `</div>`;
-            }
-
-            // Botones de Confirmación WhatsApp
-            if (d.confirmacion) {
-                html += `<h3>CONFIRMAR ASISTENCIA:</h3>`;
-                if (d.confirmacion.tel1) {
-                    const msg1 = encodeURIComponent(`¡Hola ${d.confirmacion.nombre1 || ''}! Quiero confirmar mi asistencia al evento de ${d.nombre}.`);
-                    html += `<a href="https://wa.me/${d.confirmacion.tel1}?text=${msg1}" target="_blank" class="btn" style="background:#25D366">📲 Confirmar con ${d.confirmacion.nombre1 || 'Contacto 1'}</a>`;
-                }
-                if (d.confirmacion.tel2) {
-                    const msg2 = encodeURIComponent(`¡Hola ${d.confirmacion.nombre2 || ''}! Quiero confirmar mi asistencia al evento de ${d.nombre}.`);
-                    html += `<a href="https://wa.me/${d.confirmacion.tel2}?text=${msg2}" target="_blank" class="btn" style="background:#25D366">📲 Confirmar con ${d.confirmacion.nombre2 || 'Contacto 2'}</a>`;
-                }
-            }
-
-            document.getElementById('app').innerHTML = html;
-
-            // Iniciar Contador
-            if (d.fecha) iniciarContador(d.fecha);
-        }
-
-        function iniciarContador(fechaTarget) {
-            const targetDate = new Date(fechaTarget).getTime();
-            setInterval(() => {
-                const now = new Date().getTime();
-                const diff = targetDate - now;
-
-                if (diff > 0) {
-                    const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-                    const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                    const s = Math.floor((diff % (1000 * 60)) / 1000);
-
-                    if (document.getElementById('dias')) document.getElementById('dias').innerText = d < 10 ? '0' + d : d;
-                    if (document.getElementById('horas')) document.getElementById('horas').innerText = h < 10 ? '0' + h : h;
-                    if (document.getElementById('minutos')) document.getElementById('minutos').innerText = m < 10 ? '0' + m : m;
-                    if (document.getElementById('segundos')) document.getElementById('segundos').innerText = s < 10 ? '0' + s : s;
-                }
-            }, 1000);
-        }
-
-        window.onload = cargarInvitacion;
-    </script>
+    <script src="js/invitacion.js" defer></script>
 </body>
 
 </html>
