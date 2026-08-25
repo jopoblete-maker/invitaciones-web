@@ -344,6 +344,14 @@ body::before {
     margin-top: 24px;
 }
 
+.carousel.is-paused .carousel-track {
+    cursor: grab;
+}
+
+.carousel.is-paused .carousel-dot.is-active {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary-color), transparent 82%);
+}
+
 .carousel-viewport {
     overflow: hidden;
     border-radius: 24px;

@@ -148,6 +148,7 @@ const DETAIL_ICONS = {
 };
 
 let countdownTimer = null;
+let carouselTimers = [];
 
 document.addEventListener("DOMContentLoaded", initInvitation);
 
@@ -381,14 +382,21 @@ function renderGallery(images) {
 }
 
 function setupCarousel() {
+    carouselTimers.forEach((timer) => clearInterval(timer));
+    carouselTimers = [];
+
     document.querySelectorAll("[data-carousel]").forEach((carousel) => {
         const track = carousel.querySelector(".carousel-track");
         const slides = Array.from(carousel.querySelectorAll(".carousel-slide"));
         const dots = Array.from(carousel.querySelectorAll(".carousel-dot"));
         const prev = carousel.querySelector("[data-carousel-prev]");
         const next = carousel.querySelector("[data-carousel-next]");
+        const autoplayDelay = 2000;
         let current = 0;
         let startX = 0;
+        let autoplayTimer = null;
+        let isMousePaused = false;
+        let isTouchPaused = false;
 
         const goTo = (index) => {
             current = (index + slides.length) % slides.length;
@@ -396,18 +404,81 @@ function setupCarousel() {
             dots.forEach((dot, dotIndex) => dot.classList.toggle("is-active", dotIndex === current));
         };
 
-        prev?.addEventListener("click", () => goTo(current - 1));
-        next?.addEventListener("click", () => goTo(current + 1));
-        dots.forEach((dot) => dot.addEventListener("click", () => goTo(Number(dot.dataset.slide))));
+        const stopAutoplay = () => {
+            if (!autoplayTimer) return;
+            clearInterval(autoplayTimer);
+            carouselTimers = carouselTimers.filter((timer) => timer !== autoplayTimer);
+            autoplayTimer = null;
+            carousel.classList.add("is-paused");
+        };
+
+        const startAutoplay = () => {
+            if (autoplayTimer || slides.length <= 1) return;
+            if (isMousePaused || isTouchPaused) return;
+            carousel.classList.remove("is-paused");
+            autoplayTimer = setInterval(() => goTo(current + 1), autoplayDelay);
+            carouselTimers.push(autoplayTimer);
+        };
+
+        const restartAutoplay = () => {
+            stopAutoplay();
+            startAutoplay();
+        };
+
+        const pauseFromMouse = () => {
+            isMousePaused = true;
+            stopAutoplay();
+        };
+        const resumeFromMouse = (event) => {
+            if (event.relatedTarget && carousel.contains(event.relatedTarget)) return;
+            isMousePaused = false;
+            startAutoplay();
+        };
+        const pauseFromTouch = () => {
+            isTouchPaused = true;
+            stopAutoplay();
+        };
+        const resumeFromTouch = () => {
+            isTouchPaused = false;
+            startAutoplay();
+        };
+
+        prev?.addEventListener("click", () => {
+            goTo(current - 1);
+            restartAutoplay();
+        });
+        next?.addEventListener("click", () => {
+            goTo(current + 1);
+            restartAutoplay();
+        });
+        dots.forEach((dot) => dot.addEventListener("click", () => {
+            goTo(Number(dot.dataset.slide));
+            restartAutoplay();
+        }));
+
+        carousel.addEventListener("mouseenter", pauseFromMouse);
+        carousel.addEventListener("mouseleave", () => {
+            isMousePaused = false;
+            startAutoplay();
+        });
+        carousel.addEventListener("mouseover", pauseFromMouse);
+        carousel.addEventListener("mouseout", resumeFromMouse);
+        carousel.addEventListener("touchstart", pauseFromTouch, { passive: true });
+        carousel.addEventListener("touchend", resumeFromTouch);
+        carousel.addEventListener("touchcancel", resumeFromTouch);
 
         track.addEventListener("pointerdown", (event) => {
             startX = event.clientX;
             track.setPointerCapture(event.pointerId);
+            stopAutoplay();
         });
         track.addEventListener("pointerup", (event) => {
             const delta = event.clientX - startX;
             if (Math.abs(delta) > 45) goTo(current + (delta < 0 ? 1 : -1));
+            startAutoplay();
         });
+
+        startAutoplay();
     });
 }
 
