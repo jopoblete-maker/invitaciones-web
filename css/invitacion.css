@@ -339,6 +339,102 @@ body::before {
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.22);
 }
 
+.carousel {
+    position: relative;
+    margin-top: 24px;
+}
+
+.carousel-viewport {
+    overflow: hidden;
+    border-radius: 24px;
+    box-shadow: 0 20px 46px rgba(0, 0, 0, 0.16);
+}
+
+.carousel-track {
+    display: flex;
+    touch-action: pan-y;
+    transition: transform 0.38s ease;
+    cursor: grab;
+}
+
+.carousel-track:active {
+    cursor: grabbing;
+}
+
+.carousel-slide {
+    min-width: 100%;
+    margin: 0;
+    aspect-ratio: 4 / 5;
+    background: var(--surface-strong);
+}
+
+.carousel-slide img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+.carousel-control {
+    position: absolute;
+    top: 50%;
+    z-index: 2;
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.62);
+    border-radius: 999px;
+    color: #fff;
+    background: var(--button-gradient);
+    box-shadow: 0 14px 28px var(--shadow-color);
+    cursor: pointer;
+    transform: translateY(-50%);
+    transition: transform 0.25s ease, filter 0.25s ease;
+}
+
+.carousel-control:hover {
+    filter: saturate(1.08);
+    transform: translateY(-50%) scale(1.05);
+}
+
+.carousel-control.prev {
+    left: 12px;
+}
+
+.carousel-control.next {
+    right: 12px;
+}
+
+.carousel-control span {
+    margin-top: -2px;
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.carousel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.carousel-dot {
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--primary-color), transparent 62%);
+    cursor: pointer;
+    transition: width 0.25s ease, background 0.25s ease;
+}
+
+.carousel-dot.is-active {
+    width: 24px;
+    background: var(--primary-color);
+}
+
 .music-button {
     position: fixed;
     top: 18px;
@@ -427,6 +523,10 @@ body[data-theme="elegante"] .eyebrow {
     .gallery {
         grid-auto-rows: 58px;
         gap: 8px;
+    }
+
+    .carousel-slide {
+        aspect-ratio: 3 / 4;
     }
 
     .music-button {

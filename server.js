@@ -13,6 +13,7 @@ const SUPABASE_URL = 'https://jqewkmebhdyrjeawdmon.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxZXdrbWViaGR5cmplYXdkbW9uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0NDc2OTMsImV4cCI6MjEwMzAyMzY5M30.bwBlacPpsOQSMKc3JBv9loS2pL_chyZr0wnKmK6EWqw'; // <--- Reemplaza con tu clave anon de Supabase
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const TEMAS_VALIDOS = ['frozen', 'pesca', 'elegante', 'fiesta', 'minimalista'];
 
 // Aumentamos el límite para permitir subir imágenes locales (Base64)
 app.use(express.json({ limit: '50mb' }));
@@ -37,6 +38,8 @@ app.post('/api/eventos', async (req, res) => {
         if (!evento.id) {
             return res.status(400).json({ error: 'Debes ingresar un ID para el evento.' });
         }
+
+        evento.tema = TEMAS_VALIDOS.includes(evento.tema) ? evento.tema : 'fiesta';
 
         // 2. Verificar si el ID ya existe en Supabase
         const { data: existente } = await supabase

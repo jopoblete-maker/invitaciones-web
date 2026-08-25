@@ -75,6 +75,44 @@ const THEMES = {
         watermark:
             '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><g fill="none" stroke="#244966" stroke-width="5" stroke-linecap="round"><path d="M32 118c34-6 54-24 61-54 16 24 35 37 57 40-28 13-45 31-50 55-16-22-39-35-68-41Z"/><path d="M39 53h102"/></g></svg>'
     },
+    minimalista: {
+        primary: "#466a8d",
+        secondary: "#edf4f8",
+        accent: "#172b3d",
+        text: "#142434",
+        muted: "#64798b",
+        surface: "rgba(246, 250, 253, 0.78)",
+        surfaceStrong: "rgba(252, 254, 255, 0.9)",
+        surfaceSoft: "rgba(255, 255, 255, 0.28)",
+        line: "rgba(255, 255, 255, 0.54)",
+        shadow: "rgba(25, 50, 72, 0.14)",
+        heading: '"Playfair Display", Georgia, serif',
+        body: '"Lato", Arial, sans-serif',
+        button: "linear-gradient(135deg, #6f93b2 0%, #244966 100%)",
+        background:
+            "linear-gradient(135deg, rgba(240, 248, 252, 0.72), rgba(83, 113, 139, 0.18)), url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=85')",
+        watermark:
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><g fill="none" stroke="#244966" stroke-width="5" stroke-linecap="round"><path d="M32 118c34-6 54-24 61-54 16 24 35 37 57 40-28 13-45 31-50 55-16-22-39-35-68-41Z"/><path d="M39 53h102"/></g></svg>'
+    },
+    fiesta: {
+        primary: "#d95f8a",
+        secondary: "#fff0f4",
+        accent: "#6d2147",
+        text: "#432235",
+        muted: "#95647a",
+        surface: "rgba(255, 244, 249, 0.76)",
+        surfaceStrong: "rgba(255, 250, 252, 0.9)",
+        surfaceSoft: "rgba(255, 255, 255, 0.28)",
+        line: "rgba(255, 255, 255, 0.52)",
+        shadow: "rgba(168, 61, 103, 0.18)",
+        heading: '"Mountains of Christmas", cursive',
+        body: '"Quicksand", Arial, sans-serif',
+        button: "linear-gradient(135deg, #f59bc3 0%, #d84683 100%)",
+        background:
+            "linear-gradient(135deg, rgba(255, 239, 247, 0.72), rgba(255, 177, 209, 0.34)), url('https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1800&q=85')",
+        watermark:
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><g fill="none" stroke="#d84683" stroke-width="5" stroke-linecap="round"><path d="M90 39c12-23 52-20 58 8 8 38-42 70-58 88-16-18-66-50-58-88 6-28 46-31 58-8Z"/><path d="M44 133c23 13 69 14 92 0"/></g></svg>'
+    },
     infantil: {
         primary: "#df5f95",
         secondary: "#fff0f6",
@@ -164,17 +202,18 @@ function normalizeEvent(data) {
 function inferTheme(data, id) {
     const raw = `${data.tema || ""} ${id || ""} ${data.nombre || ""} ${data.subtitulo || ""}`.toLowerCase();
 
+    if (data.tema && THEMES[data.tema]) return data.tema;
     if (raw.includes("frozen") || raw.includes("nieve")) return "frozen";
     if (raw.includes("pesca") || raw.includes("pesc")) return "pesca";
     if (raw.includes("boda") || raw.includes("casamiento") || raw.includes("elegante")) return "elegante";
-    if (raw.includes("minimal")) return "minimal";
-    if (data.tema && THEMES[data.tema]) return data.tema;
+    if (raw.includes("minimalista") || raw.includes("minimal")) return "minimalista";
+    if (raw.includes("fiesta") || raw.includes("cumple")) return "fiesta";
 
-    return "infantil";
+    return "fiesta";
 }
 
 function applyTheme(themeName) {
-    const theme = THEMES[themeName] || THEMES.infantil;
+    const theme = THEMES[themeName] || THEMES.fiesta;
     const root = document.documentElement;
 
     document.body.dataset.theme = themeName;
@@ -211,6 +250,7 @@ function renderInvitation(event) {
 
     getApp().innerHTML = html;
     setupMusic(event.multimedia.musica);
+    setupCarousel();
     startCountdown(event.fechaEvento);
 }
 
@@ -295,17 +335,80 @@ function renderCountdown() {
 function renderGallery(images) {
     if (!images.length) return "";
 
+    if (images.length === 1) {
+        return `
+            <section class="invitation-section">
+                <p class="eyebrow">Recuerdos</p>
+                <h2 class="section-title">Galería</h2>
+                <div class="gallery">
+                    <img src="${escapeAttr(images[0])}" alt="Foto de la invitación" loading="lazy">
+                </div>
+            </section>
+        `;
+    }
+
     const items = images
-        .map((src) => `<img src="${escapeAttr(src)}" alt="Foto de la invitación" loading="lazy">`)
+        .map((src, index) => `
+            <figure class="carousel-slide" aria-label="Foto ${index + 1} de ${images.length}">
+                <img src="${escapeAttr(src)}" alt="Foto de la invitación" loading="lazy">
+            </figure>
+        `)
+        .join("");
+    const dots = images
+        .map((_, index) => `
+            <button class="carousel-dot${index === 0 ? " is-active" : ""}" type="button" data-slide="${index}" aria-label="Ver foto ${index + 1}"></button>
+        `)
         .join("");
 
     return `
         <section class="invitation-section">
             <p class="eyebrow">Recuerdos</p>
             <h2 class="section-title">Galería</h2>
-            <div class="gallery">${items}</div>
+            <div class="carousel" data-carousel>
+                <div class="carousel-viewport">
+                    <div class="carousel-track">${items}</div>
+                </div>
+                <button class="carousel-control prev" type="button" data-carousel-prev aria-label="Foto anterior">
+                    <span aria-hidden="true">‹</span>
+                </button>
+                <button class="carousel-control next" type="button" data-carousel-next aria-label="Foto siguiente">
+                    <span aria-hidden="true">›</span>
+                </button>
+                <div class="carousel-dots">${dots}</div>
+            </div>
         </section>
     `;
+}
+
+function setupCarousel() {
+    document.querySelectorAll("[data-carousel]").forEach((carousel) => {
+        const track = carousel.querySelector(".carousel-track");
+        const slides = Array.from(carousel.querySelectorAll(".carousel-slide"));
+        const dots = Array.from(carousel.querySelectorAll(".carousel-dot"));
+        const prev = carousel.querySelector("[data-carousel-prev]");
+        const next = carousel.querySelector("[data-carousel-next]");
+        let current = 0;
+        let startX = 0;
+
+        const goTo = (index) => {
+            current = (index + slides.length) % slides.length;
+            track.style.transform = `translateX(-${current * 100}%)`;
+            dots.forEach((dot, dotIndex) => dot.classList.toggle("is-active", dotIndex === current));
+        };
+
+        prev?.addEventListener("click", () => goTo(current - 1));
+        next?.addEventListener("click", () => goTo(current + 1));
+        dots.forEach((dot) => dot.addEventListener("click", () => goTo(Number(dot.dataset.slide))));
+
+        track.addEventListener("pointerdown", (event) => {
+            startX = event.clientX;
+            track.setPointerCapture(event.pointerId);
+        });
+        track.addEventListener("pointerup", (event) => {
+            const delta = event.clientX - startX;
+            if (Math.abs(delta) > 45) goTo(current + (delta < 0 ? 1 : -1));
+        });
+    });
 }
 
 function renderRsvp(event) {

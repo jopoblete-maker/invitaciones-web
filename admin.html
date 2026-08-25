@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Administrador - Creador de Invitaciones</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
     <style>
         * {
             box-sizing: border-box;
@@ -147,6 +148,82 @@
             font-weight: bold;
             word-break: break-all;
         }
+
+        .editor-panel {
+            display: none;
+            margin-top: 12px;
+            padding: 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+        .editor-panel.is-open {
+            display: block;
+        }
+
+        .editor-stage {
+            max-height: 360px;
+            overflow: hidden;
+            border-radius: 10px;
+            background: #0f172a;
+        }
+
+        .editor-stage img {
+            display: block;
+            max-width: 100%;
+        }
+
+        .editor-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .editor-toolbar button,
+        .editor-toolbar select {
+            flex: 1;
+            min-width: 120px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: white;
+            color: #334155;
+            font-weight: 700;
+            padding: 9px 10px;
+            cursor: pointer;
+        }
+
+        .media-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .media-preview {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .media-preview img {
+            width: 100%;
+            height: 82px;
+            display: block;
+            object-fit: cover;
+        }
+
+        .media-preview span {
+            display: block;
+            padding: 5px;
+            color: #64748b;
+            font-size: 0.68rem;
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -211,6 +288,17 @@
 
             <!-- 3. Personalización Visual -->
             <div class="section-title">3. Estilos Visuales</div>
+            <div class="form-group">
+                <label for="tema">Tema de la Invitación:</label>
+                <select id="tema" required>
+                    <option value="frozen">Frozen</option>
+                    <option value="pesca">Pesca</option>
+                    <option value="elegante">Elegante</option>
+                    <option value="fiesta">Fiesta</option>
+                    <option value="minimalista">Minimalista</option>
+                </select>
+                <span class="help-text">Define tipografías, paleta, fondo, botones y marcas de agua.</span>
+            </div>
             <div class="form-row">
                 <div class="form-group">
                     <label for="colorFondo">Color de Fondo:</label>
@@ -233,18 +321,41 @@
                 <label for="fileHeader">Imagen Principal / Banner:</label>
                 <input type="file" id="fileHeader" accept="image/*">
                 <input type="text" id="urlHeader" placeholder="O pega la URL directa de la imagen">
+                <div id="previewHeader" class="media-preview-grid"></div>
             </div>
 
             <div class="form-group">
                 <label for="fileSeparador">Imagen Separadora / Ícono:</label>
                 <input type="file" id="fileSeparador" accept="image/*">
                 <input type="text" id="urlSeparador" placeholder="O pega la URL directa de la imagen">
+                <div id="previewSeparador" class="media-preview-grid"></div>
             </div>
 
             <div class="form-group">
                 <label for="fileGaleria">Galería de Fotos:</label>
                 <input type="file" id="fileGaleria" accept="image/*" multiple>
                 <input type="text" id="urlGaleria" placeholder="O pega URLs separadas por coma">
+                <div id="previewGaleria" class="media-preview-grid"></div>
+            </div>
+
+            <div id="imageEditor" class="editor-panel" aria-live="polite">
+                <label>Editor de imagen antes de subir</label>
+                <div class="editor-stage">
+                    <img id="editorImage" alt="Vista previa para editar">
+                </div>
+                <div class="editor-toolbar">
+                    <button type="button" id="btnRotateLeft">Rotar -90°</button>
+                    <button type="button" id="btnRotateRight">Rotar +90°</button>
+                    <select id="imageFilter">
+                        <option value="none">Sin filtro</option>
+                        <option value="warm">Cálido</option>
+                        <option value="cool">Frío</option>
+                        <option value="bw">Blanco y negro</option>
+                        <option value="soft">Suave premium</option>
+                    </select>
+                    <button type="button" id="btnApplyEdit">Aplicar edición</button>
+                    <button type="button" id="btnCancelEdit">Cerrar editor</button>
+                </div>
             </div>
 
             <div class="form-group">
@@ -283,112 +394,8 @@
         <div id="resultBox"></div>
     </div>
 
-    <script>
-        // Convertir archivo local a Base64
-        function fileToBase64(file) {
-            return new Promise((resolve, reject) => {
-                if (!file) return resolve(null);
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-                reader.readAsDataURL(file);
-            });
-        }
-
-        document.getElementById('adminForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const resultBox = document.getElementById('resultBox');
-            resultBox.style.display = 'none';
-
-            try {
-                // Procesar imágenes y audio
-                const headerFile = document.getElementById('fileHeader').files[0];
-                const separadorFile = document.getElementById('fileSeparador').files[0];
-                const musicaFile = document.getElementById('fileMusica').files[0];
-                const galeriaFiles = Array.from(document.getElementById('fileGaleria').files);
-
-                const headerBase64 = headerFile ? await fileToBase64(headerFile) : null;
-                const separadorBase64 = separadorFile ? await fileToBase64(separadorFile) : null;
-                const musicaBase64 = musicaFile ? await fileToBase64(musicaFile) : null;
-
-                let galeriaArr = [];
-                if (galeriaFiles.length > 0) {
-                    for (let file of galeriaFiles) {
-                        const b64 = await fileToBase64(file);
-                        if (b64) galeriaArr.push(b64);
-                    }
-                }
-
-                // Si ingresó URLs manuales, agregarlas/usarlas
-                const urlHeader = document.getElementById('urlHeader').value.trim();
-                const urlSeparador = document.getElementById('urlSeparador').value.trim();
-                const urlMusica = document.getElementById('urlMusica').value.trim();
-                const urlGaleria = document.getElementById('urlGaleria').value.trim();
-
-                if (urlGaleria) {
-                    const urls = urlGaleria.split(',').map(u => u.trim()).filter(u => u.length > 0);
-                    galeriaArr = galeriaArr.concat(urls);
-                }
-
-                const id = document.getElementById('idEvento').value.trim();
-
-                const payload = {
-                    password: document.getElementById('adminPassword').value.trim(),
-                    id: id,
-                    nombre: document.getElementById('nombre').value.trim(),
-                    subtitulo: document.getElementById('subtitulo').value.trim(),
-                    fecha: document.getElementById('fecha').value,
-                    horario: document.getElementById('horario').value.trim(),
-                    lugar: document.getElementById('lugar').value.trim(),
-                    direccion: document.getElementById('direccion').value.trim(),
-                    linkMaps: document.getElementById('linkMaps').value.trim(),
-                    estilos: {
-                        colorFondo: document.getElementById('colorFondo').value,
-                        colorTexto: document.getElementById('colorTexto').value,
-                        colorBoton: document.getElementById('colorBoton').value
-                    },
-                    multimedia: {
-                        personajeHeader: headerBase64 || urlHeader || '',
-                        personajeSeparador: separadorBase64 || urlSeparador || '',
-                        musica: musicaBase64 || urlMusica || '',
-                        galeria: galeriaArr
-                    },
-                    confirmacion: {
-                        tel1: document.getElementById('tel1').value.trim(),
-                        nombre1: document.getElementById('nombre1').value.trim(),
-                        tel2: document.getElementById('tel2').value.trim(),
-                        nombre2: document.getElementById('nombre2').value.trim()
-                    }
-                };
-
-                const res = await fetch('/api/eventos', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const data = await res.json();
-
-                if (!res.ok) {
-                    throw new Error(data.error || 'Ocurrió un error al guardar');
-                }
-
-                const linkInvitacion = `${window.location.origin}/invitacion.html?id=${data.id}`;
-                resultBox.className = 'success';
-                resultBox.innerHTML = `
-        ✅ <strong>¡Invitación guardada con éxito!</strong><br><br>
-        Enlace directo:<br>
-        <a href="${linkInvitacion}" target="_blank">${linkInvitacion}</a>
-      `;
-                resultBox.style.display = 'block';
-
-            } catch (err) {
-                resultBox.className = 'error';
-                resultBox.innerHTML = `❌ <strong>Error:</strong> ${err.message}`;
-                resultBox.style.display = 'block';
-            }
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+    <script src="js/admin.js"></script>
 </body>
 
 </html>
