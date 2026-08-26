@@ -4,7 +4,7 @@ const editedImages = {
     galeria: []
 };
 
-const ADMIN_PASSWORD_HASH = "2f9fed3c7cb4e5b6c05735b6b8f3e5d074ea04d6dbe7d8999cd363d64b27ba6d";
+const ADMIN_PASSWORD_HASH = "702e0afc3ebf1b22464cb509747357e3f0fa371ed7bf0df3b25c3d9114abb662";
 const ADMIN_SESSION_KEY = "invitacionesAdminSession";
 const SESSION_DURATION_MS = 30 * 60 * 1000;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
