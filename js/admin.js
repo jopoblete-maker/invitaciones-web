@@ -169,6 +169,10 @@ async function handleSubmit(event) {
     try {
         const musicaFile = document.getElementById("fileMusica").files[0];
         const musicaBase64 = musicaFile ? await fileToBase64(musicaFile) : null;
+        const marcaAguaFile = document.getElementById("fileMarcaAgua").files[0];
+        const marcaAguaBase64 = marcaAguaFile
+            ? await tintWatermark(marcaAguaFile, document.getElementById("colorMarcaAgua").value)
+            : "";
 
         const urlHeader = valueOf("urlHeader");
         const urlSeparador = valueOf("urlSeparador");
@@ -200,6 +204,7 @@ async function handleSubmit(event) {
                 personajeHeader: editedImages.header[0] || urlHeader || "",
                 personajeSeparador: editedImages.separador[0] || urlSeparador || "",
                 musica: musicaBase64 || urlMusica || "",
+                marcaAgua: marcaAguaBase64,
                 galeria: editedImages.galeria.concat(galeriaUrls)
             },
             confirmacion: {
@@ -257,6 +262,31 @@ function fileToBase64(file) {
         reader.onload = () => resolve(reader.result);
         reader.onerror = reject;
         reader.readAsDataURL(file);
+    });
+}
+
+async function tintWatermark(file, color) {
+    const source = await fileToBase64(file);
+    const image = await loadImage(source);
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    context.drawImage(image, 0, 0);
+    context.globalCompositeOperation = "source-in";
+    context.fillStyle = color;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    return canvas.toDataURL("image/png");
+}
+
+function loadImage(source) {
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = source;
     });
 }
 

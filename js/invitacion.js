@@ -196,7 +196,8 @@ function normalizeEvent(data) {
             personajeHeader: multimedia.personajeHeader || "",
             personajeSeparador: multimedia.personajeSeparador || "",
             galeria: Array.isArray(multimedia.galeria) ? multimedia.galeria : [],
-            musica: multimedia.musica || data.musica || ""
+            musica: multimedia.musica || data.musica || "",
+            marcaAgua: multimedia.marcaAgua || ""
         }
     };
 }
@@ -247,7 +248,8 @@ function renderInvitation(event) {
         renderSeparator(event.multimedia.personajeSeparador),
         renderCountdown(),
         renderGallery(event.multimedia.galeria),
-        renderRsvp(event)
+        renderRsvp(event),
+        renderWatermarkAnchor(event, "watermark-end")
     ].join("");
 
     getApp().innerHTML = html;
@@ -261,6 +263,7 @@ function renderHero(event) {
 
     return `
         <section class="invitation-section hero-section">
+            ${renderWatermark(event, "watermark-start")}
             ${event.multimedia.personajeHeader ? `
                 <div class="hero-media-frame ${flyerClass}">
                     <img class="hero-media" src="${escapeAttr(event.multimedia.personajeHeader)}" alt="">
@@ -283,6 +286,7 @@ function renderHero(event) {
 function renderDetails(event) {
     return `
         <section class="invitation-section details-section">
+            ${renderWatermark(event, "watermark-middle")}
             ${renderDetail("calendar", "Fecha", event.fechaTexto)}
             ${renderDetail("clock", "Horario", event.horarioTexto)}
             ${renderDetail("pin", "Lugar", event.lugarNombre)}
@@ -313,6 +317,18 @@ function renderDetail(icon, label, value) {
             </div>
         </div>
     `;
+}
+
+function renderWatermark(event, position) {
+    if (!event.multimedia.marcaAgua) return "";
+
+    return `<img class="watermark ${position}" src="${escapeAttr(event.multimedia.marcaAgua)}" alt="" aria-hidden="true">`;
+}
+
+function renderWatermarkAnchor(event, position) {
+    if (!event.multimedia.marcaAgua) return "";
+
+    return `<div class="watermark-anchor"><img class="watermark ${position}" src="${escapeAttr(event.multimedia.marcaAgua)}" alt="" aria-hidden="true"></div>`;
 }
 
 function renderSeparator(src) {
