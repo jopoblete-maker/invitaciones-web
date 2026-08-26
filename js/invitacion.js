@@ -273,7 +273,7 @@ function renderHero(event) {
             <h1 class="title">${escapeHtml(event.nombre)}</h1>
             ${event.googleCalendarUrl ? `
                 <div class="actions">
-                    <a class="button" href="${escapeAttr(event.googleCalendarUrl)}" target="_blank" rel="noopener">
+                    <a class="button" href="${escapeAttr(event.googleCalendarUrl)}" target="_blank" rel="noopener noreferrer">
                         ${ICONS.calendar}
                         Agendar evento
                     </a>
@@ -293,7 +293,7 @@ function renderDetails(event) {
             ${renderDetail("home", "Dirección", event.lugarDireccion)}
             ${event.googleMapsUrl ? `
                 <div class="actions">
-                    <a class="button" href="${escapeAttr(event.googleMapsUrl)}" target="_blank" rel="noopener">
+                    <a class="button" href="${escapeAttr(event.googleMapsUrl)}" target="_blank" rel="noopener noreferrer">
                         ${ICONS.map}
                         Cómo llegar
                     </a>
@@ -516,7 +516,7 @@ function renderRsvp(event) {
             const message = encodeURIComponent(`Hola ${contact.nombre || ""}, confirmo mi asistencia al evento de ${event.nombre}.`);
 
             return `
-                <a class="button" href="https://api.whatsapp.com/send?phone=${contact.telefono}&text=${message}" target="_blank" rel="noopener">
+                <a class="button" href="https://api.whatsapp.com/send?phone=${contact.telefono}&text=${message}" target="_blank" rel="noopener noreferrer">
                     ${ICONS.whatsapp}
                     Confirmar con ${escapeHtml(contact.nombre || "contacto")}
                 </a>

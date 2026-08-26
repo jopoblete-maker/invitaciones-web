@@ -4,6 +4,14 @@ const editedImages = {
     galeria: []
 };
 
+const ADMIN_PASSWORD_HASH = "2f9fed3c7cb4e5b6c05735b6b8f3e5d074ea04d6dbe7d8999cd363d64b27ba6d";
+const ADMIN_SESSION_KEY = "invitacionesAdminSession";
+const SESSION_DURATION_MS = 30 * 60 * 1000;
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const MAX_AUDIO_SIZE = 10 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/svg+xml"];
+const ALLOWED_AUDIO_TYPES = ["audio/mpeg"];
+
 const editorState = {
     cropper: null,
     target: null,
@@ -12,6 +20,7 @@ const editorState = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
+    bindAuthentication();
     bindImageInput("fileHeader", "header", "previewHeader");
     bindImageInput("fileSeparador", "separador", "previewSeparador");
     bindImageInput("fileGaleria", "galeria", "previewGaleria");
@@ -19,22 +28,87 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("adminForm").addEventListener("submit", handleSubmit);
 });
 
+function bindAuthentication() {
+    const authForm = document.getElementById("authForm");
+    const logoutButton = document.getElementById("btnLogout");
+    const passwordInput = document.getElementById("adminPassword");
+
+    if (isAuthenticated()) showAdmin(passwordInput, "");
+
+    authForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const password = document.getElementById("loginPassword").value;
+        const hash = await hashValue(password);
+        const error = document.getElementById("authError");
+
+        if (hash !== ADMIN_PASSWORD_HASH) {
+            error.textContent = "La clave de acceso no es válida.";
+            return;
+        }
+
+        sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
+            token: hash,
+            expiresAt: Date.now() + SESSION_DURATION_MS
+        }));
+        error.textContent = "";
+        showAdmin(passwordInput, password);
+    });
+
+    logoutButton.addEventListener("click", () => {
+        sessionStorage.removeItem(ADMIN_SESSION_KEY);
+        document.getElementById("adminForm").hidden = true;
+        logoutButton.hidden = true;
+        document.getElementById("authPanel").hidden = false;
+        document.getElementById("loginPassword").value = "";
+        passwordInput.value = "";
+    });
+}
+
+function showAdmin(passwordInput, password) {
+    document.getElementById("authPanel").hidden = true;
+    document.getElementById("adminForm").hidden = false;
+    document.getElementById("btnLogout").hidden = false;
+    if (password) passwordInput.value = password;
+}
+
+function isAuthenticated() {
+    try {
+        const session = JSON.parse(sessionStorage.getItem(ADMIN_SESSION_KEY) || "null");
+        return session?.token === ADMIN_PASSWORD_HASH && session.expiresAt > Date.now();
+    } catch {
+        return false;
+    }
+}
+
+async function hashValue(value) {
+    const buffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+    return Array.from(new Uint8Array(buffer), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 function bindImageInput(inputId, target, previewId) {
     const input = document.getElementById(inputId);
     if (!input) return;
 
     input.addEventListener("change", async () => {
-        const files = Array.from(input.files || []);
-        editedImages[target] = [];
+        try {
+            const files = Array.from(input.files || []);
+            editedImages[target] = [];
 
-        for (const file of files) {
-            editedImages[target].push(await fileToBase64(file));
-        }
+            for (const file of files) {
+                validateFile(file, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE);
+                editedImages[target].push(await fileToBase64(file));
+            }
 
-        renderPreviews(target, previewId);
+            renderPreviews(target, previewId);
 
-        if (editedImages[target][0]) {
-            openEditor(target, 0);
+            if (editedImages[target][0]) {
+                openEditor(target, 0);
+            }
+        } catch (error) {
+            input.value = "";
+            editedImages[target] = [];
+            renderPreviews(target, previewId);
+            window.alert(error.message);
         }
     });
 }
@@ -168,8 +242,10 @@ async function handleSubmit(event) {
 
     try {
         const musicaFile = document.getElementById("fileMusica").files[0];
+        if (musicaFile) validateFile(musicaFile, ALLOWED_AUDIO_TYPES, MAX_AUDIO_SIZE);
         const musicaBase64 = musicaFile ? await fileToBase64(musicaFile) : null;
         const marcaAguaFile = document.getElementById("fileMarcaAgua").files[0];
+        if (marcaAguaFile) validateFile(marcaAguaFile, ["image/png", "image/svg+xml"], MAX_IMAGE_SIZE);
         const marcaAguaBase64 = marcaAguaFile
             ? await tintWatermark(marcaAguaFile, document.getElementById("colorMarcaAgua").value)
             : "";
@@ -231,7 +307,7 @@ async function handleSubmit(event) {
         resultBox.innerHTML = `
             <strong>Invitación guardada con éxito.</strong><br><br>
             Enlace directo:<br>
-            <a href="${linkInvitacion}" target="_blank">${linkInvitacion}</a>
+            <a href="${linkInvitacion}" target="_blank" rel="noopener noreferrer">${linkInvitacion}</a>
         `;
         resultBox.style.display = "block";
     } catch (error) {
@@ -263,6 +339,16 @@ function fileToBase64(file) {
         reader.onerror = reject;
         reader.readAsDataURL(file);
     });
+}
+
+function validateFile(file, allowedTypes, maxSize) {
+    if (!allowedTypes.includes(file.type)) {
+        throw new Error(`Tipo de archivo no permitido: ${file.name}`);
+    }
+
+    if (file.size > maxSize) {
+        throw new Error(`El archivo ${file.name} supera el tamaño máximo permitido.`);
+    }
 }
 
 async function tintWatermark(file, color) {
