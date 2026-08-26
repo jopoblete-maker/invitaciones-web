@@ -118,11 +118,10 @@ body::before {
 .hero-media-frame {
     position: relative;
     width: min(94%, 540px);
-    margin: 0 auto 30px;
-    padding: 5px;
-    border: 1px solid color-mix(in srgb, var(--primary-color) 55%, white);
-    border-radius: 22px;
-    background: var(--surface-strong);
+    aspect-ratio: 4 / 5;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 20px;
     box-shadow: 0 20px 42px var(--shadow-color);
 }
 
@@ -137,12 +136,8 @@ body::before {
 .hero-media {
     display: block;
     width: 100%;
-    max-height: 520px;
-    aspect-ratio: 4 / 5;
-    border-radius: 17px;
-    object-fit: contain;
-    background: rgba(255, 255, 255, 0.14);
-    filter: drop-shadow(0 20px 32px rgba(0, 0, 0, 0.18));
+    height: 100%;
+    object-fit: cover;
 }
 
 @keyframes flyer-float {
@@ -158,7 +153,7 @@ body::before {
 }
 
 .hero-media-frame+.eyebrow {
-    margin-top: 2px;
+    margin-top: 30px;
 }
 
 .eyebrow {
@@ -593,11 +588,6 @@ body[data-theme="elegante"] .eyebrow {
     .hero-media-frame {
         width: 96%;
         border-radius: 18px;
-    }
-
-    .hero-media {
-        max-height: 430px;
-        border-radius: 13px;
     }
 
     .gallery {
