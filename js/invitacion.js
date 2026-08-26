@@ -190,6 +190,7 @@ function normalizeEvent(data) {
         googleMapsUrl: data.googleMapsUrl || data.linkMaps || "",
         googleCalendarUrl: data.googleCalendarUrl || "",
         confirmacionLimite: data.confirmacionLimite || "",
+        estilos: data.estilos || {},
         contactosRSVP: data.contactosRSVP || legacyContacts(data.confirmacion),
         multimedia: {
             personajeHeader: multimedia.personajeHeader || "",
@@ -256,9 +257,15 @@ function renderInvitation(event) {
 }
 
 function renderHero(event) {
+    const flyerClass = event.estilos.efectoFlyer === false ? "" : "hero-media-frame--glow";
+
     return `
         <section class="invitation-section hero-section">
-            ${event.multimedia.personajeHeader ? `<img class="hero-media" src="${escapeAttr(event.multimedia.personajeHeader)}" alt="">` : ""}
+            ${event.multimedia.personajeHeader ? `
+                <div class="hero-media-frame ${flyerClass}">
+                    <img class="hero-media" src="${escapeAttr(event.multimedia.personajeHeader)}" alt="">
+                </div>
+            ` : ""}
             <p class="eyebrow">${escapeHtml(event.subtitulo)}</p>
             <h1 class="title">${escapeHtml(event.nombre)}</h1>
             ${event.googleCalendarUrl ? `

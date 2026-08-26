@@ -193,7 +193,8 @@ async function handleSubmit(event) {
             estilos: {
                 colorFondo: document.getElementById("colorFondo").value,
                 colorTexto: document.getElementById("colorTexto").value,
-                colorBoton: document.getElementById("colorBoton").value
+                colorBoton: document.getElementById("colorBoton").value,
+                efectoFlyer: document.getElementById("efectoFlyer").checked
             },
             multimedia: {
                 personajeHeader: editedImages.header[0] || urlHeader || "",

@@ -106,7 +106,7 @@ body::before {
 }
 
 .hero-section {
-    min-height: 440px;
+    min-height: 480px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -115,12 +115,50 @@ body::before {
     padding-bottom: clamp(38px, 7vw, 64px);
 }
 
+.hero-media-frame {
+    position: relative;
+    width: min(94%, 540px);
+    margin: 0 auto 30px;
+    padding: 5px;
+    border: 1px solid color-mix(in srgb, var(--primary-color) 55%, white);
+    border-radius: 22px;
+    background: var(--surface-strong);
+    box-shadow: 0 20px 42px var(--shadow-color);
+}
+
+.hero-media-frame--glow {
+    animation: flyer-float 5s ease-in-out infinite;
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--primary-color) 35%, transparent),
+        0 0 18px color-mix(in srgb, var(--primary-color) 72%, transparent),
+        0 20px 42px var(--shadow-color);
+}
+
 .hero-media {
-    width: min(78%, 330px);
-    max-height: 270px;
+    display: block;
+    width: 100%;
+    max-height: 520px;
+    aspect-ratio: 4 / 5;
+    border-radius: 17px;
     object-fit: contain;
-    margin: 0 auto 24px;
+    background: rgba(255, 255, 255, 0.14);
     filter: drop-shadow(0 20px 32px rgba(0, 0, 0, 0.18));
+}
+
+@keyframes flyer-float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-7px);
+    }
+}
+
+.hero-media-frame+.eyebrow {
+    margin-top: 2px;
 }
 
 .eyebrow {
@@ -500,6 +538,30 @@ audio {
     margin: 0;
 }
 
+.site-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: min(100%, 580px);
+    margin: 18px auto 0;
+    padding: 8px 16px 2px;
+    color: var(--muted-color);
+    font-size: 0.78rem;
+}
+
+.site-footer a {
+    color: var(--accent-color);
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.site-footer a:hover,
+.site-footer a:focus-visible {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
 body[data-theme="frozen"] .invitation-shell::before,
 body[data-theme="frozen"] .invitation-section::after {
     opacity: 0.13;
@@ -528,6 +590,16 @@ body[data-theme="elegante"] .eyebrow {
         min-height: 370px;
     }
 
+    .hero-media-frame {
+        width: 96%;
+        border-radius: 18px;
+    }
+
+    .hero-media {
+        max-height: 430px;
+        border-radius: 13px;
+    }
+
     .gallery {
         grid-auto-rows: 58px;
         gap: 8px;
@@ -544,6 +616,7 @@ body[data-theme="elegante"] .eyebrow {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
