@@ -94,7 +94,9 @@ function cargarDatos(data) {
 
     data.contactosRSVP.forEach((contacto) => {
         const mensaje = encodeURIComponent(`¡Hola ${contacto.nombre}! Confirmo mi asistencia para el cumpleaños de ${data.nombre}.`);
-        const link = `https://wa.me/${contacto.telefono}?text=${mensaje}`;
+        const numeroLimpio = normalizeWhatsAppPhone(contacto.telefono);
+        if (!numeroLimpio) return;
+        const link = `https://api.whatsapp.com/send?phone=${numeroLimpio}&text=${mensaje}`;
 
         const a = document.createElement("a");
         a.href = link;
@@ -110,6 +112,16 @@ function cargarDatos(data) {
     });
 
     aplicarTema(data.tema || "infantil");
+}
+
+function normalizeWhatsAppPhone(value) {
+    let phone = String(value || "").replace(/\D/g, "");
+    if (!phone) return "";
+
+    if (phone.startsWith("0")) phone = phone.slice(1);
+    if (!phone.startsWith("549")) phone = `549${phone}`;
+
+    return phone;
 }
 
 // Contador regresivo

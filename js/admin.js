@@ -202,9 +202,9 @@ async function handleSubmit(event) {
                 galeria: editedImages.galeria.concat(galeriaUrls)
             },
             confirmacion: {
-                tel1: valueOf("tel1"),
+                tel1: normalizeWhatsAppPhone(valueOf("tel1")),
                 nombre1: valueOf("nombre1"),
-                tel2: valueOf("tel2"),
+                tel2: normalizeWhatsAppPhone(valueOf("tel2")),
                 nombre2: valueOf("nombre2")
             }
         };
@@ -237,6 +237,16 @@ async function handleSubmit(event) {
 
 function valueOf(id) {
     return document.getElementById(id).value.trim();
+}
+
+function normalizeWhatsAppPhone(value) {
+    let phone = String(value || "").replace(/\D/g, "");
+    if (!phone) return "";
+
+    if (phone.startsWith("0")) phone = phone.slice(1);
+    if (!phone.startsWith("549")) phone = `549${phone}`;
+
+    return phone;
 }
 
 function fileToBase64(file) {

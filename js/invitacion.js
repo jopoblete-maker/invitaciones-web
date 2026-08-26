@@ -483,16 +483,17 @@ function setupCarousel() {
 }
 
 function renderRsvp(event) {
-    const contacts = event.contactosRSVP.filter((contact) => contact.telefono);
+    const contacts = event.contactosRSVP
+        .map((contact) => ({ ...contact, telefono: normalizeWhatsAppPhone(contact.telefono) }))
+        .filter((contact) => contact.telefono);
     if (!contacts.length) return "";
 
     const buttons = contacts
         .map((contact) => {
             const message = encodeURIComponent(`Hola ${contact.nombre || ""}, confirmo mi asistencia al evento de ${event.nombre}.`);
-            const phone = encodeURIComponent(contact.telefono);
 
             return `
-                <a class="button" href="https://wa.me/${phone}?text=${message}" target="_blank" rel="noopener">
+                <a class="button" href="https://api.whatsapp.com/send?phone=${contact.telefono}&text=${message}" target="_blank" rel="noopener">
                     ${ICONS.whatsapp}
                     Confirmar con ${escapeHtml(contact.nombre || "contacto")}
                 </a>
@@ -508,6 +509,16 @@ function renderRsvp(event) {
             <div class="actions">${buttons}</div>
         </section>
     `;
+}
+
+function normalizeWhatsAppPhone(value) {
+    let phone = String(value || "").replace(/\D/g, "");
+    if (!phone) return "";
+
+    if (phone.startsWith("0")) phone = phone.slice(1);
+    if (!phone.startsWith("549")) phone = `549${phone}`;
+
+    return phone;
 }
 
 function setupMusic(src) {
