@@ -15,6 +15,7 @@
     --watermark-image: none;
     --font-heading: "Playfair Display", Georgia, serif;
     --font-body: "Lato", Arial, sans-serif;
+    --font-primary: "Playfair Display", Georgia, serif;
 }
 
 * {
@@ -151,6 +152,7 @@ body::before {
     border: 1px solid var(--line-color);
     border-radius: 30px;
     background: var(--surface-color);
+    font-family: var(--font-primary, var(--font-body));
     box-shadow: 0 32px 100px var(--shadow-color);
     backdrop-filter: blur(20px) saturate(1.08);
     -webkit-backdrop-filter: blur(20px) saturate(1.08);
@@ -296,7 +298,7 @@ body::before {
 .section-title {
     margin: 0;
     color: var(--accent-color);
-    font-family: var(--font-heading);
+    font-family: var(--font-primary, var(--font-heading));
     letter-spacing: 0;
 }
 
@@ -677,6 +679,42 @@ audio {
 .site-footer a:focus-visible {
     color: var(--primary-color);
     text-decoration: underline;
+}
+
+.brand-signature {
+    display: inline-block;
+    color: #e0faff;
+    font-size: 0.78rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.7),
+        1px 2px 0 rgba(15, 23, 42, 0.45),
+        0 0 5px rgba(0, 243, 255, 0.85),
+        0 0 14px rgba(188, 19, 254, 0.68);
+    animation: brand-glow 3.4s ease-in-out infinite;
+}
+
+@keyframes brand-glow {
+
+    0%,
+    100% {
+        filter: brightness(0.96);
+        text-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.7),
+            1px 2px 0 rgba(15, 23, 42, 0.45),
+            0 0 5px rgba(0, 243, 255, 0.75),
+            0 0 12px rgba(188, 19, 254, 0.55);
+    }
+
+    50% {
+        filter: brightness(1.1);
+        text-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.9),
+            1px 2px 0 rgba(15, 23, 42, 0.5),
+            0 0 8px rgba(0, 243, 255, 1),
+            0 0 20px rgba(188, 19, 254, 0.82);
+    }
 }
 
 body[data-theme="frozen"] .invitation-shell::before,

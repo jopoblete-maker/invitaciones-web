@@ -265,6 +265,7 @@ async function handleSubmit(event) {
             tema: valueOf("tema"),
             nombre: valueOf("nombre"),
             subtitulo: valueOf("subtitulo"),
+            fontFamily: valueOf("fontFamily"),
             fecha: document.getElementById("fecha").value,
             horario: valueOf("horario"),
             lugar: valueOf("lugar"),

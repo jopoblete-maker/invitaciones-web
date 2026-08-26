@@ -147,6 +147,19 @@ const DETAIL_ICONS = {
     home: "M12 3 3 10.5l1.28 1.54L6 10.6V21h5v-6h2v6h5V10.6l1.72 1.44L21 10.5 12 3Z"
 };
 
+const FONT_FAMILIES = {
+    playfair: '"Playfair Display", serif',
+    montserrat: '"Montserrat", sans-serif',
+    "great-vibes": '"Great Vibes", cursive',
+    cinzel: '"Cinzel", serif',
+    "dancing-script": '"Dancing Script", cursive',
+    "alex-brush": '"Alex Brush", cursive',
+    "cormorant-garamond": '"Cormorant Garamond", serif',
+    poppins: '"Poppins", sans-serif',
+    pacifico: '"Pacifico", cursive',
+    "bebas-neue": '"Bebas Neue", sans-serif'
+};
+
 let countdownTimer = null;
 let carouselTimers = [];
 
@@ -167,9 +180,10 @@ async function initInvitation() {
 
         const data = await response.json();
         const themeName = inferTheme(data, id);
+        const event = normalizeEvent(data);
 
-        applyTheme(themeName);
-        renderInvitation(normalizeEvent(data));
+        applyTheme(themeName, event.fontFamily);
+        renderInvitation(event);
         hideLoader();
     } catch (error) {
         console.error(error);
@@ -183,6 +197,7 @@ function normalizeEvent(data) {
     return {
         nombre: data.nombre || "",
         subtitulo: data.subtitulo || "Celebración",
+        fontFamily: FONT_FAMILIES[data.fontFamily || data.fuente] || FONT_FAMILIES.playfair,
         fechaEvento: data.fechaEvento || data.fecha || "",
         fechaTexto: data.fechaTexto || data.fecha || "",
         horarioTexto: data.horarioTexto || data.horario || "",
@@ -216,7 +231,7 @@ function inferTheme(data, id) {
     return "fiesta";
 }
 
-function applyTheme(themeName) {
+function applyTheme(themeName, fontFamily) {
     const theme = THEMES[themeName] || THEMES.fiesta;
     const root = document.documentElement;
 
@@ -237,6 +252,7 @@ function applyTheme(themeName) {
     root.style.setProperty("--bg-image", theme.background);
     root.style.setProperty("--font-heading", theme.heading);
     root.style.setProperty("--font-body", theme.body);
+    root.style.setProperty("--font-primary", fontFamily || FONT_FAMILIES.playfair);
     root.style.setProperty("--watermark-image", `url("data:image/svg+xml,${encodeURIComponent(theme.watermark)}")`);
 }
 
