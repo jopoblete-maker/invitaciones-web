@@ -292,9 +292,7 @@ async function handleSubmit(event) {
     resultBox.style.display = "none";
 
     try {
-        const musicaFile = document.getElementById("fileMusica").files[0];
-        if (musicaFile) validateFile(musicaFile, ALLOWED_AUDIO_TYPES, MAX_AUDIO_SIZE);
-        const musicaBase64 = musicaFile ? await fileToBase64(musicaFile) : null;
+        const audioTracks = await collectAudioTracks();
         const marcaAguaFile = document.getElementById("fileMarcaAgua").files[0];
         if (marcaAguaFile) validateFile(marcaAguaFile, ["image/png", "image/svg+xml"], MAX_IMAGE_SIZE);
         const marcaAguaBase64 = marcaAguaFile
@@ -303,7 +301,6 @@ async function handleSubmit(event) {
 
         const urlHeader = selectedImageUrl("Header");
         const urlSeparador = selectedImageUrl("Separador");
-        const urlMusica = valueOf("urlMusica");
         const galeriaUrls = selectedGalleryUrls();
 
         const id = valueOf("idEvento");
@@ -328,7 +325,9 @@ async function handleSubmit(event) {
             multimedia: {
                 personajeHeader: selectedImageFile("Header") || urlHeader,
                 personajeSeparador: selectedImageFile("Separador") || urlSeparador,
-                musica: musicaBase64 || urlMusica || "",
+                musica: audioTracks[0]?.src || "",
+                audios: audioTracks,
+                audioPlayMode: document.getElementById("audioPlayMode").value,
                 marcaAgua: marcaAguaBase64,
                 galeria: selectedGalleryFiles().concat(galeriaUrls)
             },
@@ -364,6 +363,26 @@ async function handleSubmit(event) {
         resultBox.innerHTML = `<strong>Error:</strong> ${escapeHtml(error.message)}`;
         resultBox.style.display = "block";
     }
+}
+
+async function collectAudioTracks() {
+    const fileInput = document.getElementById("fileMusica");
+    const files = Array.from(fileInput.files || []);
+    const tracks = [];
+
+    for (const file of files) {
+        validateFile(file, ALLOWED_AUDIO_TYPES, MAX_AUDIO_SIZE);
+        tracks.push({ src: await fileToBase64(file), name: file.name });
+    }
+
+    const urls = document.getElementById("urlMusica").value
+        .split(/[\n,]+/)
+        .map((url) => url.trim())
+        .filter(Boolean);
+    urls.forEach(validateExternalUrl);
+    urls.forEach((src, index) => tracks.push({ src, name: `Pista web ${index + 1}` }));
+
+    return tracks;
 }
 
 function valueOf(id) {

@@ -25,12 +25,15 @@
         </div>
     </div>
 
-    <button id="btnMusic" class="music-button is-hidden is-paused" type="button" aria-label="Reproducir música">
-        <svg class="music-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path fill="currentColor" d="M9 18V5l12-2v13h-2V7.35l-8 1.33V18a3 3 0 1 1-2 0Z" />
-        </svg>
-        <span>Música</span>
-    </button>
+    <div id="audioWidget" class="audio-widget is-hidden">
+        <select id="audioTrackSelector" aria-label="Seleccionar pista de audio"></select>
+        <button id="btnMusic" class="music-button is-paused" type="button" aria-label="Reproducir música">
+            <svg class="music-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="M9 18V5l12-2v13h-2V7.35l-8 1.33V18a3 3 0 1 1-2 0Z" />
+            </svg>
+            <span>Música</span>
+        </button>
+    </div>
     <audio id="bgMusic" loop></audio>
 
     <main class="invitation-shell" id="app" aria-live="polite">

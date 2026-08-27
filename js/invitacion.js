@@ -285,6 +285,7 @@ function normalizeEvent(data) {
         lugarDireccion: data.lugarDireccion || data.direccion || "",
         googleMapsUrl: data.googleMapsUrl || data.linkMaps || "",
         googleCalendarUrl: data.googleCalendarUrl || "",
+        audioPlayMode: data.multimedia?.audioPlayMode || data.audioPlayMode || "selector",
         confirmacionLimite: data.confirmacionLimite || "",
         estilos: data.estilos || {},
         contactosRSVP: data.contactosRSVP || legacyContacts(data.confirmacion),
@@ -293,6 +294,8 @@ function normalizeEvent(data) {
             personajeSeparador: multimedia.personajeSeparador || "",
             galeria: Array.isArray(multimedia.galeria) ? multimedia.galeria : [],
             musica: multimedia.musica || data.musica || "",
+            audios: normalizeAudioTracks(multimedia.audios || data.audios, multimedia.musica || data.musica),
+            audioPlayMode: multimedia.audioPlayMode || data.audioPlayMode || "selector",
             marcaAgua: multimedia.marcaAgua || ""
         }
     };
@@ -350,7 +353,8 @@ function renderInvitation(event) {
     ].join("");
 
     getApp().innerHTML = html;
-    setupMusic(event.multimedia.musica);
+    setupMusic(event.multimedia.audios, event.multimedia.audioPlayMode);
+    setupCalendarDownload(event);
     setupCarousel();
     startCountdown(event.fechaEvento);
 }
@@ -381,6 +385,8 @@ function renderHero(event) {
 }
 
 function renderDetails(event) {
+    const calendar = renderCalendarActions(event);
+
     return `
         <section class="invitation-section details-section">
             ${renderWatermark(event, "watermark-middle")}
@@ -396,8 +402,109 @@ function renderDetails(event) {
                     </a>
                 </div>
             ` : ""}
+            ${calendar}
         </section>
     `;
+}
+
+function renderCalendarActions(event) {
+    const details = getCalendarDetails(event);
+    if (!details) return "";
+
+    return `
+        <div class="calendar-actions">
+            <a class="button" href="${escapeAttr(details.googleUrl)}" target="_blank" rel="noopener noreferrer">
+                ${ICONS.calendar}
+                Agendar Evento
+            </a>
+            <button class="calendar-download" type="button" data-calendar-download>
+                Descargar archivo .ics
+            </button>
+        </div>
+    `;
+}
+
+function getCalendarDetails(event) {
+    if (!event.fechaEvento) return null;
+
+    const start = parseEventDate(event.fechaEvento, event.horarioTexto);
+    if (!start) return null;
+
+    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    const title = event.nombre || "Invitación Digital";
+    const location = [event.lugarNombre, event.lugarDireccion].filter(Boolean).join(", ");
+    const dates = `${formatCalendarDate(start)}/${formatCalendarDate(end)}`;
+    const googleParams = new URLSearchParams({
+        action: "TEMPLATE",
+        text: title,
+        dates,
+        location,
+        details: event.subtitulo || ""
+    });
+
+    return {
+        title,
+        location,
+        start,
+        end,
+        googleUrl: `https://calendar.google.com/calendar/render?${googleParams}`
+    };
+}
+
+function parseEventDate(dateValue, timeText) {
+    const dateMatch = String(dateValue).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!dateMatch) return null;
+
+    const timeMatch = String(timeText || "").match(/(\d{1,2})(?::(\d{2}))?/);
+    const hours = timeMatch ? Number(timeMatch[1]) : 12;
+    const minutes = timeMatch?.[2] ? Number(timeMatch[2]) : 0;
+    if (hours > 23 || minutes > 59) return null;
+
+    return new Date(Number(dateMatch[1]), Number(dateMatch[2]) - 1, Number(dateMatch[3]), hours, minutes);
+}
+
+function formatCalendarDate(date) {
+    const parts = [
+        date.getUTCFullYear(),
+        String(date.getUTCMonth() + 1).padStart(2, "0"),
+        String(date.getUTCDate()).padStart(2, "0")
+    ];
+    return `${parts.join("")}T${String(date.getUTCHours()).padStart(2, "0")}${String(date.getUTCMinutes()).padStart(2, "0")}00Z`;
+}
+
+function setupCalendarDownload(event) {
+    const button = document.querySelector("[data-calendar-download]");
+    if (!button) return;
+
+    button.addEventListener("click", () => {
+        const details = getCalendarDetails(event);
+        if (!details) return;
+
+        const ics = [
+            "BEGIN:VCALENDAR",
+            "VERSION:2.0",
+            "PRODID:-//YCORDIGITAL//Invitaciones//ES",
+            "CALSCALE:GREGORIAN",
+            "BEGIN:VEVENT",
+            `UID:${Date.now()}@ycordigital.com`,
+            `DTSTAMP:${formatCalendarDate(new Date())}`,
+            `DTSTART:${formatCalendarDate(details.start)}`,
+            `DTEND:${formatCalendarDate(details.end)}`,
+            `SUMMARY:${escapeIcs(details.title)}`,
+            `LOCATION:${escapeIcs(details.location)}`,
+            "END:VEVENT",
+            "END:VCALENDAR"
+        ].join("\r\n");
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
+        link.download = "invitacion-evento.ics";
+        link.click();
+        URL.revokeObjectURL(link.href);
+    });
+}
+
+function escapeIcs(value) {
+    return String(value || "").replace(/[\\;,\n]/g, (character) => ({ "\\": "\\\\", ";": "\\;", ",": "\\,", "\n": "\\n" })[character]);
 }
 
 function renderDetail(icon, label, value) {
@@ -641,21 +748,51 @@ function normalizeWhatsAppPhone(value) {
     return phone;
 }
 
-function setupMusic(src) {
+function normalizeAudioTracks(value, legacySource) {
+    const tracks = Array.isArray(value)
+        ? value.map((track, index) => typeof track === "string" ? { src: track, name: `Pista ${index + 1}` } : track)
+        : [];
+    if (tracks.length) return tracks.filter((track) => track?.src);
+    return legacySource ? [{ src: legacySource, name: "Música de fondo" }] : [];
+}
+
+function setupMusic(tracks, playMode) {
+    const widget = document.getElementById("audioWidget");
     const button = document.getElementById("btnMusic");
     const audio = document.getElementById("bgMusic");
+    const selector = document.getElementById("audioTrackSelector");
 
-    if (!button || !audio) return;
+    if (!widget || !button || !audio || !selector) return;
 
-    if (!src) {
-        button.classList.add("is-hidden");
+    if (!tracks.length) {
+        widget.classList.add("is-hidden");
         audio.removeAttribute("src");
         return;
     }
 
-    audio.src = src;
-    button.classList.remove("is-hidden");
+    let currentTrack = 0;
+    audio.loop = false;
+    selector.innerHTML = tracks.map((track, index) => `<option value="${index}">${escapeHtml(track.name || `Pista ${index + 1}`)}</option>`).join("");
+    selector.hidden = playMode === "playlist" || tracks.length === 1;
+    widget.classList.remove("is-hidden");
+
+    const loadTrack = (index, shouldPlay = false) => {
+        currentTrack = (index + tracks.length) % tracks.length;
+        selector.value = String(currentTrack);
+        audio.src = tracks[currentTrack].src;
+        if (shouldPlay) audio.play().catch(() => { });
+    };
+
+    loadTrack(0);
+    selector.onchange = () => loadTrack(Number(selector.value), !audio.paused);
     button.onclick = () => toggleMusic(audio, button);
+    audio.onended = () => {
+        if (playMode !== "playlist" || tracks.length < 2) {
+            button.classList.add("is-paused");
+            return;
+        }
+        loadTrack(currentTrack + 1, true);
+    };
 }
 
 function toggleMusic(audio, button) {

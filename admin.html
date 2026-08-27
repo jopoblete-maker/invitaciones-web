@@ -111,7 +111,8 @@
         input[type="time"],
         input[type="password"],
         input[type="color"],
-        select {
+        select,
+        textarea {
             width: 100%;
             padding: 10px 12px;
             border: 1px solid #cbd5e1;
@@ -119,6 +120,11 @@
             font-size: 0.95rem;
             outline: none;
             transition: border-color 0.2s;
+        }
+
+        textarea {
+            resize: vertical;
+            font-family: inherit;
         }
 
         input[type="text"]:focus,
@@ -491,8 +497,14 @@
 
             <div class="form-group">
                 <label for="fileMusica">Música de Fondo (MP3):</label>
-                <input type="file" id="fileMusica" accept="audio/mpeg">
-                <input type="text" id="urlMusica" placeholder="O pega la URL directa del audio (.mp3)">
+                <input type="file" id="fileMusica" accept="audio/mpeg" multiple>
+                <textarea id="urlMusica" rows="3" placeholder="Pega una o varias URLs .mp3, una por línea"></textarea>
+                <label for="audioPlayMode">Modo de reproducción:</label>
+                <select id="audioPlayMode">
+                    <option value="selector">Selector de pista</option>
+                    <option value="playlist">Reproducción continua / Playlist</option>
+                </select>
+                <span class="help-text">Puedes cargar más de 3 pistas combinando archivos y URLs.</span>
             </div>
 
             <div class="form-group">
