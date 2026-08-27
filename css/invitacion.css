@@ -731,6 +731,106 @@ body[data-theme="elegante"] .eyebrow {
     font-family: "Cinzel", Georgia, serif;
 }
 
+body[data-theme="mistico"] .invitation-shell,
+body[data-theme="urbano"] .invitation-shell {
+    color-scheme: dark;
+}
+
+body[data-theme="mistico"] .detail-icon,
+body[data-theme="urbano"] .detail-icon {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+body[data-theme="dorado-premium"] .eyebrow,
+body[data-theme="corporativo"] .eyebrow {
+    font-weight: 800;
+}
+
+body[data-theme="infantil-dinamico"] .title,
+body[data-theme="urbano"] .title {
+    text-transform: uppercase;
+}
+
+body[data-theme="vintage"] {
+    --primary-color: #a36f47;
+    --secondary-color: #f0dfc3;
+    --accent-color: #4e3025;
+    --text-color: #493229;
+    --muted-color: #866653;
+}
+
+body[data-theme="dorado-premium"] {
+    --primary-color: #c89b3c;
+    --secondary-color: #fff8e7;
+    --accent-color: #46351b;
+    --text-color: #45351e;
+    --muted-color: #8d7546;
+}
+
+body[data-theme="tropical"] {
+    --primary-color: #0d9488;
+    --secondary-color: #e5fff5;
+    --accent-color: #075e54;
+    --text-color: #16443d;
+    --muted-color: #4f8175;
+}
+
+body[data-theme="botanico"] {
+    --primary-color: #4f8a5b;
+    --secondary-color: #edf7e8;
+    --accent-color: #244b31;
+    --text-color: #294534;
+    --muted-color: #66806a;
+}
+
+body[data-theme="infantil-pastel"] {
+    --primary-color: #d88fb2;
+    --secondary-color: #fff2f7;
+    --accent-color: #70445c;
+    --text-color: #634656;
+    --muted-color: #a57b91;
+}
+
+body[data-theme="mistico"] {
+    --primary-color: #a855f7;
+    --secondary-color: #17152d;
+    --accent-color: #f5e9ff;
+    --text-color: #f2eaff;
+    --muted-color: #c6b9e0;
+}
+
+body[data-theme="urbano"] {
+    --primary-color: #22d3ee;
+    --secondary-color: #111827;
+    --accent-color: #f8fafc;
+    --text-color: #e2e8f0;
+    --muted-color: #94a3b8;
+}
+
+body[data-theme="infantil-dinamico"] {
+    --primary-color: #f97316;
+    --secondary-color: #fff7ed;
+    --accent-color: #164e63;
+    --text-color: #164e63;
+    --muted-color: #55758a;
+}
+
+body[data-theme="romantico"] {
+    --primary-color: #d86b91;
+    --secondary-color: #fff3f6;
+    --accent-color: #71334d;
+    --text-color: #633c4d;
+    --muted-color: #a87588;
+}
+
+body[data-theme="corporativo"] {
+    --primary-color: #1677b7;
+    --secondary-color: #eef7fc;
+    --accent-color: #123b5d;
+    --text-color: #183b55;
+    --muted-color: #658198;
+}
+
 @media (max-width: 540px) {
     body {
         padding-inline: 10px;

@@ -13,7 +13,11 @@ const SUPABASE_URL = 'https://jqewkmebhdyrjeawdmon.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxZXdrbWViaGR5cmplYXdkbW9uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0NDc2OTMsImV4cCI6MjEwMzAyMzY5M30.bwBlacPpsOQSMKc3JBv9loS2pL_chyZr0wnKmK6EWqw'; // <--- Reemplaza con tu clave anon de Supabase
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-const TEMAS_VALIDOS = ['frozen', 'pesca', 'elegante', 'fiesta', 'minimalista'];
+const TEMAS_VALIDOS = [
+    'frozen', 'pesca', 'elegante', 'fiesta', 'minimalista', 'vintage',
+    'dorado-premium', 'tropical', 'botanico', 'infantil-pastel', 'mistico',
+    'urbano', 'infantil-dinamico', 'romantico', 'corporativo'
+];
 
 app.use((req, res, next) => {
     res.setHeader('X-Frame-Options', 'DENY');

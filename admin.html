@@ -139,6 +139,10 @@
             color: #94a3b8;
         }
 
+        .media-source-mode {
+            margin-bottom: 8px;
+        }
+
         #fontPreviewBox {
             margin: -4px 0 18px;
             padding: 20px 18px;
@@ -384,11 +388,21 @@
             <div class="form-group">
                 <label for="tema">Tema de la Invitación:</label>
                 <select id="tema" required>
-                    <option value="frozen">Frozen</option>
-                    <option value="pesca">Pesca</option>
-                    <option value="elegante">Elegante</option>
-                    <option value="fiesta">Fiesta</option>
-                    <option value="minimalista">Minimalista</option>
+                    <option value="frozen">Frozen (Infantil / Hielo)</option>
+                    <option value="pesca">Pesca (Naturaleza / Aire libre)</option>
+                    <option value="elegante">Elegante (Boda / Gala)</option>
+                    <option value="fiesta">Fiesta (Neón / Noche)</option>
+                    <option value="minimalista">Minimalista (Moderno / Neutro)</option>
+                    <option value="vintage">Vintage (Retro / Sepia)</option>
+                    <option value="dorado-premium">Dorado Premium (Aniversario / XV Años)</option>
+                    <option value="tropical">Tropical (Playa / Verano)</option>
+                    <option value="botanico">Botánico (Ecológico / Hoja verde)</option>
+                    <option value="infantil-pastel">Infantil Pastel (Baby Shower / Bautismo)</option>
+                    <option value="mistico">Místico (Galaxia / Oscuro)</option>
+                    <option value="urbano">Urbano (Cyberpunk / Grafiti)</option>
+                    <option value="infantil-dinamico">Infantil Dinámico (Aventura / Súper Héroes)</option>
+                    <option value="romantico">Romántico (Flores / Rosa Soft)</option>
+                    <option value="corporativo">Corporativo (Formal / Azul Tech)</option>
                 </select>
                 <span class="help-text">Define tipografías, paleta, fondo, botones y marcas de agua.</span>
             </div>
@@ -412,8 +426,12 @@
 
             <div class="form-group">
                 <label for="fileHeader">Imagen Principal / Banner:</label>
+                <select id="sourceModeHeader" class="media-source-mode">
+                    <option value="file">Archivo local</option>
+                    <option value="url">Enlace URL web</option>
+                </select>
                 <input type="file" id="fileHeader" accept="image/jpeg,image/png,image/svg+xml">
-                <input type="text" id="urlHeader" placeholder="O pega la URL directa de la imagen">
+                <input type="url" id="urlHeader" placeholder="https://ejemplo.com/imagen.jpg" hidden>
                 <div id="previewHeader" class="media-preview-grid"></div>
             </div>
 
@@ -430,15 +448,24 @@
 
             <div class="form-group">
                 <label for="fileSeparador">Imagen Separadora / Ícono:</label>
+                <select id="sourceModeSeparador" class="media-source-mode">
+                    <option value="file">Archivo local</option>
+                    <option value="url">Enlace URL web</option>
+                </select>
                 <input type="file" id="fileSeparador" accept="image/jpeg,image/png,image/svg+xml">
-                <input type="text" id="urlSeparador" placeholder="O pega la URL directa de la imagen">
+                <input type="url" id="urlSeparador" placeholder="https://ejemplo.com/separador.jpg" hidden>
                 <div id="previewSeparador" class="media-preview-grid"></div>
             </div>
 
             <div class="form-group">
                 <label for="fileGaleria">Galería de Fotos:</label>
+                <select id="sourceModeGaleria" class="media-source-mode">
+                    <option value="file">Archivos locales</option>
+                    <option value="url">Enlaces URL web</option>
+                </select>
                 <input type="file" id="fileGaleria" accept="image/jpeg,image/png,image/svg+xml" multiple>
-                <input type="text" id="urlGaleria" placeholder="O pega URLs separadas por coma">
+                <input type="url" id="urlGaleria" placeholder="https://ejemplo.com/foto.jpg, ..." hidden>
+                <span class="help-text">Puedes pegar una o varias URLs separadas por coma.</span>
                 <div id="previewGaleria" class="media-preview-grid"></div>
             </div>
 

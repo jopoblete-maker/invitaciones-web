@@ -36,6 +36,9 @@ document.addEventListener("DOMContentLoaded", () => {
     bindImageInput("fileHeader", "header", "previewHeader");
     bindImageInput("fileSeparador", "separador", "previewSeparador");
     bindImageInput("fileGaleria", "galeria", "previewGaleria");
+    bindMediaSourceMode("Header");
+    bindMediaSourceMode("Separador");
+    bindMediaSourceMode("Galeria");
     bindEditorControls();
     bindFontPreview();
     document.getElementById("adminForm").addEventListener("submit", handleSubmit);
@@ -58,6 +61,22 @@ function bindFontPreview() {
     fontSelect.addEventListener("change", updatePreview);
     titleInput.addEventListener("input", updatePreview);
     updatePreview();
+}
+
+function bindMediaSourceMode(target) {
+    const mode = document.getElementById(`sourceMode${target}`);
+    const fileInput = document.getElementById(`file${target}`);
+    const urlInput = document.getElementById(`url${target}`);
+    if (!mode || !fileInput || !urlInput) return;
+
+    const updateVisibility = () => {
+        const useUrl = mode.value === "url";
+        fileInput.hidden = useUrl;
+        urlInput.hidden = !useUrl;
+    };
+
+    mode.addEventListener("change", updateVisibility);
+    updateVisibility();
 }
 
 function bindAuthentication() {
@@ -282,13 +301,10 @@ async function handleSubmit(event) {
             ? await tintWatermark(marcaAguaFile, document.getElementById("colorMarcaAgua").value)
             : "";
 
-        const urlHeader = valueOf("urlHeader");
-        const urlSeparador = valueOf("urlSeparador");
+        const urlHeader = selectedImageUrl("Header");
+        const urlSeparador = selectedImageUrl("Separador");
         const urlMusica = valueOf("urlMusica");
-        const urlGaleria = valueOf("urlGaleria");
-        const galeriaUrls = urlGaleria
-            ? urlGaleria.split(",").map((url) => url.trim()).filter(Boolean)
-            : [];
+        const galeriaUrls = selectedGalleryUrls();
 
         const id = valueOf("idEvento");
         const payload = {
@@ -310,11 +326,11 @@ async function handleSubmit(event) {
                 efectoFlyer: document.getElementById("efectoFlyer").checked
             },
             multimedia: {
-                personajeHeader: editedImages.header[0] || urlHeader || "",
-                personajeSeparador: editedImages.separador[0] || urlSeparador || "",
+                personajeHeader: selectedImageFile("Header") || urlHeader,
+                personajeSeparador: selectedImageFile("Separador") || urlSeparador,
                 musica: musicaBase64 || urlMusica || "",
                 marcaAgua: marcaAguaBase64,
-                galeria: editedImages.galeria.concat(galeriaUrls)
+                galeria: selectedGalleryFiles().concat(galeriaUrls)
             },
             confirmacion: {
                 tel1: normalizeWhatsAppPhone(valueOf("tel1")),
@@ -352,6 +368,46 @@ async function handleSubmit(event) {
 
 function valueOf(id) {
     return document.getElementById(id).value.trim();
+}
+
+function selectedImageFile(target) {
+    const mode = document.getElementById(`sourceMode${target}`)?.value;
+    return mode === "file" ? editedImages[target.toLowerCase()][0] || "" : "";
+}
+
+function selectedImageUrl(target) {
+    const mode = document.getElementById(`sourceMode${target}`)?.value;
+    const value = mode === "url" ? valueOf(`url${target}`) : "";
+    if (value) validateExternalUrl(value);
+    return value;
+}
+
+function selectedGalleryFiles() {
+    return document.getElementById("sourceModeGaleria")?.value === "file" ? editedImages.galeria : [];
+}
+
+function selectedGalleryUrls() {
+    if (document.getElementById("sourceModeGaleria")?.value !== "url") return [];
+
+    const value = valueOf("urlGaleria");
+    if (!value) return [];
+
+    const urls = value.split(",").map((url) => url.trim()).filter(Boolean);
+    urls.forEach(validateExternalUrl);
+    return urls;
+}
+
+function validateExternalUrl(value) {
+    let url;
+    try {
+        url = new URL(value);
+    } catch {
+        throw new Error(`URL de imagen no válida: ${value}`);
+    }
+
+    if (!['http:', 'https:'].includes(url.protocol)) {
+        throw new Error(`La URL debe comenzar con http:// o https://: ${value}`);
+    }
 }
 
 function normalizeWhatsAppPhone(value) {
