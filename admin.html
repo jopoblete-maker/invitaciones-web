@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Administrador - Creador de Invitaciones</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Bebas+Neue&family=Cinzel:wght@500;700&family=Cormorant+Garamond:wght@500;600;700&family=Dancing+Script:wght@500;600;700&family=Great+Vibes&family=Montserrat:wght@500;600;700;800&family=Pacifico&family=Playfair+Display:wght@600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap">
     <style>
         * {
             box-sizing: border-box;
@@ -133,6 +137,33 @@
         .help-text {
             font-size: 0.78rem;
             color: #94a3b8;
+        }
+
+        #fontPreviewBox {
+            margin: -4px 0 18px;
+            padding: 20px 18px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            color: #1e293b;
+            background: linear-gradient(135deg, #f8fafc, #eef6f7);
+            text-align: center;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 4px 14px rgba(15, 23, 42, 0.05);
+        }
+
+        #fontPreviewTitle {
+            display: block;
+            margin-bottom: 8px;
+            font-size: clamp(1.35rem, 4vw, 1.8rem);
+            font-weight: 700;
+            line-height: 1.15;
+            overflow-wrap: anywhere;
+        }
+
+        #fontPreviewText {
+            display: block;
+            color: #64748b;
+            font-size: 0.92rem;
+            line-height: 1.45;
         }
 
         .btn-submit {
@@ -315,6 +346,10 @@
                     <option value="bebas-neue">Bebas Neue (Imponente / Fiesta)</option>
                 </select>
                 <span class="help-text">Se aplicará a los textos principales de la invitación.</span>
+                <div id="fontPreviewBox" aria-live="polite">
+                    <strong id="fontPreviewTitle">Festejo de mis 60 años</strong>
+                    <span id="fontPreviewText">Una celebración especial para compartir.</span>
+                </div>
             </div>
 
             <div class="form-row">

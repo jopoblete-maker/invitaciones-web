@@ -11,6 +11,18 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_AUDIO_SIZE = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/svg+xml"];
 const ALLOWED_AUDIO_TYPES = ["audio/mpeg"];
+const FONT_FAMILIES = {
+    playfair: '"Playfair Display", serif',
+    montserrat: '"Montserrat", sans-serif',
+    "great-vibes": '"Great Vibes", cursive',
+    cinzel: '"Cinzel", serif',
+    "dancing-script": '"Dancing Script", cursive',
+    "alex-brush": '"Alex Brush", cursive',
+    "cormorant-garamond": '"Cormorant Garamond", serif',
+    poppins: '"Poppins", sans-serif',
+    pacifico: '"Pacifico", cursive',
+    "bebas-neue": '"Bebas Neue", sans-serif'
+};
 
 const editorState = {
     cropper: null,
@@ -25,8 +37,28 @@ document.addEventListener("DOMContentLoaded", () => {
     bindImageInput("fileSeparador", "separador", "previewSeparador");
     bindImageInput("fileGaleria", "galeria", "previewGaleria");
     bindEditorControls();
+    bindFontPreview();
     document.getElementById("adminForm").addEventListener("submit", handleSubmit);
 });
+
+function bindFontPreview() {
+    const fontSelect = document.getElementById("fontFamily");
+    const titleInput = document.getElementById("nombre");
+    if (!fontSelect || !titleInput) return;
+
+    const updatePreview = () => {
+        const previewTitle = document.getElementById("fontPreviewTitle");
+        const previewBox = document.getElementById("fontPreviewBox");
+        if (!previewTitle || !previewBox) return;
+
+        previewTitle.textContent = titleInput.value.trim() || "Festejo de mis 60 años";
+        previewBox.style.fontFamily = FONT_FAMILIES[fontSelect.value] || FONT_FAMILIES.playfair;
+    };
+
+    fontSelect.addEventListener("change", updatePreview);
+    titleInput.addEventListener("input", updatePreview);
+    updatePreview();
+}
 
 function bindAuthentication() {
     const authForm = document.getElementById("authForm");
