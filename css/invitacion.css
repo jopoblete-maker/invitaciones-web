@@ -80,8 +80,12 @@ body {
 .loading-brand {
     display: block;
     width: min(78vw, 280px);
+    max-height: min(42vh, 260px);
     height: auto;
-    filter: drop-shadow(0 0 18px rgba(34, 211, 238, 0.22));
+    object-fit: contain;
+    border-radius: 16px;
+    background: #0f172a;
+    filter: drop-shadow(0 0 18px rgba(34, 211, 238, 0.22)) drop-shadow(0 0 22px rgba(168, 85, 247, 0.12));
     animation: loading-brand-breathe 3.2s ease-in-out infinite;
 }
 

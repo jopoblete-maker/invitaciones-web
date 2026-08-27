@@ -863,8 +863,18 @@ function hideLoader() {
     const loader = document.getElementById("loadingOverlay");
     if (!loader) return;
 
+    const video = loader.querySelector("video");
+    if (video) {
+        video.pause();
+        video.removeAttribute("src");
+        video.querySelectorAll("source").forEach((source) => source.removeAttribute("src"));
+        video.load();
+    }
+
     loader.classList.add("is-hidden");
-    loader.addEventListener("transitionend", () => loader.remove(), { once: true });
+    const removeLoader = () => loader.remove();
+    loader.addEventListener("transitionend", removeLoader, { once: true });
+    window.setTimeout(removeLoader, 750);
 }
 
 function getApp() {
