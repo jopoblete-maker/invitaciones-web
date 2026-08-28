@@ -339,6 +339,8 @@ async function handleSubmit(event) {
             }
         };
 
+        validateMediaPayload(payload.multimedia);
+
         const response = await fetch("/api/eventos", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -414,6 +416,39 @@ function selectedGalleryUrls() {
     const urls = value.split(",").map((url) => url.trim()).filter(Boolean);
     urls.forEach(validateExternalUrl);
     return urls;
+}
+
+function validateMediaPayload(multimedia) {
+    if (!multimedia || typeof multimedia !== "object") {
+        throw new Error("La configuración multimedia no es válida.");
+    }
+
+    if (!Array.isArray(multimedia.audios)) {
+        throw new Error("La lista de audios no es válida.");
+    }
+
+    multimedia.audios.forEach((audio, index) => {
+        if (!audio || typeof audio !== "object" || typeof audio.src !== "string" || !audio.src.trim()) {
+            throw new Error(`El audio ${index + 1} tiene una estructura inválida.`);
+        }
+        if (audio.src.startsWith("data:") && !/^data:audio\/mpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(audio.src)) {
+            throw new Error(`El contenido Base64 del audio ${index + 1} no es válido.`);
+        }
+    });
+
+    if (!Array.isArray(multimedia.galeria)) {
+        throw new Error("La lista de galería no es válida.");
+    }
+
+    multimedia.galeria.forEach((source, index) => {
+        if (typeof source !== "string" || !source.trim()) {
+            throw new Error(`La imagen ${index + 1} de la galería es inválida.`);
+        }
+        if (source.startsWith("data:") && !/^data:image\/(jpeg|png|svg\+xml);base64,[A-Za-z0-9+/]+={0,2}$/.test(source)) {
+            throw new Error(`El contenido Base64 de la imagen ${index + 1} no es válido.`);
+        }
+        if (!source.startsWith("data:")) validateExternalUrl(source);
+    });
 }
 
 function validateExternalUrl(value) {

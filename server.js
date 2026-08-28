@@ -29,6 +29,23 @@ app.use((req, res, next) => {
 // Aumentamos el límite para permitir subir imágenes locales (Base64)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use((err, req, res, next) => {
+    if (!err) return next();
+
+    const status = err.type === 'entity.too.large' || err.status === 413
+        ? 413
+        : err instanceof SyntaxError || err.status === 400
+            ? 400
+            : err.status >= 400 && err.status < 600
+                ? err.status
+                : 500;
+
+    console.error('Error al procesar la solicitud:', err);
+    res.status(status).json({
+        error: err.message || 'Error al procesar la solicitud.'
+    });
+});
+
 app.use(express.static(__dirname));
 
 // Ruta principal para abrir el panel de administración
@@ -37,7 +54,7 @@ app.get('/', (req, res) => {
 });
 
 // Endpoint para guardar o actualizar la invitación
-app.post('/api/eventos', async (req, res) => {
+async function guardarEvento(req, res) {
     try {
         const { password, ...evento } = req.body;
 
@@ -77,9 +94,19 @@ app.post('/api/eventos', async (req, res) => {
 
     } catch (err) {
         console.error('Error al guardar:', err);
-        res.status(500).json({ error: 'Ocurrió un error en el servidor al guardar los datos.' });
+        const status = err.status === 413 || err.code === 'PAYLOAD_TOO_LARGE'
+            ? 413
+            : err.status >= 400 && err.status < 500
+                ? err.status
+                : 500;
+        res.status(status).json({
+            error: err.message || 'Ocurrió un error interno al guardar los datos.'
+        });
     }
-});
+}
+
+app.post('/api/eventos', guardarEvento);
+app.put('/api/eventos', guardarEvento);
 
 // Endpoint para leer la invitación desde el frontend (invitacion.html)
 app.get('/api/eventos/:id', async (req, res) => {
