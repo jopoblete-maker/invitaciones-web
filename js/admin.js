@@ -1,7 +1,9 @@
+const currentGalleryList = [];
+
 const editedImages = {
     header: [],
     separador: [],
-    galeria: []
+    galeria: currentGalleryList
 };
 
 const ADMIN_PASSWORD_HASH = "702e0afc3ebf1b22464cb509747357e3f0fa371ed7bf0df3b25c3d9114abb662";
@@ -35,7 +37,9 @@ document.addEventListener("DOMContentLoaded", () => {
     bindAuthentication();
     bindImageInput("fileHeader", "header", "previewHeader");
     bindImageInput("fileSeparador", "separador", "previewSeparador");
-    bindImageInput("fileGaleria", "galeria", "previewGaleria");
+    bindGalleryInput();
+    document.getElementById("btnAddGalleryUrls").addEventListener("click", addGalleryUrls);
+    document.getElementById("btnLoadEvent").addEventListener("click", loadExistingEvent);
     bindMediaSourceMode("Header");
     bindMediaSourceMode("Separador");
     bindMediaSourceMode("Galeria");
@@ -164,6 +168,97 @@ function bindImageInput(inputId, target, previewId) {
     });
 }
 
+function bindGalleryInput() {
+    const input = document.getElementById("fileGaleria");
+    if (!input) return;
+
+    input.addEventListener("change", async () => {
+        try {
+            for (const file of Array.from(input.files || [])) {
+                validateFile(file, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE);
+                currentGalleryList.push(await fileToBase64(file));
+            }
+
+            renderGalleryPreviews();
+            if (currentGalleryList.length) {
+                openEditor("galeria", currentGalleryList.length - 1);
+            }
+            input.value = "";
+        } catch (error) {
+            input.value = "";
+            window.alert(error.message);
+        }
+    });
+}
+
+function addGalleryUrls() {
+    try {
+        const input = document.getElementById("urlGaleria");
+        const urls = input.value.split(/[\n,]+/).map((url) => url.trim()).filter(Boolean);
+        urls.forEach(validateExternalUrl);
+
+        urls.forEach((url) => {
+            if (!currentGalleryList.includes(url)) currentGalleryList.push(url);
+        });
+        input.value = "";
+        renderGalleryPreviews();
+    } catch (error) {
+        window.alert(error.message);
+    }
+}
+
+function renderGalleryPreviews() {
+    const preview = document.getElementById("galleryPreviewContainer");
+    if (!preview) return;
+
+    preview.innerHTML = currentGalleryList.map((src, index) => `
+        <div class="media-preview">
+            <img src="${escapeHtml(src)}" alt="Vista previa ${index + 1}">
+            <span>Foto ${index + 1}</span>
+            <div class="media-preview-actions">
+                ${src.startsWith("data:") ? `<button type="button" data-action="edit" data-index="${index}">Editar</button>` : ""}
+                <button type="button" class="media-delete" data-action="delete" data-index="${index}">Eliminar</button>
+            </div>
+        </div>
+    `).join("");
+
+    preview.querySelectorAll("button[data-action='edit']").forEach((button) => {
+        button.addEventListener("click", () => openEditor("galeria", Number(button.dataset.index)));
+    });
+    preview.querySelectorAll("button[data-action='delete']").forEach((button) => {
+        button.addEventListener("click", () => {
+            currentGalleryList.splice(Number(button.dataset.index), 1);
+            renderGalleryPreviews();
+        });
+    });
+}
+
+async function loadExistingEvent() {
+    const id = valueOf("idEvento");
+    if (!id) {
+        window.alert("Ingresa el ID del evento que deseas cargar.");
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/eventos/${encodeURIComponent(id)}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "No se pudo cargar el evento.");
+
+        const gallery = data.multimedia?.galeria;
+        if (!Array.isArray(gallery)) throw new Error("El evento no contiene una galería válida.");
+        if (gallery.some((src) => typeof src !== "string" || !src.trim())) {
+            throw new Error("El evento contiene imágenes inválidas en la galería.");
+        }
+
+        currentGalleryList.splice(0, currentGalleryList.length, ...gallery);
+        renderGalleryPreviews();
+        window.alert(`Evento cargado. ${currentGalleryList.length} foto(s) en la galería.`);
+    } catch (error) {
+        window.alert(error.message);
+    }
+}
+
 function renderPreviews(target, previewId) {
     const preview = document.getElementById(previewId);
     if (!preview) return;
@@ -250,7 +345,11 @@ function applyCurrentEdit() {
     const result = filteredCanvas.toDataURL("image/jpeg", 0.88);
 
     editedImages[editorState.target][editorState.index] = result;
-    renderPreviews(editorState.target, previewIdForTarget(editorState.target));
+    if (editorState.target === "galeria") {
+        renderGalleryPreviews();
+    } else {
+        renderPreviews(editorState.target, previewIdForTarget(editorState.target));
+    }
     closeEditor();
 }
 
@@ -280,8 +379,7 @@ function closeEditor() {
 function previewIdForTarget(target) {
     return {
         header: "previewHeader",
-        separador: "previewSeparador",
-        galeria: "previewGaleria"
+        separador: "previewSeparador"
     }[target];
 }
 
@@ -301,8 +399,6 @@ async function handleSubmit(event) {
 
         const urlHeader = selectedImageUrl("Header");
         const urlSeparador = selectedImageUrl("Separador");
-        const galeriaUrls = selectedGalleryUrls();
-
         const id = valueOf("idEvento");
         const payload = {
             password: valueOf("adminPassword"),
@@ -329,7 +425,7 @@ async function handleSubmit(event) {
                 audios: audioTracks,
                 audioPlayMode: document.getElementById("audioPlayMode").value,
                 marcaAgua: marcaAguaBase64,
-                galeria: selectedGalleryFiles().concat(galeriaUrls)
+                galeria: currentGalleryList
             },
             confirmacion: {
                 tel1: normalizeWhatsAppPhone(valueOf("tel1")),
@@ -401,21 +497,6 @@ function selectedImageUrl(target) {
     const value = mode === "url" ? valueOf(`url${target}`) : "";
     if (value) validateExternalUrl(value);
     return value;
-}
-
-function selectedGalleryFiles() {
-    return document.getElementById("sourceModeGaleria")?.value === "file" ? editedImages.galeria : [];
-}
-
-function selectedGalleryUrls() {
-    if (document.getElementById("sourceModeGaleria")?.value !== "url") return [];
-
-    const value = valueOf("urlGaleria");
-    if (!value) return [];
-
-    const urls = value.split(",").map((url) => url.trim()).filter(Boolean);
-    urls.forEach(validateExternalUrl);
-    return urls;
 }
 
 function validateMediaPayload(multimedia) {

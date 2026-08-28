@@ -294,6 +294,37 @@
             font-size: 0.68rem;
             text-align: center;
         }
+
+        .media-preview-actions {
+            display: flex;
+            gap: 5px;
+            padding: 0 5px 5px;
+        }
+
+        .media-preview-actions button,
+        .load-event-button {
+            padding: 7px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background: #fff;
+            color: #334155;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .media-preview-actions button {
+            flex: 1;
+            padding: 4px;
+        }
+
+        .media-preview-actions .media-delete {
+            color: #b91c1c;
+        }
+
+        .media-url-actions {
+            margin-top: 8px;
+        }
     </style>
 </head>
 
@@ -328,6 +359,7 @@
                     <label for="idEvento">ID Único del Evento:</label>
                     <input type="text" id="idEvento" placeholder="Ej: luis-50" required>
                     <span class="help-text">Este ID formará el enlace web único.</span>
+                    <button type="button" id="btnLoadEvent" class="load-event-button">Cargar evento existente</button>
                 </div>
             </div>
 
@@ -472,7 +504,11 @@
                 <input type="file" id="fileGaleria" accept="image/jpeg,image/png,image/svg+xml" multiple>
                 <input type="url" id="urlGaleria" placeholder="https://ejemplo.com/foto.jpg, ..." hidden>
                 <span class="help-text">Puedes pegar una o varias URLs separadas por coma.</span>
-                <div id="previewGaleria" class="media-preview-grid"></div>
+                <div class="media-url-actions">
+                    <button type="button" id="btnAddGalleryUrls" class="load-event-button">Agregar URLs a la
+                        galería</button>
+                </div>
+                <div id="galleryPreviewContainer" class="media-preview-grid" aria-live="polite"></div>
             </div>
 
             <div id="imageEditor" class="editor-panel" aria-live="polite">
