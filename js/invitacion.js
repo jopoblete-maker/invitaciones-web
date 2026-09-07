@@ -278,6 +278,7 @@ function normalizeEvent(data) {
     return {
         nombre: data.nombre || "",
         subtitulo: data.subtitulo || "Celebración",
+        mensaje: data.mensaje || data.bendicion || data.dedicatoria || "Que el amor nos encuentre siempre del mismo lado.",
         fontFamily: FONT_FAMILIES[data.fontFamily || data.fuente] || FONT_FAMILIES.playfair,
         fechaEvento: data.fechaEvento || data.fecha || "",
         fechaTexto: data.fechaTexto || data.fecha || "",
@@ -373,7 +374,7 @@ function getBrochureImages(event) {
     const fallback = event.multimedia.personajeHeader || gallery[0] || "";
     return [
         event.multimedia.personajeHeader || fallback,
-        gallery[0] || fallback,
+        gallery[0] || event.multimedia.personajeSeparador || fallback,
         gallery[1] || gallery[0] || fallback
     ];
 }
@@ -383,9 +384,9 @@ function renderHero(event) {
         <section class="brochure-page brochure-page--cover hero-section">
             ${renderWatermark(event, "watermark-start")}
             <div class="brochure-content">
-                <p class="eyebrow">${escapeHtml(event.subtitulo || "Casamiento de civil")}</p>
-                <p class="cover-kicker">Una nueva historia comienza</p>
-                <h1 class="title">${escapeHtml(event.nombre || "Nos casamos por civil")}</h1>
+                <p class="cover-kicker">NUESTRA BODA</p>
+                <p class="cover-type">Casamiento de civil</p>
+                <h1 class="title cover-names">${escapeHtml(event.nombre || "Jennifer & Gonzalo")}</h1>
                 <p class="cover-hint">Deslizá para descubrir todos los detalles</p>
             </div>
             <button class="hero-action hero-music-action" type="button" data-audio-trigger>
@@ -401,7 +402,9 @@ function renderLocationPage(event) {
         <section class="brochure-page brochure-page--location">
             <div class="brochure-content page-card">
                 <p class="eyebrow">El encuentro</p>
-                <h2 class="section-title">Ubicación y agenda</h2>
+                <h2 class="section-title">Detalles de la boda</h2>
+                <p class="page-message">${escapeHtml(event.mensaje)}</p>
+                <p class="date-display">${escapeHtml(event.fechaTexto || "20 | 10 | 2024")}</p>
                 <div class="details-section">
                     ${renderDetail("calendar", "Fecha", event.fechaTexto)}
                     ${renderDetail("clock", "Horario", event.horarioTexto)}

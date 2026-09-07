@@ -319,6 +319,21 @@ body::before {
     border-top: 1px solid rgba(255, 255, 255, 0.34);
 }
 
+.brochure-page--confirmation {
+    background-image: linear-gradient(180deg, rgba(30, 38, 25, 0.18), rgba(30, 38, 25, 0.74)),
+        var(--page-image, var(--invitation-background, var(--bg-image)));
+}
+
+.brochure-page--confirmation .page-card {
+    border-color: rgba(222, 224, 181, 0.54);
+    background: rgba(75, 87, 49, 0.78);
+}
+
+.brochure-page--confirmation .button {
+    color: #26301c;
+    background: linear-gradient(135deg, #d4d69d 0%, #7d8c50 100%);
+}
+
 .brochure-dots {
     position: absolute;
     right: 0;
@@ -437,6 +452,42 @@ body::before {
     font-weight: 800;
     letter-spacing: 0.14em;
     text-transform: uppercase;
+}
+
+.cover-type {
+    margin: 0 0 18px;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+.cover-names {
+    font-family: "Great Vibes", "Dancing Script", cursive;
+    font-size: clamp(4rem, 17vw, 7.5rem);
+    font-weight: 500;
+    line-height: 0.9;
+}
+
+.page-message {
+    max-width: 34rem;
+    margin: 18px auto 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-family: var(--font-heading);
+    font-size: clamp(1.1rem, 3.5vw, 1.55rem);
+    font-style: italic;
+    line-height: 1.35;
+}
+
+.date-display {
+    margin: 25px 0 8px;
+    color: #fff;
+    font-family: var(--font-body);
+    font-size: clamp(1.25rem, 5vw, 2rem);
+    font-weight: 900;
+    letter-spacing: 0.22em;
+    text-shadow: 0 2px 14px rgba(20, 12, 8, 0.5);
 }
 
 .cover-hint {
@@ -1190,6 +1241,27 @@ body[data-theme="corporativo"] {
     .hero-section {
         min-height: 100%;
         padding-bottom: 170px;
+    }
+
+    .brochure-page {
+        min-height: 100%;
+        padding: 28px 18px 74px;
+        background-position: 50% 35%;
+    }
+
+    .page-card {
+        width: min(100%, 440px);
+        max-height: calc(100% - 12px);
+        overflow-y: auto;
+        padding: 24px 20px;
+    }
+
+    .cover-names {
+        font-size: clamp(3.6rem, 18vw, 5.8rem);
+    }
+
+    .date-display {
+        letter-spacing: 0.12em;
     }
 
     .hero-media-frame {
