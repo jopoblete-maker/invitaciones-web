@@ -238,7 +238,11 @@ const FONT_FAMILIES = {
     "cormorant-garamond": '"Cormorant Garamond", serif',
     poppins: '"Poppins", sans-serif',
     pacifico: '"Pacifico", cursive',
-    "bebas-neue": '"Bebas Neue", sans-serif'
+    "bebas-neue": '"Bebas Neue", sans-serif',
+    "monsieur-la-doulaise": '"Monsieur La Doulaise", cursive',
+    "pinyon-script": '"Pinyon Script", cursive',
+    "bodoni-moda": '"Bodoni Moda", serif',
+    prata: '"Prata", serif'
 };
 
 let countdownTimer = null;
@@ -263,7 +267,7 @@ async function initInvitation() {
         const themeName = inferTheme(data, id);
         const event = normalizeEvent(data);
 
-        applyTheme(themeName, event.fontFamily);
+        applyTheme(themeName, event.fontFamily, event.estilos);
         renderInvitation(event);
         hideLoader();
     } catch (error) {
@@ -316,7 +320,7 @@ function inferTheme(data, id) {
     return "fiesta";
 }
 
-function applyTheme(themeName, fontFamily) {
+function applyTheme(themeName, fontFamily, styles = {}) {
     const theme = THEMES[themeName] || THEMES.fiesta;
     const root = document.documentElement;
 
@@ -326,7 +330,7 @@ function applyTheme(themeName, fontFamily) {
     root.style.setProperty("--primary-color", theme.primary);
     root.style.setProperty("--secondary-color", theme.secondary);
     root.style.setProperty("--accent-color", theme.accent);
-    root.style.setProperty("--text-color", theme.text);
+    root.style.setProperty("--text-color", normalizeColor(styles.colorTexto, theme.text));
     root.style.setProperty("--muted-color", theme.muted);
     root.style.setProperty("--surface-color", theme.surface);
     root.style.setProperty("--surface-strong", theme.surfaceStrong);
@@ -338,7 +342,13 @@ function applyTheme(themeName, fontFamily) {
     root.style.setProperty("--font-heading", theme.heading);
     root.style.setProperty("--font-body", theme.body);
     root.style.setProperty("--font-primary", fontFamily || FONT_FAMILIES.playfair);
+    root.style.setProperty("--title-shadow-color", normalizeColor(styles.colorSombra, "#000000"));
+    root.style.setProperty("--decorative-border-color", normalizeColor(styles.colorBordeDecorativo, theme.primary));
     root.style.setProperty("--watermark-image", `url("data:image/svg+xml,${encodeURIComponent(theme.watermark)}")`);
+}
+
+function normalizeColor(value, fallback) {
+    return /^#[0-9a-f]{6}$/i.test(String(value || "")) ? value : fallback;
 }
 
 function renderInvitation(event) {

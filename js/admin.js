@@ -23,7 +23,11 @@ const FONT_FAMILIES = {
     "cormorant-garamond": '"Cormorant Garamond", serif',
     poppins: '"Poppins", sans-serif',
     pacifico: '"Pacifico", cursive',
-    "bebas-neue": '"Bebas Neue", sans-serif'
+    "bebas-neue": '"Bebas Neue", sans-serif',
+    "monsieur-la-doulaise": '"Monsieur La Doulaise", cursive',
+    "pinyon-script": '"Pinyon Script", cursive',
+    "bodoni-moda": '"Bodoni Moda", serif',
+    prata: '"Prata", serif'
 };
 
 const editorState = {
@@ -252,6 +256,13 @@ async function loadExistingEvent() {
         }
 
         currentGalleryList.splice(0, currentGalleryList.length, ...gallery);
+        document.getElementById("fontFamily").value = data.fontFamily || "playfair";
+        document.getElementById("colorFondo").value = data.estilos?.colorFondo || "#ffffff";
+        document.getElementById("colorTexto").value = data.estilos?.colorTexto || "#333333";
+        document.getElementById("colorBoton").value = data.estilos?.colorBoton || "#0d9488";
+        document.getElementById("colorSombra").value = data.estilos?.colorSombra || "#000000";
+        document.getElementById("colorBordeDecorativo").value = data.estilos?.colorBordeDecorativo || "#b88746";
+        document.getElementById("fontFamily").dispatchEvent(new Event("change"));
         renderGalleryPreviews();
         window.alert(`Evento cargado. ${currentGalleryList.length} foto(s) en la galería.`);
     } catch (error) {
@@ -416,6 +427,8 @@ async function handleSubmit(event) {
                 colorFondo: document.getElementById("colorFondo").value,
                 colorTexto: document.getElementById("colorTexto").value,
                 colorBoton: document.getElementById("colorBoton").value,
+                colorSombra: document.getElementById("colorSombra").value,
+                colorBordeDecorativo: document.getElementById("colorBordeDecorativo").value,
                 efectoFlyer: document.getElementById("efectoFlyer").checked
             },
             multimedia: {
