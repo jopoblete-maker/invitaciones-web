@@ -342,15 +342,12 @@ function applyTheme(themeName, fontFamily) {
 
 function renderInvitation(event) {
     document.title = event.nombre ? `Invitación de ${event.nombre}` : "Invitación Digital";
+    const pageImages = getBrochureImages(event);
 
     const html = [
         renderHero(event),
-        renderDetails(event),
-        renderSeparator(event.multimedia.personajeSeparador),
-        renderCountdown(),
-        renderGallery(event.multimedia.galeria),
-        renderRsvp(event),
-        renderWatermarkAnchor(event, "watermark-end")
+        renderLocationPage(event),
+        renderConfirmationPage(event)
     ].join("");
 
     getApp().innerHTML = html;
@@ -362,28 +359,113 @@ function renderInvitation(event) {
         "--invitation-background",
         invitationBackground
     );
+    document.querySelectorAll(".brochure-page").forEach((page, index) => {
+        if (pageImages[index]) page.style.setProperty("--page-image", `url("${pageImages[index]}")`);
+    });
     setupMusic(event.multimedia.audios, event.multimedia.audioPlayMode);
     setupCalendarDownload(event);
-    setupCarousel();
+    setupBrochureNavigation();
     startCountdown(event.fechaEvento);
 }
 
-function renderHero(event) {
-    const rsvpContact = event.contactosRSVP
-        .map((contact) => ({ ...contact, telefono: normalizeWhatsAppPhone(contact.telefono) }))
-        .find((contact) => contact.telefono);
-    const rsvpMessage = rsvpContact
-        ? encodeURIComponent(`Hola ${rsvpContact.nombre || ""}, confirmo mi asistencia al evento de ${event.nombre}.`)
-        : "";
+function getBrochureImages(event) {
+    const gallery = event.multimedia.galeria.filter(Boolean);
+    const fallback = event.multimedia.personajeHeader || gallery[0] || "";
+    return [
+        event.multimedia.personajeHeader || fallback,
+        gallery[0] || fallback,
+        gallery[1] || gallery[0] || fallback
+    ];
+}
 
+function renderHero(event) {
     return `
-        <section class="invitation-section hero-section">
+        <section class="brochure-page brochure-page--cover hero-section">
             ${renderWatermark(event, "watermark-start")}
-            ${renderHeroActions(event, rsvpContact, rsvpMessage)}
-            <p class="eyebrow">${escapeHtml(event.subtitulo)}</p>
-            <h1 class="title">${escapeHtml(event.nombre)}</h1>
+            <div class="brochure-content">
+                <p class="eyebrow">${escapeHtml(event.subtitulo || "Casamiento de civil")}</p>
+                <p class="cover-kicker">Una nueva historia comienza</p>
+                <h1 class="title">${escapeHtml(event.nombre || "Nos casamos por civil")}</h1>
+                <p class="cover-hint">Deslizá para descubrir todos los detalles</p>
+            </div>
+            <button class="hero-action hero-music-action" type="button" data-audio-trigger>
+                ${ICONS.music}<span>Música</span>
+            </button>
+            ${renderBrochureNavigation()}
         </section>
     `;
+}
+
+function renderLocationPage(event) {
+    return `
+        <section class="brochure-page brochure-page--location">
+            <div class="brochure-content page-card">
+                <p class="eyebrow">El encuentro</p>
+                <h2 class="section-title">Ubicación y agenda</h2>
+                <div class="details-section">
+                    ${renderDetail("calendar", "Fecha", event.fechaTexto)}
+                    ${renderDetail("clock", "Horario", event.horarioTexto)}
+                    ${renderDetail("pin", "Lugar", event.lugarNombre)}
+                    ${renderDetail("home", "Dirección", event.lugarDireccion)}
+                </div>
+                ${event.googleMapsUrl ? `
+                    <div class="actions">
+                        <a class="button" href="${escapeAttr(event.googleMapsUrl)}" target="_blank" rel="noopener noreferrer">
+                            ${ICONS.map} Cómo llegar
+                        </a>
+                    </div>
+                ` : ""}
+                ${renderCalendarActions(event)}
+            </div>
+            ${renderBrochureNavigation()}
+        </section>
+    `;
+}
+
+function renderConfirmationPage(event) {
+    return `
+        <section class="brochure-page brochure-page--confirmation">
+            <div class="brochure-content page-card">
+                ${renderCountdownContent()}
+                ${renderRsvpContent(event)}
+            </div>
+            ${renderBrochureNavigation()}
+        </section>
+    `;
+}
+
+function renderBrochureNavigation() {
+    return `
+        <nav class="brochure-dots" aria-label="Páginas de la invitación">
+            <button type="button" class="brochure-dot is-active" data-page-target="0" aria-label="Portada"></button>
+            <button type="button" class="brochure-dot" data-page-target="1" aria-label="Ubicación y agenda"></button>
+            <button type="button" class="brochure-dot" data-page-target="2" aria-label="Confirmación"></button>
+        </nav>
+    `;
+}
+
+function setupBrochureNavigation() {
+    const brochure = getApp();
+    const pages = Array.from(brochure.querySelectorAll(".brochure-page"));
+    const dots = Array.from(brochure.querySelectorAll(".brochure-dot"));
+    if (!pages.length) return;
+
+    const setActivePage = (index) => {
+        dots.forEach((dot) => dot.classList.toggle("is-active", Number(dot.dataset.pageTarget) === index));
+    };
+
+    dots.forEach((dot) => dot.addEventListener("click", () => {
+        pages[Number(dot.dataset.pageTarget)]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }));
+
+    const observer = new IntersectionObserver((entries) => {
+        const visible = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort((first, second) => second.intersectionRatio - first.intersectionRatio)[0];
+        if (visible) setActivePage(pages.indexOf(visible.target));
+    }, { root: brochure, threshold: [0.55, 0.8] });
+
+    pages.forEach((page) => observer.observe(page));
 }
 
 function renderHeroActions(event, rsvpContact, rsvpMessage) {
@@ -575,15 +657,21 @@ function renderSeparator(src) {
 function renderCountdown() {
     return `
         <section class="invitation-section">
-            <p class="eyebrow">Cuenta regresiva</p>
-            <h2 class="section-title">Faltan</h2>
-            <div class="countdown" id="countdown">
-                <div class="time-card"><span id="dias">00</span><label>Días</label></div>
-                <div class="time-card"><span id="horas">00</span><label>Hs</label></div>
-                <div class="time-card"><span id="minutos">00</span><label>Min</label></div>
-                <div class="time-card"><span id="segundos">00</span><label>Seg</label></div>
-            </div>
+            ${renderCountdownContent()}
         </section>
+    `;
+}
+
+function renderCountdownContent() {
+    return `
+        <p class="eyebrow">Cuenta regresiva</p>
+        <h2 class="section-title">Faltan</h2>
+        <div class="countdown" id="countdown">
+            <div class="time-card"><span id="dias">00</span><label>Días</label></div>
+            <div class="time-card"><span id="horas">00</span><label>Hs</label></div>
+            <div class="time-card"><span id="minutos">00</span><label>Min</label></div>
+            <div class="time-card"><span id="segundos">00</span><label>Seg</label></div>
+        </div>
     `;
 }
 
@@ -737,6 +825,14 @@ function setupCarousel() {
 }
 
 function renderRsvp(event) {
+    return `
+        <section class="invitation-section">
+            ${renderRsvpContent(event)}
+        </section>
+    `;
+}
+
+function renderRsvpContent(event) {
     const contacts = event.contactosRSVP
         .map((contact) => ({ ...contact, telefono: normalizeWhatsAppPhone(contact.telefono) }))
         .filter((contact) => contact.telefono);
@@ -756,12 +852,12 @@ function renderRsvp(event) {
         .join("");
 
     return `
-        <section class="invitation-section">
+        <div class="rsvp-block">
             <p class="eyebrow">Asistencia</p>
             <h2 class="section-title">Confirmar</h2>
             ${event.confirmacionLimite ? `<p class="detail-value">Hasta el ${escapeHtml(event.confirmacionLimite)}</p>` : ""}
             <div class="actions">${buttons}</div>
-        </section>
+        </div>
     `;
 }
 

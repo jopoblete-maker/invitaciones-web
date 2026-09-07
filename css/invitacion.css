@@ -151,17 +151,14 @@ body::before {
 
 .invitation-shell {
     position: relative;
-    width: min(100%, 760px);
-    min-height: calc(100vh - clamp(36px, 8vw, 96px));
+    width: min(100%, 920px);
+    height: calc(100vh - clamp(36px, 8vw, 96px));
+    height: calc(100dvh - clamp(36px, 8vw, 96px));
     margin: 0 auto;
     overflow: hidden;
     border: 1px solid var(--line-color);
     border-radius: 30px;
-    background-image: linear-gradient(rgba(22, 14, 11, 0.28), rgba(22, 14, 11, 0.58)),
-        var(--invitation-background, var(--bg-image));
-    background-attachment: fixed;
-    background-position: center 18%;
-    background-size: cover;
+    background: transparent;
     font-family: var(--font-primary, var(--font-body));
     box-shadow: 0 32px 100px var(--shadow-color);
     backdrop-filter: blur(20px) saturate(1.08);
@@ -207,6 +204,147 @@ body::before {
 .invitation-section {
     position: relative;
     padding: clamp(28px, 6vw, 46px) clamp(22px, 6vw, 48px);
+}
+
+.invitation-dashboard {
+    display: block;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scroll-snap-type: y mandatory;
+    scrollbar-width: none;
+}
+
+.invitation-dashboard::-webkit-scrollbar {
+    display: none;
+}
+
+.brochure-page {
+    position: relative;
+    display: grid;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    padding: clamp(34px, 7vw, 80px) clamp(22px, 7vw, 86px);
+    isolation: isolate;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    overflow: hidden;
+    background-image: linear-gradient(180deg, rgba(19, 13, 10, 0.22), rgba(19, 13, 10, 0.7)),
+        var(--page-image, var(--invitation-background, var(--bg-image)));
+    background-position: center;
+    background-size: cover;
+}
+
+.brochure-page::after {
+    content: "";
+    position: absolute;
+    inset: 14px;
+    z-index: 0;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    box-shadow: inset 0 0 0 1px rgba(200, 155, 60, 0.25);
+    pointer-events: none;
+}
+
+.brochure-page--cover {
+    align-items: center;
+    justify-items: center;
+    text-align: center;
+}
+
+.brochure-page--location,
+.brochure-page--confirmation {
+    align-items: center;
+    justify-items: center;
+}
+
+.brochure-content {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 620px);
+}
+
+.page-card {
+    padding: clamp(24px, 5vw, 48px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.14);
+    box-shadow: 0 24px 60px rgba(20, 12, 8, 0.2);
+    backdrop-filter: blur(12px) saturate(1.08);
+    -webkit-backdrop-filter: blur(12px) saturate(1.08);
+}
+
+.brochure-page--location .eyebrow,
+.brochure-page--location .section-title,
+.brochure-page--confirmation .eyebrow,
+.brochure-page--confirmation .section-title,
+.brochure-page--confirmation .detail-value {
+    color: #fff;
+    text-shadow: 0 2px 14px rgba(20, 12, 8, 0.55);
+}
+
+.brochure-page .details-section {
+    margin-top: 24px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+}
+
+.brochure-page .detail-label,
+.brochure-page .detail-value,
+.brochure-page .time-card label {
+    color: rgba(255, 255, 255, 0.86);
+}
+
+.brochure-page .detail-icon {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.brochure-page .countdown {
+    border-color: rgba(255, 255, 255, 0.45);
+}
+
+.brochure-page .time-card {
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+.brochure-page .time-card span {
+    color: #fff;
+}
+
+.rsvp-block {
+    margin-top: clamp(28px, 6vh, 52px);
+    padding-top: clamp(22px, 4vh, 38px);
+    border-top: 1px solid rgba(255, 255, 255, 0.34);
+}
+
+.brochure-dots {
+    position: absolute;
+    right: 0;
+    bottom: 20px;
+    left: 0;
+    z-index: 4;
+    display: flex;
+    justify-content: center;
+    gap: 9px;
+}
+
+.brochure-dot {
+    width: 9px;
+    height: 9px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.22);
+    cursor: pointer;
+    transition: width 0.25s ease, border-radius 0.25s ease, background 0.25s ease;
+}
+
+.brochure-dot.is-active {
+    width: 28px;
+    border-radius: 999px;
+    background: var(--primary-color);
 }
 
 .invitation-section> :not(.watermark) {
@@ -256,14 +394,23 @@ body::before {
     transform: rotate(18deg);
 }
 
+.brochure-page::after {
+    inset: 14px;
+    width: auto;
+    height: auto;
+    left: auto;
+    bottom: auto;
+    transform: none;
+}
+
 .hero-section {
-    min-height: min(100vh, 900px);
+    min-height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding-top: clamp(54px, 9vw, 82px);
-    padding-bottom: clamp(150px, 18vh, 190px);
+    padding-bottom: clamp(110px, 16vh, 160px);
     color: #fff;
 }
 
@@ -281,6 +428,33 @@ body::before {
 
 .hero-section .eyebrow {
     margin-top: 30px;
+}
+
+.cover-kicker {
+    margin: 0 0 14px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: clamp(0.85rem, 2.6vw, 1.1rem);
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.cover-hint {
+    margin: 24px 0 0;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.hero-music-action {
+    position: absolute;
+    right: clamp(24px, 6vw, 64px);
+    bottom: clamp(54px, 11vh, 90px);
+    z-index: 3;
+    width: 76px;
+    min-height: 68px;
 }
 
 .hero-media-frame {
@@ -1010,13 +1184,11 @@ body[data-theme="corporativo"] {
 
     .invitation-shell {
         border-radius: 24px;
-        min-height: calc(100svh - 36px);
-        background-attachment: scroll;
-        background-position: center 20%;
+        height: calc(100svh - 36px);
     }
 
     .hero-section {
-        min-height: calc(100svh - 36px);
+        min-height: 100%;
         padding-bottom: 170px;
     }
 
