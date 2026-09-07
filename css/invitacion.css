@@ -33,9 +33,10 @@ body {
     padding: clamp(18px, 4vw, 48px) 14px;
     color: var(--text-color);
     font-family: var(--font-body);
-    background-image: var(--bg-image);
+    background-image: linear-gradient(rgba(18, 12, 10, 0.3), rgba(18, 12, 10, 0.64)),
+        var(--invitation-background, var(--bg-image));
     background-attachment: fixed;
-    background-position: center;
+    background-position: center 18%;
     background-size: cover;
     text-align: center;
 }
@@ -150,12 +151,17 @@ body::before {
 
 .invitation-shell {
     position: relative;
-    width: min(100%, 580px);
+    width: min(100%, 760px);
+    min-height: calc(100vh - clamp(36px, 8vw, 96px));
     margin: 0 auto;
     overflow: hidden;
     border: 1px solid var(--line-color);
     border-radius: 30px;
-    background: var(--surface-color);
+    background-image: linear-gradient(rgba(22, 14, 11, 0.28), rgba(22, 14, 11, 0.58)),
+        var(--invitation-background, var(--bg-image));
+    background-attachment: fixed;
+    background-position: center 18%;
+    background-size: cover;
     font-family: var(--font-primary, var(--font-body));
     box-shadow: 0 32px 100px var(--shadow-color);
     backdrop-filter: blur(20px) saturate(1.08);
@@ -251,13 +257,30 @@ body::before {
 }
 
 .hero-section {
-    min-height: 480px;
+    min-height: min(100vh, 900px);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding-top: clamp(54px, 9vw, 82px);
-    padding-bottom: clamp(38px, 7vw, 64px);
+    padding-bottom: clamp(150px, 18vh, 190px);
+    color: #fff;
+}
+
+.invitation-dashboard>.invitation-section:not(.hero-section) {
+    background: color-mix(in srgb, var(--surface-color) 82%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.hero-section .eyebrow,
+.hero-section .title {
+    color: #fff;
+    text-shadow: 0 3px 18px rgba(20, 12, 8, 0.72);
+}
+
+.hero-section .eyebrow {
+    margin-top: 30px;
 }
 
 .hero-media-frame {
@@ -298,9 +321,9 @@ body::before {
 
 .hero-actions {
     position: absolute;
-    right: 14px;
-    bottom: 14px;
-    left: 14px;
+    right: clamp(18px, 8vw, 72px);
+    bottom: clamp(28px, 7vh, 68px);
+    left: clamp(18px, 8vw, 72px);
     z-index: 2;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -308,7 +331,7 @@ body::before {
     padding: 9px;
     border: 1px solid rgba(255, 255, 255, 0.64);
     border-radius: 18px;
-    background: rgba(49, 31, 22, 0.32);
+    background: rgba(255, 255, 255, 0.15);
     box-shadow: 0 14px 28px rgba(34, 21, 13, 0.2);
     backdrop-filter: blur(10px) saturate(1.15);
     -webkit-backdrop-filter: blur(10px) saturate(1.15);
@@ -982,14 +1005,19 @@ body[data-theme="corporativo"] {
     body {
         padding-inline: 10px;
         background-attachment: scroll;
+        background-position: center 20%;
     }
 
     .invitation-shell {
         border-radius: 24px;
+        min-height: calc(100svh - 36px);
+        background-attachment: scroll;
+        background-position: center 20%;
     }
 
     .hero-section {
-        min-height: 370px;
+        min-height: calc(100svh - 36px);
+        padding-bottom: 170px;
     }
 
     .hero-media-frame {
@@ -999,12 +1027,11 @@ body[data-theme="corporativo"] {
     }
 
     .hero-actions {
-        position: relative;
-        right: auto;
-        bottom: auto;
-        left: auto;
+        position: absolute;
+        right: 14px;
+        bottom: 24px;
+        left: 14px;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        margin: 10px 0 0;
         background: color-mix(in srgb, var(--accent-color) 72%, transparent);
     }
 

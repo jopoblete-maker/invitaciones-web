@@ -354,6 +354,14 @@ function renderInvitation(event) {
     ].join("");
 
     getApp().innerHTML = html;
+    const invitationBackground = event.multimedia.personajeHeader
+        ? `url("${event.multimedia.personajeHeader}")`
+        : "none";
+    document.documentElement.style.setProperty("--invitation-background", invitationBackground);
+    getApp().style.setProperty(
+        "--invitation-background",
+        invitationBackground
+    );
     setupMusic(event.multimedia.audios, event.multimedia.audioPlayMode);
     setupCalendarDownload(event);
     setupCarousel();
@@ -361,7 +369,6 @@ function renderInvitation(event) {
 }
 
 function renderHero(event) {
-    const flyerClass = event.estilos.efectoFlyer === false ? "" : "hero-media-frame--glow";
     const rsvpContact = event.contactosRSVP
         .map((contact) => ({ ...contact, telefono: normalizeWhatsAppPhone(contact.telefono) }))
         .find((contact) => contact.telefono);
@@ -372,12 +379,7 @@ function renderHero(event) {
     return `
         <section class="invitation-section hero-section">
             ${renderWatermark(event, "watermark-start")}
-            ${event.multimedia.personajeHeader ? `
-                <div class="hero-media-frame ${flyerClass}">
-                    <img class="hero-media" src="${escapeAttr(event.multimedia.personajeHeader)}" alt="">
-                    ${renderHeroActions(event, rsvpContact, rsvpMessage)}
-                </div>
-            ` : ""}
+            ${renderHeroActions(event, rsvpContact, rsvpMessage)}
             <p class="eyebrow">${escapeHtml(event.subtitulo)}</p>
             <h1 class="title">${escapeHtml(event.nombre)}</h1>
         </section>
