@@ -155,7 +155,7 @@ function bindImageInput(inputId, target, previewId) {
 
             for (const file of files) {
                 validateFile(file, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE);
-                editedImages[target].push(await fileToBase64(file));
+                editedImages[target].push(await fileToBase64(file, { compressImage: true }));
             }
 
             renderPreviews(target, previewId);
@@ -180,7 +180,8 @@ function bindGalleryInput() {
         try {
             for (const file of Array.from(input.files || [])) {
                 validateFile(file, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE);
-                currentGalleryList.push(await fileToBase64(file));
+                const compressed = await fileToBase64(file, { compressImage: true });
+                if (compressed && !currentGalleryList.includes(compressed)) currentGalleryList.push(compressed);
             }
 
             renderGalleryPreviews();
@@ -411,6 +412,16 @@ async function handleSubmit(event) {
         const urlHeader = selectedImageUrl("Header");
         const urlSeparador = selectedImageUrl("Separador");
         const id = valueOf("idEvento");
+        const gallery = uniqueNonEmpty(currentGalleryList);
+        const multimedia = {
+            personajeHeader: selectedImageFile("Header") || urlHeader,
+            personajeSeparador: selectedImageFile("Separador") || urlSeparador,
+            musica: "",
+            audios: uniqueAudioTracks(audioTracks),
+            audioPlayMode: document.getElementById("audioPlayMode").value,
+            marcaAgua: marcaAguaBase64,
+            galeria: gallery
+        };
         const payload = {
             password: valueOf("adminPassword"),
             id,
@@ -431,15 +442,7 @@ async function handleSubmit(event) {
                 colorBordeDecorativo: document.getElementById("colorBordeDecorativo").value,
                 efectoFlyer: document.getElementById("efectoFlyer").checked
             },
-            multimedia: {
-                personajeHeader: selectedImageFile("Header") || urlHeader,
-                personajeSeparador: selectedImageFile("Separador") || urlSeparador,
-                musica: audioTracks[0]?.src || "",
-                audios: audioTracks,
-                audioPlayMode: document.getElementById("audioPlayMode").value,
-                marcaAgua: marcaAguaBase64,
-                galeria: currentGalleryList
-            },
+            multimedia,
             confirmacion: {
                 tel1: normalizeWhatsAppPhone(valueOf("tel1")),
                 nombre1: valueOf("nombre1"),
@@ -493,7 +496,20 @@ async function collectAudioTracks() {
     urls.forEach(validateExternalUrl);
     urls.forEach((src, index) => tracks.push({ src, name: `Pista web ${index + 1}` }));
 
-    return tracks;
+    return uniqueAudioTracks(tracks);
+}
+
+function uniqueNonEmpty(values) {
+    return [...new Set(values.filter((value) => typeof value === "string" && value.trim()))];
+}
+
+function uniqueAudioTracks(tracks) {
+    const seen = new Set();
+    return tracks.filter((track) => {
+        if (!track?.src || seen.has(track.src)) return false;
+        seen.add(track.src);
+        return true;
+    });
 }
 
 function valueOf(id) {
@@ -568,9 +584,23 @@ function normalizeWhatsAppPhone(value) {
     return phone;
 }
 
-function fileToBase64(file) {
+async function fileToBase64(file, options = {}) {
+    if (!file) return null;
+    if (options.compressImage && file.type.startsWith("image/") && file.type !== "image/svg+xml") {
+        const source = await readFileAsDataUrl(file);
+        const image = await loadImage(source);
+        const scale = Math.min(1, 1200 / Math.max(image.naturalWidth, image.naturalHeight));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+        return canvas.toDataURL("image/jpeg", 0.82);
+    }
+    return readFileAsDataUrl(file);
+}
+
+function readFileAsDataUrl(file) {
     return new Promise((resolve, reject) => {
-        if (!file) return resolve(null);
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
         reader.onerror = reject;

@@ -13,6 +13,8 @@ const SUPABASE_URL = 'https://jqewkmebhdyrjeawdmon.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxZXdrbWViaGR5cmplYXdkbW9uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0NDc2OTMsImV4cCI6MjEwMzAyMzY5M30.bwBlacPpsOQSMKc3JBv9loS2pL_chyZr0wnKmK6EWqw'; // <--- Reemplaza con tu clave anon de Supabase
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_TIMEOUT_MS = 15000;
+const MAX_EVENT_PAYLOAD_BYTES = 12 * 1024 * 1024;
 const TEMAS_VALIDOS = [
     'frozen', 'pesca', 'elegante', 'fiesta', 'minimalista', 'vintage',
     'dorado-premium', 'tropical', 'botanico', 'infantil-pastel', 'mistico',
@@ -67,14 +69,21 @@ async function guardarEvento(req, res) {
             return res.status(400).json({ error: 'Debes ingresar un ID para el evento.' });
         }
 
+        const payloadBytes = Buffer.byteLength(JSON.stringify(evento), 'utf8');
+        if (payloadBytes > MAX_EVENT_PAYLOAD_BYTES) {
+            return res.status(413).json({
+                error: 'Los archivos multimedia superan el peso recomendado. Comprime las imágenes o utiliza URLs externas para archivos pesados.'
+            });
+        }
+
         evento.tema = TEMAS_VALIDOS.includes(evento.tema) ? evento.tema : 'fiesta';
 
         // 2. Verificar si el ID ya existe en Supabase
-        const { data: existente } = await supabase
+        const { data: existente } = await withSupabaseTimeout(supabase
             .from('eventos')
             .select('id')
             .eq('id', evento.id)
-            .maybeSingle();
+            .maybeSingle());
 
         // Si el ID ya existe y no se autorizó sobrescribir
         if (existente && !req.body.overwrite) {
@@ -84,9 +93,9 @@ async function guardarEvento(req, res) {
         }
 
         // 3. Guardar evento en Supabase
-        const { error } = await supabase
+        const { error } = await withSupabaseTimeout(supabase
             .from('eventos')
-            .upsert({ id: evento.id, datos: evento });
+            .upsert({ id: evento.id, datos: evento }));
 
         if (error) throw error;
 
@@ -94,15 +103,32 @@ async function guardarEvento(req, res) {
 
     } catch (err) {
         console.error('Error al guardar:', err);
+        const isTimeout = err.code === 'SUPABASE_TIMEOUT' || /statement timeout|timeout/i.test(err.message || '');
         const status = err.status === 413 || err.code === 'PAYLOAD_TOO_LARGE'
             ? 413
-            : err.status >= 400 && err.status < 500
-                ? err.status
-                : 500;
+            : isTimeout
+                ? 504
+                : err.status >= 400 && err.status < 500
+                    ? err.status
+                    : 500;
         res.status(status).json({
-            error: err.message || 'Ocurrió un error interno al guardar los datos.'
+            error: isTimeout
+                ? 'Supabase tardó demasiado en guardar la invitación. Reduce el peso de las imágenes o utiliza URLs externas para archivos multimedia pesados.'
+                : err.message || 'Ocurrió un error interno al guardar los datos.'
         });
     }
+}
+
+function withSupabaseTimeout(query, timeoutMs = SUPABASE_TIMEOUT_MS) {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => {
+            const error = new Error('La consulta a Supabase superó el tiempo de espera.');
+            error.code = 'SUPABASE_TIMEOUT';
+            reject(error);
+        }, timeoutMs);
+    });
+    return Promise.race([query, timeout]).finally(() => clearTimeout(timer));
 }
 
 app.post('/api/eventos', guardarEvento);
