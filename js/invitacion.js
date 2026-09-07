@@ -217,7 +217,8 @@ const THEMES = {
 const ICONS = {
     calendar: '<svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 2h2v3H7V2Zm8 0h2v3h-2V2ZM4 5h16a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm0 6v9h16v-9H4Zm0-2h16V7H4v2Z"/></svg>',
     map: '<svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m15 19-6-2.1-5 1.95V5l5-2 6 2.1L20 3.15V17l-5 2Zm-1-2.35V6.85l-4-1.4v9.8l4 1.4Zm2-.05 2-.78V6.08l-2 .78v9.74ZM6 15.92l2-.78V5.4l-2 .78v9.74Z"/></svg>',
-    whatsapp: '<svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.04 2C6.56 2 2.1 6.35 2.1 11.7c0 1.9.57 3.72 1.63 5.31L2 22l5.18-1.62a10.16 10.16 0 0 0 4.86 1.24c5.48 0 9.94-4.35 9.94-9.7S17.52 2 12.04 2Zm0 17.86c-1.54 0-3.03-.42-4.33-1.22l-.31-.19-3.06.96 1-2.9-.21-.32a7.86 7.86 0 0 1-1.28-4.29c0-4.38 3.67-7.94 8.19-7.94 4.51 0 8.18 3.56 8.18 7.94 0 4.39-3.67 7.96-8.18 7.96Zm4.48-5.95c-.24-.12-1.43-.69-1.65-.77-.22-.08-.38-.12-.54.12-.16.24-.62.77-.76.93-.14.16-.28.18-.52.06-.24-.12-1.02-.37-1.94-1.17-.72-.64-1.2-1.42-1.34-1.66-.14-.24-.01-.37.11-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.27-.74-1.74-.2-.45-.39-.39-.54-.4h-.46c-.16 0-.42.06-.64.3-.22.24-.84.81-.84 1.97s.86 2.29.98 2.45c.12.16 1.7 2.53 4.1 3.55.57.25 1.02.39 1.37.5.58.18 1.1.16 1.51.1.46-.07 1.43-.57 1.63-1.12.2-.55.2-1.03.14-1.12-.06-.1-.22-.16-.46-.28Z"/></svg>'
+    whatsapp: '<svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.04 2C6.56 2 2.1 6.35 2.1 11.7c0 1.9.57 3.72 1.63 5.31L2 22l5.18-1.62a10.16 10.16 0 0 0 4.86 1.24c5.48 0 9.94-4.35 9.94-9.7S17.52 2 12.04 2Zm0 17.86c-1.54 0-3.03-.42-4.33-1.22l-.31-.19-3.06.96 1-2.9-.21-.32a7.86 7.86 0 0 1-1.28-4.29c0-4.38 3.67-7.94 8.19-7.94 4.51 0 8.18 3.56 8.18 7.94 0 4.39-3.67 7.96-8.18 7.96Zm4.48-5.95c-.24-.12-1.43-.69-1.65-.77-.22-.08-.38-.12-.54.12-.16.24-.62.77-.76.93-.14.16-.28.18-.52.06-.24-.12-1.02-.37-1.94-1.17-.72-.64-1.2-1.42-1.34-1.66-.14-.24-.01-.37.11-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.27-.74-1.74-.2-.45-.39-.39-.54-.4h-.46c-.16 0-.42.06-.64.3-.22.24-.84.81-.84 1.97s.86 2.29.98 2.45c.12.16 1.7 2.53 4.1 3.55.57.25 1.02.39 1.37.5.58.18 1.1.16 1.51.1.46-.07 1.43-.57 1.63-1.12.2-.55.2-1.03.14-1.12-.06-.1-.22-.16-.46-.28Z"/></svg>',
+    music: '<svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 18V5l12-2v13h-2V7.35l-8 1.33V18a3 3 0 1 1-2 0Z"/></svg>',
 };
 
 const DETAIL_ICONS = {
@@ -361,6 +362,12 @@ function renderInvitation(event) {
 
 function renderHero(event) {
     const flyerClass = event.estilos.efectoFlyer === false ? "" : "hero-media-frame--glow";
+    const rsvpContact = event.contactosRSVP
+        .map((contact) => ({ ...contact, telefono: normalizeWhatsAppPhone(contact.telefono) }))
+        .find((contact) => contact.telefono);
+    const rsvpMessage = rsvpContact
+        ? encodeURIComponent(`Hola ${rsvpContact.nombre || ""}, confirmo mi asistencia al evento de ${event.nombre}.`)
+        : "";
 
     return `
         <section class="invitation-section hero-section">
@@ -368,19 +375,37 @@ function renderHero(event) {
             ${event.multimedia.personajeHeader ? `
                 <div class="hero-media-frame ${flyerClass}">
                     <img class="hero-media" src="${escapeAttr(event.multimedia.personajeHeader)}" alt="">
+                    ${renderHeroActions(event, rsvpContact, rsvpMessage)}
                 </div>
             ` : ""}
             <p class="eyebrow">${escapeHtml(event.subtitulo)}</p>
             <h1 class="title">${escapeHtml(event.nombre)}</h1>
-            ${event.googleCalendarUrl ? `
-                <div class="actions">
-                    <a class="button" href="${escapeAttr(event.googleCalendarUrl)}" target="_blank" rel="noopener noreferrer">
-                        ${ICONS.calendar}
-                        Agendar evento
-                    </a>
-                </div>
-            ` : ""}
         </section>
+    `;
+}
+
+function renderHeroActions(event, rsvpContact, rsvpMessage) {
+    return `
+        <nav class="hero-actions" aria-label="Acciones de la invitación">
+            ${event.googleMapsUrl ? `
+                <a class="hero-action" href="${escapeAttr(event.googleMapsUrl)}" target="_blank" rel="noopener noreferrer">
+                    ${ICONS.map}<span>Ubicación</span>
+                </a>
+            ` : ""}
+            ${event.googleCalendarUrl ? `
+                <a class="hero-action" href="${escapeAttr(event.googleCalendarUrl)}" target="_blank" rel="noopener noreferrer">
+                    ${ICONS.calendar}<span>Agendar</span>
+                </a>
+            ` : ""}
+            <button class="hero-action" type="button" data-audio-trigger>
+                ${ICONS.music}<span>Música</span>
+            </button>
+            ${rsvpContact ? `
+                <a class="hero-action" href="https://api.whatsapp.com/send?phone=${rsvpContact.telefono}&text=${rsvpMessage}" target="_blank" rel="noopener noreferrer">
+                    ${ICONS.whatsapp}<span>Confirmar</span>
+                </a>
+            ` : ""}
+        </nav>
     `;
 }
 
@@ -766,6 +791,7 @@ function setupMusic(tracks, playMode) {
 
     if (!tracks.length) {
         widget.classList.add("is-hidden");
+        document.querySelectorAll("[data-audio-trigger]").forEach((trigger) => trigger.remove());
         audio.removeAttribute("src");
         return;
     }
@@ -786,6 +812,9 @@ function setupMusic(tracks, playMode) {
     loadTrack(0);
     selector.onchange = () => loadTrack(Number(selector.value), !audio.paused);
     button.onclick = () => toggleMusic(audio, button);
+    document.querySelectorAll("[data-audio-trigger]").forEach((trigger) => {
+        trigger.onclick = () => button.click();
+    });
     audio.onended = () => {
         if (playMode !== "playlist" || tracks.length < 2) {
             button.classList.add("is-paused");
