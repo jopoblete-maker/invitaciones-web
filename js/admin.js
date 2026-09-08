@@ -1,9 +1,7 @@
-const currentGalleryList = [];
-
 const editedImages = {
-    header: [],
-    separador: [],
-    galeria: currentGalleryList
+    capa1: [],
+    capa2: [],
+    capa3: []
 };
 
 const ADMIN_PASSWORD_HASH = "702e0afc3ebf1b22464cb509747357e3f0fa371ed7bf0df3b25c3d9114abb662";
@@ -39,14 +37,13 @@ const editorState = {
 
 document.addEventListener("DOMContentLoaded", () => {
     bindAuthentication();
-    bindImageInput("fileHeader", "header", "previewHeader");
-    bindImageInput("fileSeparador", "separador", "previewSeparador");
-    bindGalleryInput();
-    document.getElementById("btnAddGalleryUrls").addEventListener("click", addGalleryUrls);
+    bindImageInput("fileCapa1", "capa1", "previewCapa1");
+    bindImageInput("fileCapa2", "capa2", "previewCapa2");
+    bindImageInput("fileCapa3", "capa3", "previewCapa3");
     document.getElementById("btnLoadEvent").addEventListener("click", loadExistingEvent);
-    bindMediaSourceMode("Header");
-    bindMediaSourceMode("Separador");
-    bindMediaSourceMode("Galeria");
+    bindMediaSourceMode("Capa1");
+    bindMediaSourceMode("Capa2");
+    bindMediaSourceMode("Capa3");
     bindEditorControls();
     bindFontPreview();
     document.getElementById("adminForm").addEventListener("submit", handleSubmit);
@@ -172,72 +169,6 @@ function bindImageInput(inputId, target, previewId) {
     });
 }
 
-function bindGalleryInput() {
-    const input = document.getElementById("fileGaleria");
-    if (!input) return;
-
-    input.addEventListener("change", async () => {
-        try {
-            for (const file of Array.from(input.files || [])) {
-                validateFile(file, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE);
-                const compressed = await fileToBase64(file, { compressImage: true });
-                if (compressed && !currentGalleryList.includes(compressed)) currentGalleryList.push(compressed);
-            }
-
-            renderGalleryPreviews();
-            if (currentGalleryList.length) {
-                openEditor("galeria", currentGalleryList.length - 1);
-            }
-            input.value = "";
-        } catch (error) {
-            input.value = "";
-            window.alert(error.message);
-        }
-    });
-}
-
-function addGalleryUrls() {
-    try {
-        const input = document.getElementById("urlGaleria");
-        const urls = input.value.split(/[\n,]+/).map((url) => url.trim()).filter(Boolean);
-        urls.forEach(validateExternalUrl);
-
-        urls.forEach((url) => {
-            if (!currentGalleryList.includes(url)) currentGalleryList.push(url);
-        });
-        input.value = "";
-        renderGalleryPreviews();
-    } catch (error) {
-        window.alert(error.message);
-    }
-}
-
-function renderGalleryPreviews() {
-    const preview = document.getElementById("galleryPreviewContainer");
-    if (!preview) return;
-
-    preview.innerHTML = currentGalleryList.map((src, index) => `
-        <div class="media-preview">
-            <img src="${escapeHtml(src)}" alt="Vista previa ${index + 1}">
-            <span>Foto ${index + 1}</span>
-            <div class="media-preview-actions">
-                ${src.startsWith("data:") ? `<button type="button" data-action="edit" data-index="${index}">Editar</button>` : ""}
-                <button type="button" class="media-delete" data-action="delete" data-index="${index}">Eliminar</button>
-            </div>
-        </div>
-    `).join("");
-
-    preview.querySelectorAll("button[data-action='edit']").forEach((button) => {
-        button.addEventListener("click", () => openEditor("galeria", Number(button.dataset.index)));
-    });
-    preview.querySelectorAll("button[data-action='delete']").forEach((button) => {
-        button.addEventListener("click", () => {
-            currentGalleryList.splice(Number(button.dataset.index), 1);
-            renderGalleryPreviews();
-        });
-    });
-}
-
 async function loadExistingEvent() {
     const id = valueOf("idEvento");
     if (!id) {
@@ -250,14 +181,22 @@ async function loadExistingEvent() {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "No se pudo cargar el evento.");
 
-        const gallery = data.multimedia?.galeria;
-        if (!Array.isArray(gallery)) throw new Error("El evento no contiene una galería válida.");
-        if (gallery.some((src) => typeof src !== "string" || !src.trim())) {
-            throw new Error("El evento contiene imágenes inválidas en la galería.");
-        }
-
-        currentGalleryList.splice(0, currentGalleryList.length, ...gallery);
-        document.getElementById("urlFondoVentana3").value = data.multimedia?.fondoVentana3 || "";
+        const multimedia = data.multimedia || {};
+        const legacyImages = [multimedia.personajeHeader, multimedia.personajeSeparador, multimedia.fondoVentana3]
+            .map((source, index) => source || multimedia.galeria?.[index] || "");
+        const layers = multimedia.capas || {};
+        [layers.portada || legacyImages[0], layers.encuentro || legacyImages[1], layers.confirmacion || legacyImages[2]]
+            .forEach((source, index) => {
+                editedImages[`capa${index + 1}`] = source ? [source] : [];
+                const mode = document.getElementById(`sourceModeCapa${index + 1}`);
+                const url = document.getElementById(`urlCapa${index + 1}`);
+                if (source && !source.startsWith("data:")) {
+                    mode.value = "url";
+                    url.value = source;
+                }
+                renderPreviews(`capa${index + 1}`, `previewCapa${index + 1}`);
+            });
+        document.getElementById("mensaje").value = data.mensaje || data.bendicion || data.dedicatoria || "";
         document.getElementById("fontFamily").value = data.fontFamily || "playfair";
         document.getElementById("colorFondo").value = data.estilos?.colorFondo || "#ffffff";
         document.getElementById("colorTexto").value = data.estilos?.colorTexto || "#333333";
@@ -265,8 +204,7 @@ async function loadExistingEvent() {
         document.getElementById("colorSombra").value = data.estilos?.colorSombra || "#000000";
         document.getElementById("colorBordeDecorativo").value = data.estilos?.colorBordeDecorativo || "#b88746";
         document.getElementById("fontFamily").dispatchEvent(new Event("change"));
-        renderGalleryPreviews();
-        window.alert(`Evento cargado. ${currentGalleryList.length} foto(s) en la galería.`);
+        window.alert("Evento cargado correctamente.");
     } catch (error) {
         window.alert(error.message);
     }
@@ -358,11 +296,7 @@ function applyCurrentEdit() {
     const result = filteredCanvas.toDataURL("image/jpeg", 0.88);
 
     editedImages[editorState.target][editorState.index] = result;
-    if (editorState.target === "galeria") {
-        renderGalleryPreviews();
-    } else {
-        renderPreviews(editorState.target, previewIdForTarget(editorState.target));
-    }
+    renderPreviews(editorState.target, previewIdForTarget(editorState.target));
     closeEditor();
 }
 
@@ -391,8 +325,9 @@ function closeEditor() {
 
 function previewIdForTarget(target) {
     return {
-        header: "previewHeader",
-        separador: "previewSeparador"
+        capa1: "previewCapa1",
+        capa2: "previewCapa2",
+        capa3: "previewCapa3"
     }[target];
 }
 
@@ -410,21 +345,20 @@ async function handleSubmit(event) {
             ? await tintWatermark(marcaAguaFile, document.getElementById("colorMarcaAgua").value)
             : "";
 
-        const urlHeader = selectedImageUrl("Header");
-        const urlSeparador = selectedImageUrl("Separador");
-        const fondoVentana3 = valueOf("urlFondoVentana3");
-        if (fondoVentana3) validateExternalUrl(fondoVentana3);
+        const layerSources = [1, 2, 3].map((index) => getLayerSource(index));
         const id = valueOf("idEvento");
-        const gallery = uniqueNonEmpty(currentGalleryList);
         const multimedia = {
-            personajeHeader: selectedImageFile("Header") || urlHeader,
-            personajeSeparador: selectedImageFile("Separador") || urlSeparador,
-            fondoVentana3,
+            capas: {
+                portada: layerSources[0],
+                encuentro: layerSources[1],
+                confirmacion: layerSources[2]
+            },
+            personajeHeader: layerSources[0],
+            personajeSeparador: layerSources[1],
             musica: "",
             audios: uniqueAudioTracks(audioTracks),
             audioPlayMode: document.getElementById("audioPlayMode").value,
-            marcaAgua: marcaAguaBase64,
-            galeria: gallery
+            marcaAgua: marcaAguaBase64
         };
         const payload = {
             password: valueOf("adminPassword"),
@@ -432,6 +366,7 @@ async function handleSubmit(event) {
             tema: valueOf("tema"),
             nombre: valueOf("nombre"),
             subtitulo: valueOf("subtitulo"),
+            mensaje: valueOf("mensaje"),
             fontFamily: valueOf("fontFamily"),
             fecha: document.getElementById("fecha").value,
             horario: valueOf("horario"),
@@ -550,21 +485,25 @@ function validateMediaPayload(multimedia) {
         }
     });
 
-    if (!Array.isArray(multimedia.galeria)) {
-        throw new Error("La lista de galería no es válida.");
+    if (!multimedia.capas || typeof multimedia.capas !== "object") {
+        throw new Error("Las imágenes de las capas no son válidas.");
     }
 
-    if (multimedia.fondoVentana3) validateExternalUrl(multimedia.fondoVentana3);
-
-    multimedia.galeria.forEach((source, index) => {
-        if (typeof source !== "string" || !source.trim()) {
-            throw new Error(`La imagen ${index + 1} de la galería es inválida.`);
-        }
+    Object.values(multimedia.capas).forEach((source, index) => {
+        if (!source) return;
+        if (typeof source !== "string") throw new Error(`La imagen de la capa ${index + 1} es inválida.`);
         if (source.startsWith("data:") && !/^data:image\/(jpeg|png|svg\+xml);base64,[A-Za-z0-9+/]+={0,2}$/.test(source)) {
-            throw new Error(`El contenido Base64 de la imagen ${index + 1} no es válido.`);
+            throw new Error(`El contenido Base64 de la capa ${index + 1} no es válido.`);
         }
         if (!source.startsWith("data:")) validateExternalUrl(source);
     });
+}
+
+function getLayerSource(index) {
+    const target = `Capa${index}`;
+    const fileSource = selectedImageFile(target);
+    const urlSource = selectedImageUrl(target);
+    return fileSource || urlSource;
 }
 
 function validateExternalUrl(value) {

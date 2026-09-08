@@ -374,6 +374,11 @@
                 <input type="text" id="subtitulo" placeholder="Ej: Mis 60 Años">
             </div>
             <div class="form-group">
+                <label for="mensaje">Mensaje de asistencia / Dedicatoria:</label>
+                <textarea id="mensaje" rows="3"
+                    placeholder="Ej: Será un placer compartir este día con ustedes."></textarea>
+            </div>
+            <div class="form-group">
                 <label for="fontFamily">Tipografía principal:</label>
                 <select id="fontFamily">
                     <option value="playfair">Playfair Display (Elegante Clásica)</option>
@@ -474,15 +479,36 @@
             <!-- 4. Archivos Multimedia -->
             <div class="section-title">4. Archivos y Multimedia</div>
 
+            <div class="section-title">Imágenes del Folleto Virtual (3 Capas)</div>
             <div class="form-group">
-                <label for="fileHeader">Imagen Principal / Banner:</label>
-                <select id="sourceModeHeader" class="media-source-mode">
+                <label for="fileCapa1">Imagen Capa 1 (Portada / Presentación):</label>
+                <select id="sourceModeCapa1" class="media-source-mode">
                     <option value="file">Archivo local</option>
                     <option value="url">Enlace URL web</option>
                 </select>
-                <input type="file" id="fileHeader" accept="image/jpeg,image/png,image/svg+xml">
-                <input type="url" id="urlHeader" placeholder="https://ejemplo.com/imagen.jpg" hidden>
-                <div id="previewHeader" class="media-preview-grid"></div>
+                <input type="file" id="fileCapa1" accept="image/jpeg,image/png,image/svg+xml">
+                <input type="url" id="urlCapa1" placeholder="https://ejemplo.com/portada.jpg" hidden>
+                <div id="previewCapa1" class="media-preview-grid"></div>
+            </div>
+            <div class="form-group">
+                <label for="fileCapa2">Imagen Capa 2 (El Encuentro / Ubicación y Agenda):</label>
+                <select id="sourceModeCapa2" class="media-source-mode">
+                    <option value="file">Archivo local</option>
+                    <option value="url">Enlace URL web</option>
+                </select>
+                <input type="file" id="fileCapa2" accept="image/jpeg,image/png,image/svg+xml">
+                <input type="url" id="urlCapa2" placeholder="https://ejemplo.com/encuentro.jpg" hidden>
+                <div id="previewCapa2" class="media-preview-grid"></div>
+            </div>
+            <div class="form-group">
+                <label for="fileCapa3">Imagen Capa 3 (Confirmación y Mensajes):</label>
+                <select id="sourceModeCapa3" class="media-source-mode">
+                    <option value="file">Archivo local</option>
+                    <option value="url">Enlace URL web</option>
+                </select>
+                <input type="file" id="fileCapa3" accept="image/jpeg,image/png,image/svg+xml">
+                <input type="url" id="urlCapa3" placeholder="https://ejemplo.com/confirmacion.jpg" hidden>
+                <div id="previewCapa3" class="media-preview-grid"></div>
             </div>
 
             <div class="form-row">
@@ -496,39 +522,6 @@
                 </div>
             </div>
 
-            <div class="form-group">
-                <label for="fileSeparador">Imagen Separadora / Ícono:</label>
-                <select id="sourceModeSeparador" class="media-source-mode">
-                    <option value="file">Archivo local</option>
-                    <option value="url">Enlace URL web</option>
-                </select>
-                <input type="file" id="fileSeparador" accept="image/jpeg,image/png,image/svg+xml">
-                <input type="url" id="urlSeparador" placeholder="https://ejemplo.com/separador.jpg" hidden>
-                <div id="previewSeparador" class="media-preview-grid"></div>
-            </div>
-
-            <div class="form-group">
-                <label for="fileGaleria">Galería de Fotos:</label>
-                <select id="sourceModeGaleria" class="media-source-mode">
-                    <option value="file">Archivos locales</option>
-                    <option value="url">Enlaces URL web</option>
-                </select>
-                <input type="file" id="fileGaleria" accept="image/jpeg,image/png,image/svg+xml" multiple>
-                <input type="url" id="urlGaleria" placeholder="https://ejemplo.com/foto.jpg, ..." hidden>
-                <span class="help-text">Puedes pegar una o varias URLs separadas por coma.</span>
-                <div class="media-url-actions">
-                    <button type="button" id="btnAddGalleryUrls" class="load-event-button">Agregar URLs a la
-                        galería</button>
-                </div>
-                <div id="galleryPreviewContainer" class="media-preview-grid" aria-live="polite"></div>
-            </div>
-
-            <div class="form-group">
-                <label for="urlFondoVentana3">Fondo específico Ventana 3 (opcional):</label>
-                <input type="url" id="urlFondoVentana3" placeholder="https://ejemplo.com/fondo-rsvp.jpg">
-                <span class="help-text">Si queda vacío, se utilizará automáticamente la tercera foto de la
-                    galería.</span>
-            </div>
 
             <div id="imageEditor" class="editor-panel" aria-live="polite">
                 <label>Editor de imagen antes de subir</label>

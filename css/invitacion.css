@@ -384,6 +384,43 @@ body::before {
     letter-spacing: 0.04em;
 }
 
+.rsvp-label {
+    display: block;
+    margin-top: 18px;
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-align: left;
+    text-transform: uppercase;
+}
+
+.rsvp-message {
+    display: block;
+    width: 100%;
+    min-height: 74px;
+    margin-top: 8px;
+    padding: 11px 12px;
+    resize: vertical;
+    border: 1px solid rgba(255, 255, 255, 0.56);
+    border-radius: 12px;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.22);
+    font: inherit;
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
+.rsvp-message::placeholder {
+    color: rgba(255, 255, 255, 0.62);
+}
+
+.rsvp-message:focus {
+    border-color: rgba(255, 255, 255, 0.92);
+    outline: 2px solid color-mix(in srgb, var(--primary-color) 55%, transparent);
+    outline-offset: 2px;
+}
+
 .rsvp-block {
     margin-top: clamp(28px, 6vh, 52px);
     padding-top: clamp(22px, 4vh, 38px);
@@ -397,7 +434,9 @@ body::before {
 
 .brochure-page--confirmation .page-card {
     border-color: rgba(222, 224, 181, 0.54);
-    background: rgba(75, 87, 49, 0.64);
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(4px) saturate(1.08);
+    -webkit-backdrop-filter: blur(4px) saturate(1.08);
 }
 
 .brochure-page--location .button,

@@ -278,6 +278,7 @@ async function initInvitation() {
 
 function normalizeEvent(data) {
     const multimedia = data.multimedia || {};
+    const capas = multimedia.capas || {};
 
     return {
         nombre: data.nombre || "",
@@ -296,6 +297,11 @@ function normalizeEvent(data) {
         estilos: data.estilos || {},
         contactosRSVP: data.contactosRSVP || legacyContacts(data.confirmacion),
         multimedia: {
+            capas: {
+                portada: capas.portada || multimedia.personajeHeader || multimedia.galeria?.[0] || "",
+                encuentro: capas.encuentro || multimedia.personajeSeparador || multimedia.galeria?.[1] || "",
+                confirmacion: capas.confirmacion || multimedia.fondoVentana3 || multimedia.galeria?.[2] || ""
+            },
             personajeHeader: multimedia.personajeHeader || "",
             personajeSeparador: multimedia.personajeSeparador || "",
             fondoVentana3: multimedia.fondoVentana3 || "",
@@ -370,15 +376,15 @@ function renderInvitation(event) {
     setupMusic(event.multimedia.audios, event.multimedia.audioPlayMode);
     setupCalendarDownload(event);
     setupBrochureNavigation();
+    setupRsvpMessage();
     startCountdown(event.fechaEvento);
 }
 
 function getBrochureImages(event) {
-    const gallery = event.multimedia.galeria.filter(Boolean);
     return [
-        event.multimedia.personajeHeader || gallery[0] || "",
-        gallery[1] || event.multimedia.personajeSeparador || "",
-        event.multimedia.fondoVentana3 || gallery[2] || ""
+        event.multimedia.capas.portada,
+        event.multimedia.capas.encuentro,
+        event.multimedia.capas.confirmacion
     ];
 }
 
@@ -851,10 +857,8 @@ function renderRsvpContent(event) {
 
     const buttons = contacts
         .map((contact) => {
-            const message = encodeURIComponent(`Hola ${contact.nombre || ""}, confirmo mi asistencia al evento de ${event.nombre}.`);
-
             return `
-                <a class="button" href="https://api.whatsapp.com/send?phone=${contact.telefono}&text=${message}" target="_blank" rel="noopener noreferrer">
+                <a class="button rsvp-button" href="https://api.whatsapp.com/send?phone=${contact.telefono}" data-phone="${contact.telefono}" target="_blank" rel="noopener noreferrer">
                     ${ICONS.whatsapp}
                     Confirmar con ${escapeHtml(contact.nombre || "contacto")}
                 </a>
@@ -867,9 +871,27 @@ function renderRsvpContent(event) {
             <p class="eyebrow">Asistencia</p>
             <h2 class="section-title">Confirmar</h2>
             ${event.confirmacionLimite ? `<p class="detail-value">Hasta el ${escapeHtml(event.confirmacionLimite)}</p>` : ""}
+            <label class="rsvp-label" for="rsvpMessage">Mensaje o restricción alimentaria (opcional)</label>
+            <textarea id="rsvpMessage" class="rsvp-message" rows="3" maxlength="400" placeholder="Escribí un mensaje para los novios..."></textarea>
             <div class="actions">${buttons}</div>
         </div>
     `;
+}
+
+function setupRsvpMessage() {
+    const input = document.getElementById("rsvpMessage");
+    if (!input) return;
+
+    const updateLinks = () => {
+        const message = input.value.trim();
+        document.querySelectorAll(".rsvp-button").forEach((button) => {
+            const text = `Hola, confirmo mi asistencia al evento.\nMensaje: ${message || "Sin comentarios"}`;
+            button.href = `https://api.whatsapp.com/send?phone=${button.dataset.phone}&text=${encodeURIComponent(text)}`;
+        });
+    };
+
+    input.addEventListener("input", updateLinks);
+    updateLinks();
 }
 
 function normalizeWhatsAppPhone(value) {
