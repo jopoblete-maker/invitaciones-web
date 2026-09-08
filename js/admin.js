@@ -5,9 +5,9 @@ const editedImages = {
 };
 
 const layoutState = {
-    capa1: { objectPosition: "50% 25%", scale: 1, align: "flex-end", offsetY: 0, contentScale: "medium" },
-    capa2: { objectPosition: "50% 35%", scale: 1, align: "center", offsetY: 0, contentScale: "medium" },
-    capa3: { objectPosition: "50% 35%", scale: 1, align: "center", offsetY: 0, contentScale: "medium" }
+    capa1: { objectPosition: "50% 25%", scale: 1, align: "flex-end", offsetY: 78, contentScale: "medium" },
+    capa2: { objectPosition: "50% 35%", scale: 1, align: "center", offsetY: 50, contentScale: "medium" },
+    capa3: { objectPosition: "50% 35%", scale: 1, align: "center", offsetY: 50, contentScale: "medium" }
 };
 
 const ADMIN_PASSWORD_HASH = "702e0afc3ebf1b22464cb509747357e3f0fa371ed7bf0df3b25c3d9114abb662";
@@ -74,7 +74,10 @@ function bindPreviewNavigation() {
 
 function bindLayoutControls() {
     const ids = ["layoutLayer", "layoutX", "layoutY", "layoutScale", "layoutAlign", "layoutScaleContent", "layoutOffsetY"];
-    ids.forEach((id) => document.getElementById(id)?.addEventListener("input", updateLayoutFromControls));
+    ids.forEach((id) => {
+        document.getElementById(id)?.addEventListener("input", updateLayoutFromControls);
+        document.getElementById(id)?.addEventListener("change", updateLayoutFromControls);
+    });
     document.getElementById("layoutLayer")?.addEventListener("change", syncLayoutControls);
     syncLayoutControls();
 }
@@ -118,14 +121,23 @@ function updateLivePreview() {
     slides.forEach((slide, index) => {
         const config = layoutState[`capa${index + 1}`];
         slide.style.backgroundImage = images[index] ? `url("${images[index]}")` : "none";
-        slide.style.backgroundPosition = config.objectPosition;
-        slide.style.backgroundSize = `${config.scale * 100}%`;
-        slide.style.alignItems = config.align;
+        slide.style.setProperty("--page-position", config.objectPosition);
+        slide.style.setProperty("--page-scale", config.scale);
+        slide.style.setProperty("--content-offset-y", `${config.offsetY}%`);
+        slide.style.setProperty("--content-scale", config.contentScale === "small" ? "0.88" : config.contentScale === "large" ? "1.08" : "1");
+        const content = slide.querySelector(".preview-copy, .preview-detail");
+        if (content) {
+            content.style.removeProperty("top");
+            content.style.removeProperty("bottom");
+            content.style.removeProperty("transform");
+            content.style.removeProperty("scale");
+        }
     });
     const title = document.getElementById("nombre")?.value.trim() || "Nuestra boda";
     const subtitle = document.getElementById("subtitulo")?.value.trim() || "Casamiento de civil";
     document.getElementById("previewTitle").textContent = title;
     document.getElementById("previewSubtitle").textContent = subtitle;
+    document.getElementById("previewDate").textContent = document.getElementById("fecha")?.value || "Fecha del evento";
     document.getElementById("previewPlace").textContent = document.getElementById("lugar")?.value.trim() || "Ubicación y agenda";
 }
 
@@ -150,8 +162,10 @@ function bindFontPreview() {
 
     fontSelect.addEventListener("change", updatePreview);
     titleInput.addEventListener("input", updatePreview);
+    titleInput.addEventListener("input", updateLivePreview);
     document.getElementById("subtitulo")?.addEventListener("input", updateLivePreview);
     document.getElementById("lugar")?.addEventListener("input", updateLivePreview);
+    document.getElementById("fecha")?.addEventListener("input", updateLivePreview);
     updatePreview();
 }
 
@@ -296,7 +310,13 @@ async function loadExistingEvent() {
         document.getElementById("colorSombra").value = data.estilos?.colorSombra || "#000000";
         document.getElementById("colorBordeDecorativo").value = data.estilos?.colorBordeDecorativo || "#b88746";
         Object.keys(layoutState).forEach((layer) => {
-            if (data.layoutConfig?.[layer]) layoutState[layer] = { ...layoutState[layer], ...data.layoutConfig[layer] };
+            if (data.layoutConfig?.[layer]) {
+                layoutState[layer] = { ...layoutState[layer], ...data.layoutConfig[layer] };
+                const offsetY = Number(layoutState[layer].offsetY);
+                if (!Number.isFinite(offsetY) || offsetY < 50 || offsetY > 95) {
+                    layoutState[layer].offsetY = layer === "capa1" ? 78 : 50;
+                }
+            }
         });
         document.getElementById("fontFamily").dispatchEvent(new Event("change"));
         syncLayoutControls();

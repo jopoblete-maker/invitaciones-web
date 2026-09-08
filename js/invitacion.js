@@ -317,14 +317,19 @@ function normalizeEvent(data) {
 
 function normalizeLayoutConfig(value) {
     const defaults = {
-        capa1: { objectPosition: "50% 25%", scale: 1, align: "flex-end", offsetY: 0, contentScale: "medium" },
-        capa2: { objectPosition: "50% 35%", scale: 1, align: "center", offsetY: 0, contentScale: "medium" },
-        capa3: { objectPosition: "50% 35%", scale: 1, align: "center", offsetY: 0, contentScale: "medium" }
+        capa1: { objectPosition: "50% 25%", scale: 1, align: "flex-end", offsetY: 78, contentScale: "medium" },
+        capa2: { objectPosition: "50% 35%", scale: 1, align: "center", offsetY: 50, contentScale: "medium" },
+        capa3: { objectPosition: "50% 35%", scale: 1, align: "center", offsetY: 50, contentScale: "medium" }
     };
-    return Object.fromEntries(Object.entries(defaults).map(([layer, config]) => [
-        layer,
-        { ...config, ...(value?.[layer] || {}) }
-    ]));
+    return Object.fromEntries(Object.entries(defaults).map(([layer, config]) => {
+        const saved = value?.[layer] || {};
+        const offsetY = Number(saved.offsetY);
+        return [layer, {
+            ...config,
+            ...saved,
+            offsetY: Number.isFinite(offsetY) && offsetY >= 50 && offsetY <= 95 ? offsetY : config.offsetY
+        }];
+    }));
 }
 
 function inferTheme(data, id) {
@@ -389,6 +394,7 @@ function renderInvitation(event) {
         page.style.setProperty("--page-position", config.objectPosition);
         page.style.setProperty("--page-scale", config.scale);
         page.style.setProperty("--content-offset-y", `${config.offsetY}%`);
+        page.style.setProperty("--content-scale", config.contentScale === "small" ? "0.88" : config.contentScale === "large" ? "1.08" : "1");
         page.classList.add(`layout-align-${config.align}`, `layout-scale-${config.contentScale}`);
     });
     setupMusic(event.multimedia.audios, event.multimedia.audioPlayMode);

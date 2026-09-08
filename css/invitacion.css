@@ -534,11 +534,14 @@ body::before {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: min(90vw, 620px);
-    margin-top: auto;
-    margin-bottom: 1rem;
+    position: absolute;
+    top: var(--content-offset-y, 78%);
+    right: 5%;
+    left: 5%;
+    width: 90%;
+    margin: 0;
     padding-inline: 8px;
-    transform: translateY(var(--content-offset-y, 0));
+    transform: translateY(-50%) scale(var(--content-scale, 1));
 }
 
 .brochure-page.layout-align-flex-start {
@@ -554,15 +557,22 @@ body::before {
 }
 
 .brochure-page.layout-scale-small .brochure-content {
-    transform: scale(.88) translateY(var(--content-offset-y, 0));
+    transform: translateY(-50%) scale(var(--content-scale, .88));
 }
 
 .brochure-page.layout-scale-large .brochure-content {
-    transform: scale(1.08) translateY(var(--content-offset-y, 0));
+    transform: translateY(-50%) scale(var(--content-scale, 1.08));
 }
 
 .brochure-page.layout-scale-medium .brochure-content {
-    transform: translateY(var(--content-offset-y, 0));
+    transform: translateY(-50%) scale(var(--content-scale, 1));
+}
+
+.brochure-page--location .page-card,
+.brochure-page--confirmation .page-card {
+    position: relative;
+    top: var(--content-offset-y, 50%);
+    transform: translateY(-50%) scale(var(--content-scale, 1));
 }
 
 .hero-subtitle {

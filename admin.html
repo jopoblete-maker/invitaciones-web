@@ -56,9 +56,11 @@
         }
 
         .phone-frame {
-            width: 100%;
-            aspect-ratio: 375 / 667;
+            width: 360px;
+            height: 640px;
+            max-width: 100%;
             overflow: hidden;
+            position: relative;
             border: 7px solid #0b1020;
             border-radius: 30px;
             background: #111827;
@@ -76,7 +78,7 @@
             position: relative;
             flex: 0 0 33.333333%;
             overflow: hidden;
-            background: #334155 center / cover no-repeat;
+            background: #334155 var(--page-position, center 25%) / calc(100% * var(--page-scale, 1)) auto no-repeat;
         }
 
         .preview-slide::after {
@@ -90,12 +92,13 @@
         .preview-detail {
             position: absolute;
             z-index: 1;
+            top: var(--content-offset-y, 50%);
+            transform: translateY(-50%) scale(var(--content-scale, 1));
             text-align: center;
         }
 
         .preview-copy {
             right: 18px;
-            bottom: 42px;
             left: 18px;
         }
 
@@ -116,7 +119,6 @@
 
         .preview-detail {
             right: 14px;
-            bottom: 40px;
             left: 14px;
             padding: 18px 12px;
             border: 1px solid rgba(255, 255, 255, .5);
@@ -686,8 +688,8 @@
                 </div>
                 <div class="form-group">
                     <label for="layoutOffsetY">Desplazamiento Y <span class="range-value"
-                            id="layoutOffsetYValue">0%</span></label>
-                    <input type="range" id="layoutOffsetY" min="-20" max="20" value="0">
+                            id="layoutOffsetYValue">78%</span></label>
+                    <input type="range" id="layoutOffsetY" min="50" max="95" value="78">
                 </div>
             </div>
 
@@ -775,7 +777,8 @@
                 <div id="previewTrack" class="preview-track">
                     <div class="preview-slide">
                         <div class="preview-copy"><span id="previewSubtitle">Casamiento de civil</span><strong
-                                id="previewTitle">Nuestra boda</strong></div>
+                                id="previewTitle">Nuestra boda</strong><span id="previewDate">Fecha del evento</span>
+                        </div>
                     </div>
                     <div class="preview-slide">
                         <div class="preview-detail"><strong>El encuentro</strong><span id="previewPlace">Ubicación y
