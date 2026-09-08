@@ -257,6 +257,7 @@ async function loadExistingEvent() {
         }
 
         currentGalleryList.splice(0, currentGalleryList.length, ...gallery);
+        document.getElementById("urlFondoVentana3").value = data.multimedia?.fondoVentana3 || "";
         document.getElementById("fontFamily").value = data.fontFamily || "playfair";
         document.getElementById("colorFondo").value = data.estilos?.colorFondo || "#ffffff";
         document.getElementById("colorTexto").value = data.estilos?.colorTexto || "#333333";
@@ -411,11 +412,14 @@ async function handleSubmit(event) {
 
         const urlHeader = selectedImageUrl("Header");
         const urlSeparador = selectedImageUrl("Separador");
+        const fondoVentana3 = valueOf("urlFondoVentana3");
+        if (fondoVentana3) validateExternalUrl(fondoVentana3);
         const id = valueOf("idEvento");
         const gallery = uniqueNonEmpty(currentGalleryList);
         const multimedia = {
             personajeHeader: selectedImageFile("Header") || urlHeader,
             personajeSeparador: selectedImageFile("Separador") || urlSeparador,
+            fondoVentana3,
             musica: "",
             audios: uniqueAudioTracks(audioTracks),
             audioPlayMode: document.getElementById("audioPlayMode").value,
@@ -549,6 +553,8 @@ function validateMediaPayload(multimedia) {
     if (!Array.isArray(multimedia.galeria)) {
         throw new Error("La lista de galería no es válida.");
     }
+
+    if (multimedia.fondoVentana3) validateExternalUrl(multimedia.fondoVentana3);
 
     multimedia.galeria.forEach((source, index) => {
         if (typeof source !== "string" || !source.trim()) {

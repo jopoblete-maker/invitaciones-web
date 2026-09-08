@@ -298,6 +298,7 @@ function normalizeEvent(data) {
         multimedia: {
             personajeHeader: multimedia.personajeHeader || "",
             personajeSeparador: multimedia.personajeSeparador || "",
+            fondoVentana3: multimedia.fondoVentana3 || "",
             galeria: Array.isArray(multimedia.galeria) ? multimedia.galeria : [],
             musica: multimedia.musica || data.musica || "",
             audios: normalizeAudioTracks(multimedia.audios || data.audios, multimedia.musica || data.musica),
@@ -377,7 +378,7 @@ function getBrochureImages(event) {
     return [
         event.multimedia.personajeHeader || gallery[0] || "",
         gallery[1] || event.multimedia.personajeSeparador || "",
-        gallery[2] || ""
+        event.multimedia.fondoVentana3 || gallery[2] || ""
     ];
 }
 
