@@ -1633,3 +1633,28 @@ button[data-action="ics"],
     font-weight: 400 !important;
     letter-spacing: 1px !important;
 }
+
+/* --- UI GLASS-FREE: Remueve tarjetas y deja contenido flotante sobre el fondo --- */
+
+/* 1. Elimina el fondo oscuro, bordes y sombras de las tarjetas en Capas 2 y 3 */
+.card-content,
+.glass-card,
+.layer-card,
+.card-container {
+    background: none !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* 2. Sombra suave a los textos para asegurar lectura clara sobre cualquier imagen de fondo */
+.layer-content h1,
+.layer-content h2,
+.layer-content h3,
+.layer-content p,
+.layer-content span,
+.countdown-item {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7) !important;
+}
