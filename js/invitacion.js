@@ -331,6 +331,7 @@ function applyTheme(themeName, fontFamily, styles = {}) {
     root.style.setProperty("--secondary-color", theme.secondary);
     root.style.setProperty("--accent-color", theme.accent);
     root.style.setProperty("--text-color", normalizeColor(styles.colorTexto, theme.text));
+    root.style.setProperty("--canvas-background", normalizeColor(styles.colorFondo, theme.secondary));
     root.style.setProperty("--muted-color", theme.muted);
     root.style.setProperty("--surface-color", theme.surface);
     root.style.setProperty("--surface-strong", theme.surfaceStrong);
@@ -362,14 +363,6 @@ function renderInvitation(event) {
     ].join("");
 
     getApp().innerHTML = html;
-    const invitationBackground = event.multimedia.personajeHeader
-        ? `url("${event.multimedia.personajeHeader}")`
-        : "none";
-    document.documentElement.style.setProperty("--invitation-background", invitationBackground);
-    getApp().style.setProperty(
-        "--invitation-background",
-        invitationBackground
-    );
     document.querySelectorAll(".brochure-page").forEach((page, index) => {
         if (pageImages[index]) page.style.setProperty("--page-image", `url("${pageImages[index]}")`);
     });
@@ -381,11 +374,10 @@ function renderInvitation(event) {
 
 function getBrochureImages(event) {
     const gallery = event.multimedia.galeria.filter(Boolean);
-    const fallback = event.multimedia.personajeHeader || gallery[0] || "";
     return [
-        event.multimedia.personajeHeader || fallback,
-        gallery[0] || event.multimedia.personajeSeparador || fallback,
-        gallery[1] || gallery[0] || fallback
+        event.multimedia.personajeHeader || gallery[0] || "",
+        gallery[1] || event.multimedia.personajeSeparador || "",
+        gallery[2] || ""
     ];
 }
 
@@ -468,7 +460,7 @@ function setupBrochureNavigation() {
     };
 
     dots.forEach((dot) => dot.addEventListener("click", () => {
-        pages[Number(dot.dataset.pageTarget)]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        pages[Number(dot.dataset.pageTarget)]?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
     }));
 
     const observer = new IntersectionObserver((entries) => {
