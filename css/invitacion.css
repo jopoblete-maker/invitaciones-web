@@ -1614,3 +1614,10 @@ body[data-theme="corporativo"] {
         animation-iteration-count: 1 !important;
     }
 }
+
+/* Ocultar botón de descarga .ics de forma segura */
+a[href*=".ics"],
+button[data-action="ics"],
+.btn-ics {
+    display: none !important;
+}
