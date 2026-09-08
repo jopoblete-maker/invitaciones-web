@@ -384,18 +384,25 @@ function getBrochureImages(event) {
 
 function renderHero(event) {
     return `
-        <section class="brochure-page brochure-page--cover hero-section">
+        <section id="capa-1" class="brochure-page brochure-page--cover hero-section">
+            ${event.multimedia.personajeHeader ? `<div class="bg-image-wrapper" aria-hidden="true"><img src="${escapeAttr(event.multimedia.personajeHeader)}" alt=""></div>` : ""}
+            <div class="bg-overlay" aria-hidden="true"></div>
             ${renderWatermark(event, "watermark-start")}
-            <div class="brochure-content">
+            <div class="hero-topline">
+                <span>${escapeHtml(event.fechaTexto || "")}</span>
+            </div>
+            <div class="brochure-content hero-copy">
+                <p class="hero-subtitle">${escapeHtml(event.subtitulo || "Casamiento de civil")}</p>
                 <p class="cover-kicker">NUESTRA BODA</p>
-                <p class="cover-type">Casamiento de civil</p>
                 <h1 class="title cover-names">${escapeHtml(event.nombre || "Jennifer & Gonzalo")}</h1>
+            </div>
+            <div class="hero-footer">
                 <p class="cover-hint">Deslizá para descubrir todos los detalles</p>
+                ${renderBrochureNavigation()}
             </div>
             <button class="hero-action hero-music-action" type="button" data-audio-trigger>
                 ${ICONS.music}<span>Música</span>
             </button>
-            ${renderBrochureNavigation()}
         </section>
     `;
 }
