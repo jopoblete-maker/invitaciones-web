@@ -1658,3 +1658,72 @@ button[data-action="ics"],
 .countdown-item {
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7) !important;
 }
+
+/* ==========================================================================
+   RESTRICCIONES Y ESTILOS DE CAPAS (SCROLL VERTICAL & TRANSPARENCbuffer)
+   ========================================================================== */
+
+/* 1. ELIMINAR CONTENEDORES OSCUROS, BORDES Y FONDOS (CONTENIDO FLOTANTE) */
+.card,
+.card-content,
+.glass-card,
+.layer-card,
+.card-container,
+[class*="card"],
+[class*="container"] {
+    background: none !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* 2. SOMBRA EN TEXTOS PARA LECTURA CLARA SOBRE FONDO LIBRE */
+.layer-content h1,
+.layer-content h2,
+.layer-content h3,
+.layer-content p,
+.layer-content span,
+.countdown-item {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7) !important;
+}
+
+/* 3. OCULTAR BOTÓN DE ARCHIVO .ICS */
+a[href*=".ics"],
+button[data-action="ics"],
+.btn-ics,
+#btn-ics {
+    display: none !important;
+}
+
+/* 4. CONVERTIR CARRUSEL HORIZONTAL EN SCROLL VERTICAL CONTINUO */
+.carousel,
+.swiper-wrapper,
+.layers-slider,
+.slider-container {
+    display: flex !important;
+    flex-direction: column !important;
+    transform: none !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    width: 100% !important;
+}
+
+/* FORZAR CADA CAPA A API LARSE UNA DEBAJO DE OTRA */
+.swiper-slide,
+.layer,
+.slide {
+    width: 100% !important;
+    min-height: 100vh !important;
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+}
+
+/* OCULTAR PUNTOS Y PAGINACIÓN DEL CARRUSEL */
+.swiper-pagination,
+.carousel-indicators,
+.dots-container {
+    display: none !important;
+}
