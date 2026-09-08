@@ -388,13 +388,11 @@ function renderHero(event) {
             ${event.multimedia.personajeHeader ? `<div class="bg-image-wrapper" aria-hidden="true"><img src="${escapeAttr(event.multimedia.personajeHeader)}" alt=""></div>` : ""}
             <div class="bg-overlay" aria-hidden="true"></div>
             ${renderWatermark(event, "watermark-start")}
-            <div class="hero-topline">
-                <span>${escapeHtml(event.fechaTexto || "")}</span>
-            </div>
             <div class="brochure-content hero-copy">
                 <p class="hero-subtitle">${escapeHtml(event.subtitulo || "Casamiento de civil")}</p>
                 <p class="cover-kicker">NUESTRA BODA</p>
                 <h1 class="title cover-names">${escapeHtml(event.nombre || "Jennifer & Gonzalo")}</h1>
+                <p class="hero-date">${escapeHtml(event.fechaTexto || "")}</p>
             </div>
             <div class="hero-footer">
                 <p class="cover-hint">Deslizá para descubrir todos los detalles</p>
