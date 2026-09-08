@@ -4,6 +4,12 @@ const editedImages = {
     capa3: []
 };
 
+const layoutState = {
+    capa1: { objectPosition: "50% 25%", scale: 1, align: "flex-end", offsetY: 0, contentScale: "medium" },
+    capa2: { objectPosition: "50% 35%", scale: 1, align: "center", offsetY: 0, contentScale: "medium" },
+    capa3: { objectPosition: "50% 35%", scale: 1, align: "center", offsetY: 0, contentScale: "medium" }
+};
+
 const ADMIN_PASSWORD_HASH = "702e0afc3ebf1b22464cb509747357e3f0fa371ed7bf0df3b25c3d9114abb662";
 const ADMIN_SESSION_KEY = "invitacionesAdminSession";
 const SESSION_DURATION_MS = 30 * 60 * 1000;
@@ -47,7 +53,86 @@ document.addEventListener("DOMContentLoaded", () => {
     bindEditorControls();
     bindFontPreview();
     document.getElementById("adminForm").addEventListener("submit", handleSubmit);
+    bindLayoutControls();
+    bindPreviewNavigation();
+    updateLivePreview();
 });
+
+function showLivePreview() {
+    const panel = document.getElementById("livePreviewPanel");
+    if (panel) panel.hidden = false;
+}
+
+function bindPreviewNavigation() {
+    document.querySelectorAll("[data-preview-page]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const page = Number(button.dataset.previewPage);
+            document.getElementById("previewTrack").style.transform = `translateX(-${page * 33.333333}%)`;
+        });
+    });
+}
+
+function bindLayoutControls() {
+    const ids = ["layoutLayer", "layoutX", "layoutY", "layoutScale", "layoutAlign", "layoutScaleContent", "layoutOffsetY"];
+    ids.forEach((id) => document.getElementById(id)?.addEventListener("input", updateLayoutFromControls));
+    document.getElementById("layoutLayer")?.addEventListener("change", syncLayoutControls);
+    syncLayoutControls();
+}
+
+function updateLayoutFromControls() {
+    const layer = document.getElementById("layoutLayer").value;
+    layoutState[layer] = {
+        objectPosition: `${document.getElementById("layoutX").value}% ${document.getElementById("layoutY").value}%`,
+        scale: Number(document.getElementById("layoutScale").value) / 100,
+        align: document.getElementById("layoutAlign").value,
+        offsetY: Number(document.getElementById("layoutOffsetY").value),
+        contentScale: document.getElementById("layoutScaleContent").value
+    };
+    updateRangeLabels();
+    updateLivePreview();
+}
+
+function syncLayoutControls() {
+    const config = layoutState[document.getElementById("layoutLayer").value];
+    const [x, y] = config.objectPosition.split(" ");
+    document.getElementById("layoutX").value = parseInt(x, 10);
+    document.getElementById("layoutY").value = parseInt(y, 10);
+    document.getElementById("layoutScale").value = Math.round(config.scale * 100);
+    document.getElementById("layoutAlign").value = config.align;
+    document.getElementById("layoutOffsetY").value = config.offsetY;
+    document.getElementById("layoutScaleContent").value = config.contentScale;
+    updateRangeLabels();
+    updateLivePreview();
+}
+
+function updateRangeLabels() {
+    document.getElementById("layoutXValue").textContent = `${document.getElementById("layoutX").value}%`;
+    document.getElementById("layoutYValue").textContent = `${document.getElementById("layoutY").value}%`;
+    document.getElementById("layoutScaleValue").textContent = `${document.getElementById("layoutScale").value}%`;
+    document.getElementById("layoutOffsetYValue").textContent = `${document.getElementById("layoutOffsetY").value}%`;
+}
+
+function updateLivePreview() {
+    const images = [getAdminLayerSource(1), getAdminLayerSource(2), getAdminLayerSource(3)];
+    const slides = document.querySelectorAll(".preview-slide");
+    slides.forEach((slide, index) => {
+        const config = layoutState[`capa${index + 1}`];
+        slide.style.backgroundImage = images[index] ? `url("${images[index]}")` : "none";
+        slide.style.backgroundPosition = config.objectPosition;
+        slide.style.backgroundSize = `${config.scale * 100}%`;
+        slide.style.alignItems = config.align;
+    });
+    const title = document.getElementById("nombre")?.value.trim() || "Nuestra boda";
+    const subtitle = document.getElementById("subtitulo")?.value.trim() || "Casamiento de civil";
+    document.getElementById("previewTitle").textContent = title;
+    document.getElementById("previewSubtitle").textContent = subtitle;
+    document.getElementById("previewPlace").textContent = document.getElementById("lugar")?.value.trim() || "Ubicación y agenda";
+}
+
+function getAdminLayerSource(index) {
+    const target = `Capa${index}`;
+    return selectedImageFile(target) || selectedImageUrl(target);
+}
 
 function bindFontPreview() {
     const fontSelect = document.getElementById("fontFamily");
@@ -65,6 +150,8 @@ function bindFontPreview() {
 
     fontSelect.addEventListener("change", updatePreview);
     titleInput.addEventListener("input", updatePreview);
+    document.getElementById("subtitulo")?.addEventListener("input", updateLivePreview);
+    document.getElementById("lugar")?.addEventListener("input", updateLivePreview);
     updatePreview();
 }
 
@@ -78,9 +165,11 @@ function bindMediaSourceMode(target) {
         const useUrl = mode.value === "url";
         fileInput.hidden = useUrl;
         urlInput.hidden = !useUrl;
+        updateLivePreview();
     };
 
     mode.addEventListener("change", updateVisibility);
+    urlInput.addEventListener("input", updateLivePreview);
     updateVisibility();
 }
 
@@ -115,6 +204,7 @@ function bindAuthentication() {
         document.getElementById("adminForm").hidden = true;
         logoutButton.hidden = true;
         document.getElementById("authPanel").hidden = false;
+        document.getElementById("livePreviewPanel").hidden = true;
         document.getElementById("loginPassword").value = "";
         passwordInput.value = "";
     });
@@ -124,6 +214,7 @@ function showAdmin(passwordInput, password) {
     document.getElementById("authPanel").hidden = true;
     document.getElementById("adminForm").hidden = false;
     document.getElementById("btnLogout").hidden = false;
+    document.getElementById("livePreviewPanel").hidden = false;
     if (password) passwordInput.value = password;
 }
 
@@ -160,6 +251,7 @@ function bindImageInput(inputId, target, previewId) {
             if (editedImages[target][0]) {
                 openEditor(target, 0);
             }
+            updateLivePreview();
         } catch (error) {
             input.value = "";
             editedImages[target] = [];
@@ -203,7 +295,12 @@ async function loadExistingEvent() {
         document.getElementById("colorBoton").value = data.estilos?.colorBoton || "#0d9488";
         document.getElementById("colorSombra").value = data.estilos?.colorSombra || "#000000";
         document.getElementById("colorBordeDecorativo").value = data.estilos?.colorBordeDecorativo || "#b88746";
+        Object.keys(layoutState).forEach((layer) => {
+            if (data.layoutConfig?.[layer]) layoutState[layer] = { ...layoutState[layer], ...data.layoutConfig[layer] };
+        });
         document.getElementById("fontFamily").dispatchEvent(new Event("change"));
+        syncLayoutControls();
+        updateLivePreview();
         window.alert("Evento cargado correctamente.");
     } catch (error) {
         window.alert(error.message);
@@ -381,6 +478,7 @@ async function handleSubmit(event) {
                 colorBordeDecorativo: document.getElementById("colorBordeDecorativo").value,
                 efectoFlyer: document.getElementById("efectoFlyer").checked
             },
+            layoutConfig: layoutState,
             multimedia,
             confirmacion: {
                 tel1: normalizeWhatsAppPhone(valueOf("tel1")),

@@ -295,6 +295,7 @@ function normalizeEvent(data) {
         audioPlayMode: data.multimedia?.audioPlayMode || data.audioPlayMode || "selector",
         confirmacionLimite: data.confirmacionLimite || "",
         estilos: data.estilos || {},
+        layoutConfig: normalizeLayoutConfig(data.layoutConfig),
         contactosRSVP: data.contactosRSVP || legacyContacts(data.confirmacion),
         multimedia: {
             capas: {
@@ -312,6 +313,18 @@ function normalizeEvent(data) {
             marcaAgua: multimedia.marcaAgua || ""
         }
     };
+}
+
+function normalizeLayoutConfig(value) {
+    const defaults = {
+        capa1: { objectPosition: "50% 25%", scale: 1, align: "flex-end", offsetY: 0, contentScale: "medium" },
+        capa2: { objectPosition: "50% 35%", scale: 1, align: "center", offsetY: 0, contentScale: "medium" },
+        capa3: { objectPosition: "50% 35%", scale: 1, align: "center", offsetY: 0, contentScale: "medium" }
+    };
+    return Object.fromEntries(Object.entries(defaults).map(([layer, config]) => [
+        layer,
+        { ...config, ...(value?.[layer] || {}) }
+    ]));
 }
 
 function inferTheme(data, id) {
@@ -371,12 +384,17 @@ function renderInvitation(event) {
 
     getApp().innerHTML = html;
     document.querySelectorAll(".brochure-page").forEach((page, index) => {
+        const config = event.layoutConfig[`capa${index + 1}`];
         if (pageImages[index]) page.style.setProperty("--page-image", `url("${pageImages[index]}")`);
+        page.style.setProperty("--page-position", config.objectPosition);
+        page.style.setProperty("--page-scale", config.scale);
+        page.style.setProperty("--content-offset-y", `${config.offsetY}%`);
+        page.classList.add(`layout-align-${config.align}`, `layout-scale-${config.contentScale}`);
     });
     setupMusic(event.multimedia.audios, event.multimedia.audioPlayMode);
     setupCalendarDownload(event);
     setupBrochureNavigation();
-    setupRsvpMessage();
+    setupRsvpConfirmation();
     startCountdown(event.fechaEvento);
 }
 
@@ -391,7 +409,7 @@ function getBrochureImages(event) {
 function renderHero(event) {
     return `
         <section id="capa-1" class="brochure-page brochure-page--cover hero-section">
-            ${event.multimedia.personajeHeader ? `<div class="bg-image-wrapper" aria-hidden="true"><img src="${escapeAttr(event.multimedia.personajeHeader)}" alt=""></div>` : ""}
+            ${event.multimedia.capas.portada ? `<div class="bg-image-wrapper" aria-hidden="true"><img src="${escapeAttr(event.multimedia.capas.portada)}" alt=""></div>` : ""}
             <div class="bg-overlay" aria-hidden="true"></div>
             ${renderWatermark(event, "watermark-start")}
             <div class="brochure-content hero-copy">
@@ -858,7 +876,7 @@ function renderRsvpContent(event) {
     const buttons = contacts
         .map((contact) => {
             return `
-                <a class="button rsvp-button" href="https://api.whatsapp.com/send?phone=${contact.telefono}" data-phone="${contact.telefono}" target="_blank" rel="noopener noreferrer">
+                <a class="button rsvp-button" href="https://wa.me/${contact.telefono}" data-phone="${contact.telefono}" target="_blank" rel="noopener noreferrer">
                     ${ICONS.whatsapp}
                     Confirmar con ${escapeHtml(contact.nombre || "contacto")}
                 </a>
@@ -871,27 +889,27 @@ function renderRsvpContent(event) {
             <p class="eyebrow">Asistencia</p>
             <h2 class="section-title">Confirmar</h2>
             ${event.confirmacionLimite ? `<p class="detail-value">Hasta el ${escapeHtml(event.confirmacionLimite)}</p>` : ""}
-            <label class="rsvp-label" for="rsvpMessage">Mensaje o restricción alimentaria (opcional)</label>
-            <textarea id="rsvpMessage" class="rsvp-message" rows="3" maxlength="400" placeholder="Escribí un mensaje para los novios..."></textarea>
             <div class="actions">${buttons}</div>
         </div>
     `;
 }
 
-function setupRsvpMessage() {
-    const input = document.getElementById("rsvpMessage");
-    if (!input) return;
+function setupRsvpConfirmation() {
+    document.querySelectorAll(".rsvp-button").forEach((button) => {
+        button.addEventListener("click", (event) => {
+            event.preventDefault();
+            const addMessage = window.confirm("¿Deseas agregar un mensaje o restricción alimentaria para los novios?\n\nAceptar: Enviar mensaje\nCancelar: Solo confirmar");
+            let text = "¡Hola! Confirmo mi asistencia al evento.";
 
-    const updateLinks = () => {
-        const message = input.value.trim();
-        document.querySelectorAll(".rsvp-button").forEach((button) => {
-            const text = `Hola, confirmo mi asistencia al evento.\nMensaje: ${message || "Sin comentarios"}`;
-            button.href = `https://api.whatsapp.com/send?phone=${button.dataset.phone}&text=${encodeURIComponent(text)}`;
+            if (addMessage) {
+                const message = window.prompt("Escribí un mensaje breve para los novios:", "");
+                if (message?.trim()) text += ` Mensaje: ${message.trim()}`;
+            }
+
+            const url = `https://wa.me/${button.dataset.phone}?text=${encodeURIComponent(text)}`;
+            window.location.assign(url);
         });
-    };
-
-    input.addEventListener("input", updateLinks);
-    updateLinks();
+    });
 }
 
 function normalizeWhatsAppPhone(value) {
