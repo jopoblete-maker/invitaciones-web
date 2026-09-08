@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+
 :root {
     --primary-color: #b88746;
     --secondary-color: #f6ead8;
@@ -1620,4 +1622,14 @@ a[href*=".ics"],
 button[data-action="ics"],
 .btn-ics {
     display: none !important;
+}
+
+/* Tipografía cursiva elegante para títulos y nombres */
+.font-script,
+.hero-title,
+.names-title,
+.couple-names {
+    font-family: 'Great Vibes', cursive !important;
+    font-weight: 400 !important;
+    letter-spacing: 1px !important;
 }
