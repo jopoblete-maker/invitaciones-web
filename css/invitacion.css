@@ -318,10 +318,11 @@ body::before {
     padding: clamp(24px, 5vw, 48px);
     border: 1px solid color-mix(in srgb, var(--decorative-border-color) 62%, white);
     border-radius: 24px;
-    background: rgba(0, 0, 0, 0.25);
+    background: rgba(15, 23, 42, 0.35);
     box-shadow: 0 24px 60px rgba(20, 12, 8, 0.2);
-    backdrop-filter: blur(4px) saturate(1.08);
-    -webkit-backdrop-filter: blur(4px) saturate(1.08);
+    backdrop-filter: blur(8px) saturate(1.08);
+    -webkit-backdrop-filter: blur(8px) saturate(1.08);
+    border-color: rgba(255, 255, 255, 0.18);
 }
 
 .brochure-page--location .eyebrow,
@@ -400,10 +401,10 @@ body::before {
 }
 
 .brochure-page--confirmation .page-card {
-    border-color: rgba(222, 224, 181, 0.54);
-    background: rgba(0, 0, 0, 0.25);
-    backdrop-filter: blur(4px) saturate(1.08);
-    -webkit-backdrop-filter: blur(4px) saturate(1.08);
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(15, 23, 42, 0.35);
+    backdrop-filter: blur(8px) saturate(1.08);
+    -webkit-backdrop-filter: blur(8px) saturate(1.08);
 }
 
 .brochure-page--location .button,
@@ -414,17 +415,33 @@ body::before {
 }
 
 .brochure-page--location .button {
-    background: rgba(184, 135, 70, 0.94);
+    background: rgba(255, 255, 255, 0.15);
 }
 
 .brochure-page--location .calendar-download {
     color: #fff;
-    background: rgba(31, 27, 22, 0.82);
+    background: rgba(255, 255, 255, 0.15);
 }
 
 .brochure-page--confirmation .button {
-    color: #26301c;
-    background: linear-gradient(135deg, #d4d69d 0%, #7d8c50 100%);
+    color: #fff;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.brochure-page--location .button:hover,
+.brochure-page--location .calendar-download:hover,
+.brochure-page--confirmation .button:hover,
+.brochure-page--location .button:focus-visible,
+.brochure-page--location .calendar-download:focus-visible,
+.brochure-page--confirmation .button:focus-visible {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+.brochure-page--location .detail-value,
+.brochure-page--location .detail-label,
+.brochure-page--confirmation .time-card,
+.brochure-page--confirmation .rsvp-block {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
 .brochure-dots {
@@ -709,8 +726,10 @@ body::before {
 
 .hero-music-action {
     position: absolute;
-    top: clamp(20px, 4vh, 42px);
-    right: clamp(20px, 5vw, 54px);
+    top: var(--audio-top, 22px);
+    right: var(--audio-right, 20px);
+    bottom: var(--audio-bottom, auto);
+    left: var(--audio-left, auto);
     z-index: 3;
     width: 58px;
     min-height: 58px;
@@ -1193,8 +1212,10 @@ body::before {
 
 .audio-widget {
     position: fixed;
-    top: 18px;
-    right: 18px;
+    top: var(--audio-top, 18px);
+    right: var(--audio-right, 18px);
+    bottom: var(--audio-bottom, auto);
+    left: var(--audio-left, auto);
     z-index: 10;
     display: inline-flex;
     align-items: center;
@@ -1524,10 +1545,10 @@ body[data-theme="corporativo"] {
     }
 
     .hero-music-action {
-        top: 22px;
-        right: 20px;
-        bottom: auto;
-        left: auto;
+        top: var(--audio-top, 22px);
+        right: var(--audio-right, 20px);
+        bottom: var(--audio-bottom, auto);
+        left: var(--audio-left, auto);
         display: grid;
         grid-template-columns: 1fr;
         min-height: 58px;
@@ -1566,7 +1587,10 @@ body[data-theme="corporativo"] {
     }
 
     .audio-widget {
-        right: 10px;
+        top: var(--audio-top, 10px);
+        right: var(--audio-right, 10px);
+        bottom: var(--audio-bottom, auto);
+        left: var(--audio-left, auto);
     }
 
     #audioTrackSelector {

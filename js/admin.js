@@ -7,7 +7,8 @@ const editedImages = {
 const layoutState = {
     capa1: { objectPosition: "50% 25%", scale: 1, align: "flex-end", offsetY: 78, contentScale: "medium" },
     capa2: { objectPosition: "50% 35%", scale: 1, align: "center", offsetY: 50, contentScale: "medium" },
-    capa3: { objectPosition: "50% 35%", scale: 1, align: "center", offsetY: 50, contentScale: "medium" }
+    capa3: { objectPosition: "50% 35%", scale: 1, align: "center", offsetY: 50, contentScale: "medium" },
+    audioButton: { verticalEdge: "top", horizontalEdge: "left", verticalOffset: 22, horizontalOffset: 22 }
 };
 
 const ADMIN_PASSWORD_HASH = "702e0afc3ebf1b22464cb509747357e3f0fa371ed7bf0df3b25c3d9114abb662";
@@ -73,7 +74,7 @@ function bindPreviewNavigation() {
 }
 
 function bindLayoutControls() {
-    const ids = ["layoutLayer", "layoutX", "layoutY", "layoutScale", "layoutAlign", "layoutScaleContent", "layoutOffsetY"];
+    const ids = ["layoutLayer", "layoutX", "layoutY", "layoutScale", "layoutAlign", "layoutScaleContent", "layoutOffsetY", "audioVerticalEdge", "audioHorizontalEdge", "audioVerticalOffset", "audioHorizontalOffset"];
     ids.forEach((id) => {
         document.getElementById(id)?.addEventListener("input", updateLayoutFromControls);
         document.getElementById(id)?.addEventListener("change", updateLayoutFromControls);
@@ -91,6 +92,12 @@ function updateLayoutFromControls() {
         offsetY: Number(document.getElementById("layoutOffsetY").value),
         contentScale: document.getElementById("layoutScaleContent").value
     };
+    layoutState.audioButton = {
+        verticalEdge: document.getElementById("audioVerticalEdge").value,
+        horizontalEdge: document.getElementById("audioHorizontalEdge").value,
+        verticalOffset: Number(document.getElementById("audioVerticalOffset").value),
+        horizontalOffset: Number(document.getElementById("audioHorizontalOffset").value)
+    };
     updateRangeLabels();
     updateLivePreview();
 }
@@ -104,6 +111,11 @@ function syncLayoutControls() {
     document.getElementById("layoutAlign").value = config.align;
     document.getElementById("layoutOffsetY").value = config.offsetY;
     document.getElementById("layoutScaleContent").value = config.contentScale;
+    const audio = layoutState.audioButton;
+    document.getElementById("audioVerticalEdge").value = audio.verticalEdge;
+    document.getElementById("audioHorizontalEdge").value = audio.horizontalEdge;
+    document.getElementById("audioVerticalOffset").value = audio.verticalOffset;
+    document.getElementById("audioHorizontalOffset").value = audio.horizontalOffset;
     updateRangeLabels();
     updateLivePreview();
 }
@@ -113,6 +125,8 @@ function updateRangeLabels() {
     document.getElementById("layoutYValue").textContent = `${document.getElementById("layoutY").value}%`;
     document.getElementById("layoutScaleValue").textContent = `${document.getElementById("layoutScale").value}%`;
     document.getElementById("layoutOffsetYValue").textContent = `${document.getElementById("layoutOffsetY").value}%`;
+    document.getElementById("audioVerticalOffsetValue").textContent = `${document.getElementById("audioVerticalOffset").value}%`;
+    document.getElementById("audioHorizontalOffsetValue").textContent = `${document.getElementById("audioHorizontalOffset").value}%`;
 }
 
 function updateLivePreview() {
@@ -132,6 +146,13 @@ function updateLivePreview() {
             content.style.removeProperty("transform");
             content.style.removeProperty("scale");
         }
+    });
+    const audio = layoutState.audioButton;
+    document.querySelectorAll(".preview-audio").forEach((button) => {
+        button.style.setProperty("--audio-top", audio.verticalEdge === "top" ? `${audio.verticalOffset}%` : "auto");
+        button.style.setProperty("--audio-bottom", audio.verticalEdge === "bottom" ? `${audio.verticalOffset}%` : "auto");
+        button.style.setProperty("--audio-left", audio.horizontalEdge === "left" ? `${audio.horizontalOffset}%` : "auto");
+        button.style.setProperty("--audio-right", audio.horizontalEdge === "right" ? `${audio.horizontalOffset}%` : "auto");
     });
     const title = document.getElementById("nombre")?.value.trim() || "Nuestra boda";
     const subtitle = document.getElementById("subtitulo")?.value.trim() || "Casamiento de civil";
@@ -309,7 +330,7 @@ async function loadExistingEvent() {
         document.getElementById("colorBoton").value = data.estilos?.colorBoton || "#0d9488";
         document.getElementById("colorSombra").value = data.estilos?.colorSombra || "#000000";
         document.getElementById("colorBordeDecorativo").value = data.estilos?.colorBordeDecorativo || "#b88746";
-        Object.keys(layoutState).forEach((layer) => {
+        ["capa1", "capa2", "capa3"].forEach((layer) => {
             if (data.layoutConfig?.[layer]) {
                 layoutState[layer] = { ...layoutState[layer], ...data.layoutConfig[layer] };
                 const offsetY = Number(layoutState[layer].offsetY);
@@ -318,6 +339,9 @@ async function loadExistingEvent() {
                 }
             }
         });
+        if (data.layoutConfig?.audioButton) {
+            layoutState.audioButton = { ...layoutState.audioButton, ...data.layoutConfig.audioButton };
+        }
         document.getElementById("fontFamily").dispatchEvent(new Event("change"));
         syncLayoutControls();
         updateLivePreview();

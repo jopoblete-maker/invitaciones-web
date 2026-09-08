@@ -127,6 +127,22 @@
             backdrop-filter: blur(4px);
         }
 
+        .preview-audio {
+            position: absolute;
+            z-index: 2;
+            top: var(--audio-top, 22px);
+            right: var(--audio-right, auto);
+            bottom: var(--audio-bottom, auto);
+            left: var(--audio-left, 22px);
+            width: 42px;
+            height: 42px;
+            border: 1px solid rgba(255, 255, 255, .5);
+            border-radius: 50%;
+            color: #fff;
+            background: rgba(255, 255, 255, .15);
+            cursor: pointer;
+        }
+
         .preview-controls {
             display: flex;
             justify-content: center;
@@ -691,6 +707,35 @@
                             id="layoutOffsetYValue">78%</span></label>
                     <input type="range" id="layoutOffsetY" min="50" max="95" value="78">
                 </div>
+                <div class="section-title">Ubicación del botón Música</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="audioVerticalEdge">Anclaje vertical:</label>
+                        <select id="audioVerticalEdge">
+                            <option value="top" selected>Arriba</option>
+                            <option value="bottom">Abajo</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="audioHorizontalEdge">Anclaje horizontal:</label>
+                        <select id="audioHorizontalEdge">
+                            <option value="left" selected>Izquierda</option>
+                            <option value="right">Derecha</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="audioVerticalOffset">Offset vertical <span class="range-value"
+                                id="audioVerticalOffsetValue">22%</span></label>
+                        <input type="range" id="audioVerticalOffset" min="0" max="95" value="22">
+                    </div>
+                    <div class="form-group">
+                        <label for="audioHorizontalOffset">Offset horizontal <span class="range-value"
+                                id="audioHorizontalOffsetValue">22%</span></label>
+                        <input type="range" id="audioHorizontalOffset" min="0" max="95" value="22">
+                    </div>
+                </div>
             </div>
 
             <div class="form-row">
@@ -776,15 +821,18 @@
             <div class="phone-frame">
                 <div id="previewTrack" class="preview-track">
                     <div class="preview-slide">
+                        <button type="button" class="preview-audio" aria-label="Previsualizar música">♪</button>
                         <div class="preview-copy"><span id="previewSubtitle">Casamiento de civil</span><strong
                                 id="previewTitle">Nuestra boda</strong><span id="previewDate">Fecha del evento</span>
                         </div>
                     </div>
                     <div class="preview-slide">
+                        <button type="button" class="preview-audio" aria-label="Previsualizar música">♪</button>
                         <div class="preview-detail"><strong>El encuentro</strong><span id="previewPlace">Ubicación y
                                 agenda</span></div>
                     </div>
                     <div class="preview-slide">
+                        <button type="button" class="preview-audio" aria-label="Previsualizar música">♪</button>
                         <div class="preview-detail"><strong>Confirmación</strong><span>Cuenta regresiva y RSVP</span>
                         </div>
                     </div>

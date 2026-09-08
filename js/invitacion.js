@@ -321,7 +321,7 @@ function normalizeLayoutConfig(value) {
         capa2: { objectPosition: "50% 35%", scale: 1, align: "center", offsetY: 50, contentScale: "medium" },
         capa3: { objectPosition: "50% 35%", scale: 1, align: "center", offsetY: 50, contentScale: "medium" }
     };
-    return Object.fromEntries(Object.entries(defaults).map(([layer, config]) => {
+    const normalized = Object.fromEntries(Object.entries(defaults).map(([layer, config]) => {
         const saved = value?.[layer] || {};
         const offsetY = Number(saved.offsetY);
         return [layer, {
@@ -330,6 +330,27 @@ function normalizeLayoutConfig(value) {
             offsetY: Number.isFinite(offsetY) && offsetY >= 50 && offsetY <= 95 ? offsetY : config.offsetY
         }];
     }));
+    const audio = value?.audioButton || {};
+    normalized.audioButton = {
+        verticalEdge: audio.verticalEdge === "bottom" ? "bottom" : "top",
+        horizontalEdge: audio.horizontalEdge === "right" ? "right" : "left",
+        verticalOffset: clampPercent(audio.verticalOffset, 22),
+        horizontalOffset: clampPercent(audio.horizontalOffset, 22)
+    };
+    return normalized;
+}
+
+function clampPercent(value, fallback) {
+    const number = Number(value);
+    return Number.isFinite(number) ? Math.max(0, Math.min(95, number)) : fallback;
+}
+
+function applyAudioButtonPosition(config) {
+    const root = document.documentElement;
+    root.style.setProperty("--audio-top", config.verticalEdge === "top" ? `${config.verticalOffset}%` : "auto");
+    root.style.setProperty("--audio-bottom", config.verticalEdge === "bottom" ? `${config.verticalOffset}%` : "auto");
+    root.style.setProperty("--audio-left", config.horizontalEdge === "left" ? `${config.horizontalOffset}%` : "auto");
+    root.style.setProperty("--audio-right", config.horizontalEdge === "right" ? `${config.horizontalOffset}%` : "auto");
 }
 
 function inferTheme(data, id) {
@@ -398,6 +419,7 @@ function renderInvitation(event) {
         page.classList.add(`layout-align-${config.align}`, `layout-scale-${config.contentScale}`);
     });
     setupMusic(event.multimedia.audios, event.multimedia.audioPlayMode);
+    applyAudioButtonPosition(event.layoutConfig.audioButton);
     setupCalendarDownload(event);
     setupBrochureNavigation();
     setupRsvpConfirmation();
