@@ -409,7 +409,7 @@ function renderInvitation(event) {
     ].join("");
 
     getApp().innerHTML = html;
-    document.querySelectorAll(".brochure-page").forEach((page, index) => {
+    document.querySelectorAll(".wedding-section").forEach((page, index) => {
         const config = event.layoutConfig[`capa${index + 1}`];
         if (pageImages[index]) page.style.setProperty("--page-image", `url("${pageImages[index]}")`);
         page.style.setProperty("--page-position", config.objectPosition);
@@ -420,7 +420,6 @@ function renderInvitation(event) {
     });
     setupMusic(event.multimedia.audios, event.multimedia.audioPlayMode);
     applyAudioButtonPosition(event.layoutConfig.audioButton);
-    setupCalendarDownload(event);
     setupBrochureNavigation();
     setupRsvpConfirmation();
     startCountdown(event.fechaEvento);
@@ -436,11 +435,11 @@ function getBrochureImages(event) {
 
 function renderHero(event) {
     return `
-        <section id="capa-1" class="brochure-page brochure-page--cover hero-section">
+        <section id="capa-1" class="wedding-section wedding-section--cover hero-section">
             ${event.multimedia.capas.portada ? `<div class="bg-image-wrapper" aria-hidden="true"><img src="${escapeAttr(event.multimedia.capas.portada)}" alt=""></div>` : ""}
             <div class="bg-overlay" aria-hidden="true"></div>
             ${renderWatermark(event, "watermark-start")}
-            <div class="brochure-content hero-copy">
+            <div class="wedding-content hero-copy">
                 <p class="hero-subtitle">${escapeHtml(event.subtitulo || "Casamiento de civil")}</p>
                 <p class="cover-kicker">NUESTRA BODA</p>
                 <h1 class="title cover-names">${escapeHtml(event.nombre || "Jennifer & Gonzalo")}</h1>
@@ -458,27 +457,25 @@ function renderHero(event) {
 }
 
 function renderLocationPage(event) {
+    const locationText = getLocationText(event);
+    const calendar = renderCalendarActions(event);
+
     return `
-        <section class="brochure-page brochure-page--location">
-            <div class="brochure-content page-card">
-                <p class="eyebrow">El encuentro</p>
-                <h2 class="section-title">Detalles de la boda</h2>
+        <section class="wedding-section wedding-section--location">
+            <div class="wedding-content">
                 <p class="page-message">${escapeHtml(event.mensaje)}</p>
-                <p class="date-display">${escapeHtml(event.fechaTexto || "20 | 10 | 2024")}</p>
                 <div class="details-section">
-                    ${renderDetail("calendar", "Fecha", event.fechaTexto)}
                     ${renderDetail("clock", "Horario", event.horarioTexto)}
-                    ${renderDetail("pin", "Lugar", event.lugarNombre)}
-                    ${renderDetail("home", "Dirección", event.lugarDireccion)}
+                    ${renderDetail("pin", "Lugar", locationText)}
                 </div>
                 ${event.googleMapsUrl ? `
                     <div class="actions">
                         <a class="button" href="${escapeAttr(event.googleMapsUrl)}" target="_blank" rel="noopener noreferrer">
-                            ${ICONS.map} Cómo llegar
+                            ${ICONS.map} Cómo Llegar
                         </a>
                     </div>
                 ` : ""}
-                ${renderCalendarActions(event)}
+                ${calendar}
             </div>
             ${renderBrochureNavigation()}
         </section>
@@ -487,8 +484,8 @@ function renderLocationPage(event) {
 
 function renderConfirmationPage(event) {
     return `
-        <section class="brochure-page brochure-page--confirmation">
-            <div class="brochure-content page-card">
+        <section class="wedding-section wedding-section--confirmation">
+            <div class="wedding-content">
                 ${renderCountdownContent()}
                 ${renderRsvpContent(event)}
             </div>
@@ -509,7 +506,7 @@ function renderBrochureNavigation() {
 
 function setupBrochureNavigation() {
     const brochure = getApp();
-    const pages = Array.from(brochure.querySelectorAll(".brochure-page"));
+    const pages = Array.from(brochure.querySelectorAll(".wedding-section"));
     const dots = Array.from(brochure.querySelectorAll(".brochure-dot"));
     if (!pages.length) return;
 
@@ -558,19 +555,18 @@ function renderHeroActions(event, rsvpContact, rsvpMessage) {
 
 function renderDetails(event) {
     const calendar = renderCalendarActions(event);
+    const locationText = getLocationText(event);
 
     return `
         <section class="invitation-section details-section">
             ${renderWatermark(event, "watermark-middle")}
-            ${renderDetail("calendar", "Fecha", event.fechaTexto)}
             ${renderDetail("clock", "Horario", event.horarioTexto)}
-            ${renderDetail("pin", "Lugar", event.lugarNombre)}
-            ${renderDetail("home", "Dirección", event.lugarDireccion)}
+            ${renderDetail("pin", "Lugar", locationText)}
             ${event.googleMapsUrl ? `
                 <div class="actions">
                     <a class="button" href="${escapeAttr(event.googleMapsUrl)}" target="_blank" rel="noopener noreferrer">
                         ${ICONS.map}
-                        Cómo llegar
+                        Cómo Llegar
                     </a>
                 </div>
             ` : ""}
@@ -589,11 +585,12 @@ function renderCalendarActions(event) {
                 ${ICONS.calendar}
                 Agendar Evento
             </a>
-            <button class="calendar-download" type="button" data-calendar-download>
-                Descargar archivo .ics
-            </button>
         </div>
     `;
+}
+
+function getLocationText(event) {
+    return [event.lugarNombre, event.lugarDireccion].filter(Boolean).join(" - ");
 }
 
 function getCalendarDetails(event) {
@@ -604,7 +601,7 @@ function getCalendarDetails(event) {
 
     const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
     const title = event.nombre || "Invitación Digital";
-    const location = [event.lugarNombre, event.lugarDireccion].filter(Boolean).join(", ");
+    const location = getLocationText(event);
     const dates = `${formatCalendarDate(start)}/${formatCalendarDate(end)}`;
     const googleParams = new URLSearchParams({
         action: "TEMPLATE",
@@ -642,41 +639,6 @@ function formatCalendarDate(date) {
         String(date.getUTCDate()).padStart(2, "0")
     ];
     return `${parts.join("")}T${String(date.getUTCHours()).padStart(2, "0")}${String(date.getUTCMinutes()).padStart(2, "0")}00Z`;
-}
-
-function setupCalendarDownload(event) {
-    const button = document.querySelector("[data-calendar-download]");
-    if (!button) return;
-
-    button.addEventListener("click", () => {
-        const details = getCalendarDetails(event);
-        if (!details) return;
-
-        const ics = [
-            "BEGIN:VCALENDAR",
-            "VERSION:2.0",
-            "PRODID:-//YCORDIGITAL//Invitaciones//ES",
-            "CALSCALE:GREGORIAN",
-            "BEGIN:VEVENT",
-            `UID:${Date.now()}@ycordigital.com`,
-            `DTSTAMP:${formatCalendarDate(new Date())}`,
-            `DTSTART:${formatCalendarDate(details.start)}`,
-            `DTEND:${formatCalendarDate(details.end)}`,
-            `SUMMARY:${escapeIcs(details.title)}`,
-            `LOCATION:${escapeIcs(details.location)}`,
-            "END:VEVENT",
-            "END:VCALENDAR"
-        ].join("\r\n");
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
-        link.download = "invitacion-evento.ics";
-        link.click();
-        URL.revokeObjectURL(link.href);
-    });
-}
-
-function escapeIcs(value) {
-    return String(value || "").replace(/[\\;,\n]/g, (character) => ({ "\\": "\\\\", ";": "\\;", ",": "\\,", "\n": "\\n" })[character]);
 }
 
 function renderDetail(icon, label, value) {

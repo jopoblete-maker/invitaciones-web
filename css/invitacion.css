@@ -221,7 +221,7 @@ body::before {
     display: none;
 }
 
-.brochure-page {
+.wedding-section {
     position: relative;
     display: grid;
     flex: 0 0 100%;
@@ -241,7 +241,7 @@ body::before {
     background-size: calc(100% * var(--page-scale, 1)) auto;
 }
 
-.brochure-page--cover {
+.wedding-section--cover {
     background-image: none;
     background-color: var(--canvas-background, var(--secondary-color));
     background-position: var(--page-position, center 25%);
@@ -275,7 +275,7 @@ body::before {
     pointer-events: none;
 }
 
-.brochure-page::after {
+.wedding-section::after {
     content: "";
     position: absolute;
     inset: 14px;
@@ -286,105 +286,94 @@ body::before {
     pointer-events: none;
 }
 
-.brochure-page--cover {
+.wedding-section--cover {
     align-items: center;
     justify-items: center;
     text-align: center;
 }
 
-.brochure-page--cover .brochure-content {
+.wedding-section--cover .wedding-content {
     width: min(90vw, 620px);
     max-width: 100%;
     min-width: 0;
     overflow-wrap: break-word;
 }
 
-.brochure-page--location,
-.brochure-page--confirmation {
+.wedding-section--location,
+.wedding-section--confirmation {
     align-items: center;
     justify-items: center;
 }
 
-.brochure-page--location,
-.brochure-page--confirmation {
+.wedding-section--location,
+.wedding-section--confirmation {
     background-position: center 35%;
 }
 
-.brochure-content {
+.wedding-content {
     position: relative;
     z-index: 1;
     width: min(100%, 620px);
 }
 
-.page-card {
-    padding: clamp(24px, 5vw, 48px);
-    border: 1px solid color-mix(in srgb, var(--decorative-border-color) 62%, white);
-    border-radius: 24px;
-    background: rgba(15, 23, 42, 0.35);
-    box-shadow: 0 24px 60px rgba(20, 12, 8, 0.2);
-    backdrop-filter: blur(8px) saturate(1.08);
-    -webkit-backdrop-filter: blur(8px) saturate(1.08);
-    border-color: rgba(255, 255, 255, 0.18);
-}
-
-.brochure-page--location .eyebrow,
-.brochure-page--location .section-title,
-.brochure-page--confirmation .eyebrow,
-.brochure-page--confirmation .section-title,
-.brochure-page--confirmation .detail-value {
+.wedding-section--location .eyebrow,
+.wedding-section--location .section-title,
+.wedding-section--confirmation .eyebrow,
+.wedding-section--confirmation .section-title,
+.wedding-section--confirmation .detail-value {
     color: #fff;
     text-shadow: 0 2px 14px rgba(20, 12, 8, 0.55);
 }
 
-.brochure-page .details-section {
+.wedding-section .details-section {
     margin-top: 24px;
     padding: 0;
     background: transparent;
     border: 0;
 }
 
-.brochure-page .detail-label,
-.brochure-page .detail-value,
-.brochure-page .time-card label {
+.wedding-section .detail-label,
+.wedding-section .detail-value,
+.wedding-section .time-card label {
     color: rgba(255, 255, 255, 0.86);
 }
 
-.brochure-page .detail-icon {
+.wedding-section .detail-icon {
     color: #fff;
     background: rgba(255, 255, 255, 0.16);
 }
 
-.brochure-page .countdown {
+.wedding-section .countdown {
     border-color: rgba(255, 255, 255, 0.45);
 }
 
-.brochure-page .time-card {
+.wedding-section .time-card {
     border-color: rgba(255, 255, 255, 0.35);
 }
 
-.brochure-page .time-card span {
+.wedding-section .time-card span {
     color: #fff;
 }
 
-.brochure-page--confirmation .countdown {
+.wedding-section--confirmation .countdown {
     width: 100%;
     margin-top: 18px;
 }
 
-.brochure-page--confirmation .time-card {
+.wedding-section--confirmation .time-card {
     padding: 12px 3px;
 }
 
-.brochure-page--confirmation .time-card span {
+.wedding-section--confirmation .time-card span {
     font-size: clamp(1.5rem, 7vw, 2.5rem);
 }
 
-.brochure-page--confirmation .actions {
+.wedding-section--confirmation .actions {
     gap: 9px;
     margin-top: 16px;
 }
 
-.brochure-page--confirmation .actions .button {
+.wedding-section--confirmation .actions .button {
     min-height: 46px;
     padding: 11px 12px;
     font-size: 0.68rem;
@@ -397,52 +386,37 @@ body::before {
     border-top: 1px solid rgba(255, 255, 255, 0.34);
 }
 
-.brochure-page--confirmation {
+.wedding-section--confirmation {
     background-image: linear-gradient(180deg, rgba(30, 38, 25, 0.18), rgba(30, 38, 25, 0.74)),
         var(--page-image, none);
 }
 
-.brochure-page--confirmation .page-card {
-    border-color: rgba(255, 255, 255, 0.18);
-    background: rgba(15, 23, 42, 0.35);
-    backdrop-filter: blur(8px) saturate(1.08);
-    -webkit-backdrop-filter: blur(8px) saturate(1.08);
-}
-
-.brochure-page--location .button,
-.brochure-page--location .calendar-download,
-.brochure-page--confirmation .button {
+.wedding-section--location .button,
+.wedding-section--confirmation .button {
     border: 1px solid rgba(255, 255, 255, 0.82);
     box-shadow: 0 10px 24px rgba(15, 10, 6, 0.28);
 }
 
-.brochure-page--location .button {
+.wedding-section--location .button {
     background: rgba(255, 255, 255, 0.15);
 }
 
-.brochure-page--location .calendar-download {
+.wedding-section--confirmation .button {
     color: #fff;
     background: rgba(255, 255, 255, 0.15);
 }
 
-.brochure-page--confirmation .button {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.15);
-}
-
-.brochure-page--location .button:hover,
-.brochure-page--location .calendar-download:hover,
-.brochure-page--confirmation .button:hover,
-.brochure-page--location .button:focus-visible,
-.brochure-page--location .calendar-download:focus-visible,
-.brochure-page--confirmation .button:focus-visible {
+.wedding-section--location .button:hover,
+.wedding-section--confirmation .button:hover,
+.wedding-section--location .button:focus-visible,
+.wedding-section--confirmation .button:focus-visible {
     background: rgba(255, 255, 255, 0.28);
 }
 
-.brochure-page--location .detail-value,
-.brochure-page--location .detail-label,
-.brochure-page--confirmation .time-card,
-.brochure-page--confirmation .rsvp-block {
+.wedding-section--location .detail-value,
+.wedding-section--location .detail-label,
+.wedding-section--confirmation .time-card,
+.wedding-section--confirmation .rsvp-block {
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
@@ -521,7 +495,7 @@ body::before {
     transform: rotate(18deg);
 }
 
-.brochure-page::after {
+.wedding-section::after {
     inset: 14px;
     width: auto;
     height: auto;
@@ -563,32 +537,32 @@ body::before {
     transform: translateY(-50%) scale(var(--content-scale, 1));
 }
 
-.brochure-page.layout-align-flex-start {
+.wedding-section.layout-align-flex-start {
     align-items: start;
 }
 
-.brochure-page.layout-align-center {
+.wedding-section.layout-align-center {
     align-items: center;
 }
 
-.brochure-page.layout-align-flex-end {
+.wedding-section.layout-align-flex-end {
     align-items: end;
 }
 
-.brochure-page.layout-scale-small .brochure-content {
+.wedding-section.layout-scale-small .wedding-content {
     transform: translateY(-50%) scale(var(--content-scale, .88));
 }
 
-.brochure-page.layout-scale-large .brochure-content {
+.wedding-section.layout-scale-large .wedding-content {
     transform: translateY(-50%) scale(var(--content-scale, 1.08));
 }
 
-.brochure-page.layout-scale-medium .brochure-content {
+.wedding-section.layout-scale-medium .wedding-content {
     transform: translateY(-50%) scale(var(--content-scale, 1));
 }
 
-.brochure-page--location .page-card,
-.brochure-page--confirmation .page-card {
+.wedding-section--location .wedding-content,
+.wedding-section--confirmation .wedding-content {
     position: relative;
     top: var(--content-offset-y, 50%);
     transform: translateY(-50%) scale(var(--content-scale, 1));
@@ -620,7 +594,7 @@ body::before {
     pointer-events: none;
 }
 
-.hero-section .brochure-content {
+.hero-section .wedding-content {
     z-index: 2;
 }
 
@@ -987,27 +961,6 @@ body::before {
     display: grid;
     gap: 10px;
     margin-top: 10px;
-}
-
-.calendar-download {
-    min-height: 42px;
-    padding: 10px 16px;
-    border: 1px solid color-mix(in srgb, var(--primary-color) 48%, white);
-    border-radius: 999px;
-    color: var(--accent-color);
-    background: transparent;
-    font: inherit;
-    font-size: 0.76rem;
-    font-weight: 900;
-    letter-spacing: 0.06em;
-    cursor: pointer;
-    transition: background 0.25s ease, transform 0.25s ease;
-}
-
-.calendar-download:hover,
-.calendar-download:focus-visible {
-    background: color-mix(in srgb, var(--primary-color) 12%, transparent);
-    transform: translateY(-1px);
 }
 
 .countdown {
@@ -1497,7 +1450,7 @@ body[data-theme="corporativo"] {
         padding: 28px 20px 118px;
     }
 
-    .brochure-page--cover {
+    .wedding-section--cover {
         background-position: var(--page-position, center 25%);
     }
 
@@ -1505,23 +1458,16 @@ body[data-theme="corporativo"] {
         object-position: var(--page-position, center 25%);
     }
 
-    .hero-section .brochure-content {
+    .hero-section .wedding-content {
         width: min(100%, 390px);
     }
 
-    .brochure-page {
+    .wedding-section {
         width: 100vw;
         min-width: 100vw;
         min-height: 100%;
         padding: 28px 18px 74px;
         background-position: center 20%;
-    }
-
-    .page-card {
-        width: min(100%, 440px);
-        max-height: calc(100% - 12px);
-        overflow-y: auto;
-        padding: 24px 20px;
     }
 
     .cover-names {
@@ -1617,14 +1563,7 @@ body[data-theme="corporativo"] {
     }
 }
 
-/* Ocultar botón de descarga .ics de forma segura */
-a[href*=".ics"],
-button[data-action="ics"],
-.btn-ics {
-    display: none !important;
-}
-
-/* Tipografía cursiva elegante para títulos y nombres */
+/* TipografÃ­a cursiva elegante para tÃ­tulos y nombres */
 .font-script,
 .hero-title,
 .names-title,
@@ -1632,98 +1571,4 @@ button[data-action="ics"],
     font-family: 'Great Vibes', cursive !important;
     font-weight: 400 !important;
     letter-spacing: 1px !important;
-}
-
-/* --- UI GLASS-FREE: Remueve tarjetas y deja contenido flotante sobre el fondo --- */
-
-/* 1. Elimina el fondo oscuro, bordes y sombras de las tarjetas en Capas 2 y 3 */
-.card-content,
-.glass-card,
-.layer-card,
-.card-container {
-    background: none !important;
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-}
-
-/* 2. Sombra suave a los textos para asegurar lectura clara sobre cualquier imagen de fondo */
-.layer-content h1,
-.layer-content h2,
-.layer-content h3,
-.layer-content p,
-.layer-content span,
-.countdown-item {
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7) !important;
-}
-
-/* ==========================================================================
-   RESTRICCIONES Y ESTILOS DE CAPAS (SCROLL VERTICAL & TRANSPARENCbuffer)
-   ========================================================================== */
-
-/* 1. ELIMINAR CONTENEDORES OSCUROS, BORDES Y FONDOS (CONTENIDO FLOTANTE) */
-.card,
-.card-content,
-.glass-card,
-.layer-card,
-.card-container,
-[class*="card"],
-[class*="container"] {
-    background: none !important;
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-}
-
-/* 2. SOMBRA EN TEXTOS PARA LECTURA CLARA SOBRE FONDO LIBRE */
-.layer-content h1,
-.layer-content h2,
-.layer-content h3,
-.layer-content p,
-.layer-content span,
-.countdown-item {
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7) !important;
-}
-
-/* 3. OCULTAR BOTÓN DE ARCHIVO .ICS */
-a[href*=".ics"],
-button[data-action="ics"],
-.btn-ics,
-#btn-ics {
-    display: none !important;
-}
-
-/* 4. CONVERTIR CARRUSEL HORIZONTAL EN SCROLL VERTICAL CONTINUO */
-.carousel,
-.swiper-wrapper,
-.layers-slider,
-.slider-container {
-    display: flex !important;
-    flex-direction: column !important;
-    transform: none !important;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-    width: 100% !important;
-}
-
-/* FORZAR CADA CAPA A API LARSE UNA DEBAJO DE OTRA */
-.swiper-slide,
-.layer,
-.slide {
-    width: 100% !important;
-    min-height: 100vh !important;
-    position: relative !important;
-    left: auto !important;
-    top: auto !important;
-}
-
-/* OCULTAR PUNTOS Y PAGINACIÓN DEL CARRUSEL */
-.swiper-pagination,
-.carousel-indicators,
-.dots-container {
-    display: none !important;
 }

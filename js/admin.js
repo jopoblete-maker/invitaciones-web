@@ -159,7 +159,11 @@ function updateLivePreview() {
     document.getElementById("previewTitle").textContent = title;
     document.getElementById("previewSubtitle").textContent = subtitle;
     document.getElementById("previewDate").textContent = document.getElementById("fecha")?.value || "Fecha del evento";
-    document.getElementById("previewPlace").textContent = document.getElementById("lugar")?.value.trim() || "Ubicación y agenda";
+    const previewLocation = [
+        document.getElementById("lugar")?.value.trim(),
+        document.getElementById("direccion")?.value.trim()
+    ].filter(Boolean).join(" - ");
+    document.getElementById("previewPlace").textContent = previewLocation || "Ubicación";
 }
 
 function getAdminLayerSource(index) {
@@ -186,6 +190,7 @@ function bindFontPreview() {
     titleInput.addEventListener("input", updateLivePreview);
     document.getElementById("subtitulo")?.addEventListener("input", updateLivePreview);
     document.getElementById("lugar")?.addEventListener("input", updateLivePreview);
+    document.getElementById("direccion")?.addEventListener("input", updateLivePreview);
     document.getElementById("fecha")?.addEventListener("input", updateLivePreview);
     updatePreview();
 }
