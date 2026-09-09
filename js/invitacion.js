@@ -1,17 +1,3 @@
-const LEGACY_INVITATION_IDS = new Set([
-    "luis-60",
-    "luis-50",
-    "luis-60-anios",
-    "luis-60-anos",
-    "luis-60-años"
-]);
-const INVITATION_ID = new URLSearchParams(window.location.search).get("id") || "";
-const IS_LEGACY_INVITATION = LEGACY_INVITATION_IDS.has(INVITATION_ID.trim().toLowerCase());
-
-if (IS_LEGACY_INVITATION) {
-    loadLegacyInvitationAssets();
-}
-
 const THEMES = {
     elegante: {
         primary: "#b88746",
@@ -265,7 +251,8 @@ let carouselTimers = [];
 document.addEventListener("DOMContentLoaded", initInvitation);
 
 async function initInvitation() {
-    const id = INVITATION_ID;
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
 
     if (!id) {
         renderState("ID de invitación no especificado.");
@@ -289,26 +276,6 @@ async function initInvitation() {
     }
 }
 
-function loadLegacyInvitationAssets() {
-    document.documentElement.dataset.invitationVersion = "legacy";
-
-    document.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
-        const href = link.getAttribute("href") || "";
-        if (href.includes("css/invitacion.css")) {
-            link.disabled = true;
-            link.remove();
-        }
-    });
-
-    if (document.querySelector('link[href="css/invitacion-legacy.css"]')) return;
-
-    const legacyStyles = document.createElement("link");
-    legacyStyles.rel = "stylesheet";
-    legacyStyles.href = "css/invitacion-legacy.css";
-    legacyStyles.dataset.legacyInvitationAsset = "true";
-    document.head.appendChild(legacyStyles);
-}
-
 function normalizeEvent(data) {
     const multimedia = data.multimedia || {};
     const capas = multimedia.capas || {};
@@ -329,7 +296,7 @@ function normalizeEvent(data) {
         confirmacionLimite: data.confirmacionLimite || "",
         estilos: data.estilos || {},
         layoutConfig: normalizeLayoutConfig(data.layoutConfig),
-        contactosRSVP: data.contactosRSVP || legacyContacts(data.confirmacion),
+        contactosRSVP: data.contactosRSVP || contactsFromConfirmation(data.confirmacion),
         multimedia: {
             capas: {
                 portada: capas.portada || multimedia.personajeHeader || multimedia.galeria?.[0] || "",
@@ -433,10 +400,6 @@ function normalizeColor(value, fallback) {
 
 function renderInvitation(event) {
     document.title = event.nombre ? `Invitación de ${event.nombre}` : "Invitación Digital";
-    if (IS_LEGACY_INVITATION) {
-        renderLegacyInvitation(event);
-        return;
-    }
 
     const pageImages = getBrochureImages(event);
 
@@ -448,31 +411,6 @@ function renderInvitation(event) {
 
     getApp().innerHTML = html;
     document.querySelectorAll(".wedding-section").forEach((page, index) => {
-        const config = event.layoutConfig[`capa${index + 1}`];
-        if (pageImages[index]) page.style.setProperty("--page-image", `url("${pageImages[index]}")`);
-        page.style.setProperty("--page-position", config.objectPosition);
-        page.style.setProperty("--page-scale", config.scale);
-        page.style.setProperty("--content-offset-y", `${config.offsetY}%`);
-        page.style.setProperty("--content-scale", config.contentScale === "small" ? "0.88" : config.contentScale === "large" ? "1.08" : "1");
-        page.classList.add(`layout-align-${config.align}`, `layout-scale-${config.contentScale}`);
-    });
-    setupMusic(event.multimedia.audios, event.multimedia.audioPlayMode);
-    applyAudioButtonPosition(event.layoutConfig.audioButton);
-    setupBrochureNavigation();
-    setupRsvpConfirmation();
-    startCountdown(event.fechaEvento);
-}
-
-function renderLegacyInvitation(event) {
-    const pageImages = getBrochureImages(event);
-    const html = [
-        renderLegacyHero(event),
-        renderLegacyLocationPage(event),
-        renderLegacyConfirmationPage(event)
-    ].join("");
-
-    getApp().innerHTML = html;
-    document.querySelectorAll(".brochure-page").forEach((page, index) => {
         const config = event.layoutConfig[`capa${index + 1}`];
         if (pageImages[index]) page.style.setProperty("--page-image", `url("${pageImages[index]}")`);
         page.style.setProperty("--page-position", config.objectPosition);
@@ -519,29 +457,6 @@ function renderHero(event) {
     `;
 }
 
-function renderLegacyHero(event) {
-    return `
-        <section id="capa-1" class="brochure-page brochure-page--cover hero-section">
-            ${event.multimedia.capas.portada ? `<div class="bg-image-wrapper" aria-hidden="true"><img src="${escapeAttr(event.multimedia.capas.portada)}" alt=""></div>` : ""}
-            <div class="bg-overlay" aria-hidden="true"></div>
-            ${renderWatermark(event, "watermark-start")}
-            <div class="brochure-content hero-copy">
-                <p class="hero-subtitle">${escapeHtml(event.subtitulo || "Celebración")}</p>
-                <p class="cover-kicker">${escapeHtml((event.subtitulo || "Celebración").toUpperCase())}</p>
-                <h1 class="title cover-names">${escapeHtml(event.nombre || "Luis")}</h1>
-                <p class="hero-date">${escapeHtml(event.fechaTexto || "")}</p>
-            </div>
-            <div class="hero-footer">
-                <p class="cover-hint">Deslizá para descubrir todos los detalles</p>
-                ${renderBrochureNavigation()}
-            </div>
-            <button class="hero-action hero-music-action" type="button" data-audio-trigger>
-                ${ICONS.music}<span>Música</span>
-            </button>
-        </section>
-    `;
-}
-
 function renderLocationPage(event) {
     const locationText = getLocationText(event);
     const calendar = renderCalendarActions(event);
@@ -568,50 +483,10 @@ function renderLocationPage(event) {
     `;
 }
 
-function renderLegacyLocationPage(event) {
-    return `
-        <section class="brochure-page brochure-page--location">
-            <div class="brochure-content page-card">
-                <p class="eyebrow">El encuentro</p>
-                <h2 class="section-title">Detalles del evento</h2>
-                <p class="page-message">${escapeHtml(event.mensaje)}</p>
-                <p class="date-display">${escapeHtml(event.fechaTexto || "")}</p>
-                <div class="details-section">
-                    ${renderDetail("calendar", "Fecha", event.fechaTexto)}
-                    ${renderDetail("clock", "Horario", event.horarioTexto)}
-                    ${renderDetail("pin", "Lugar", event.lugarNombre)}
-                    ${renderDetail("home", "Dirección", event.lugarDireccion)}
-                </div>
-                ${event.googleMapsUrl ? `
-                    <div class="actions">
-                        <a class="button" href="${escapeAttr(event.googleMapsUrl)}" target="_blank" rel="noopener noreferrer">
-                            ${ICONS.map} Cómo llegar
-                        </a>
-                    </div>
-                ` : ""}
-                ${renderCalendarActions(event)}
-            </div>
-            ${renderBrochureNavigation()}
-        </section>
-    `;
-}
-
 function renderConfirmationPage(event) {
     return `
         <section class="wedding-section wedding-section--confirmation">
             <div class="wedding-content">
-                ${renderCountdownContent()}
-                ${renderRsvpContent(event)}
-            </div>
-            ${renderBrochureNavigation()}
-        </section>
-    `;
-}
-
-function renderLegacyConfirmationPage(event) {
-    return `
-        <section class="brochure-page brochure-page--confirmation">
-            <div class="brochure-content page-card">
                 ${renderCountdownContent()}
                 ${renderRsvpContent(event)}
             </div>
@@ -632,7 +507,7 @@ function renderBrochureNavigation() {
 
 function setupBrochureNavigation() {
     const brochure = getApp();
-    const pages = Array.from(brochure.querySelectorAll(".wedding-section, .brochure-page"));
+    const pages = Array.from(brochure.querySelectorAll(".wedding-section"));
     const dots = Array.from(brochure.querySelectorAll(".brochure-dot"));
     if (!pages.length) return;
 
@@ -1038,12 +913,12 @@ function normalizeWhatsAppPhone(value) {
     return phone;
 }
 
-function normalizeAudioTracks(value, legacySource) {
+function normalizeAudioTracks(value, fallbackSource) {
     const tracks = Array.isArray(value)
         ? value.map((track, index) => typeof track === "string" ? { src: track, name: `Pista ${index + 1}` } : track)
         : [];
     if (tracks.length) return tracks.filter((track) => track?.src);
-    return legacySource ? [{ src: legacySource, name: "Música de fondo" }] : [];
+    return fallbackSource ? [{ src: fallbackSource, name: "Música de fondo" }] : [];
 }
 
 function setupMusic(tracks, playMode) {
@@ -1135,7 +1010,7 @@ function setCountdownText(id, value) {
     if (element) element.innerText = String(value).padStart(2, "0");
 }
 
-function legacyContacts(confirmacion) {
+function contactsFromConfirmation(confirmacion) {
     if (!confirmacion) return [];
 
     return [
