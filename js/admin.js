@@ -314,6 +314,7 @@ async function loadExistingEvent() {
         if (!response.ok) throw new Error(data.error || "No se pudo cargar el evento.");
 
         const multimedia = data.multimedia || {};
+        document.getElementById("template_slug").value = data.datos?.template_slug || data.template_slug || "boda-vertical";
         const legacyImages = [multimedia.personajeHeader, multimedia.personajeSeparador, multimedia.fondoVentana3]
             .map((source, index) => source || multimedia.galeria?.[index] || "");
         const layers = multimedia.capas || {};
@@ -493,6 +494,8 @@ async function handleSubmit(event) {
 
         const layerSources = [1, 2, 3].map((index) => getLayerSource(index));
         const id = valueOf("idEvento");
+        const selectTemplate = document.getElementById("template_slug");
+        const templateSlug = selectTemplate?.value || "boda-vertical";
         const multimedia = {
             capas: {
                 portada: layerSources[0],
@@ -509,6 +512,7 @@ async function handleSubmit(event) {
         const payload = {
             password: valueOf("adminPassword"),
             id,
+            template_slug: templateSlug,
             tema: valueOf("tema"),
             nombre: valueOf("nombre"),
             subtitulo: valueOf("subtitulo"),
@@ -529,6 +533,9 @@ async function handleSubmit(event) {
             },
             layoutConfig: layoutState,
             multimedia,
+            datos: {
+                template_slug: templateSlug
+            },
             confirmacion: {
                 tel1: normalizeWhatsAppPhone(valueOf("tel1")),
                 nombre1: valueOf("nombre1"),

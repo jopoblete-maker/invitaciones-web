@@ -245,6 +245,9 @@ const FONT_FAMILIES = {
     prata: '"Prata", serif'
 };
 
+const TEMPLATE_STYLESHEETS = new Set(["boda-vertical", "cumple-clasico"]);
+const DEFAULT_TEMPLATE_STYLESHEET = "boda-vertical";
+
 let countdownTimer = null;
 let carouselTimers = [];
 
@@ -266,7 +269,9 @@ async function initInvitation() {
         const data = await response.json();
         const themeName = inferTheme(data, id);
         const event = normalizeEvent(data);
+        const templateSlug = normalizeTemplateSlug(event.datos?.template_slug || event.template_slug || DEFAULT_TEMPLATE_STYLESHEET);
 
+        loadTemplateStylesheet(templateSlug);
         applyTheme(themeName, event.fontFamily, event.estilos);
         renderInvitation(event);
         hideLoader();
@@ -282,6 +287,8 @@ function normalizeEvent(data) {
 
     return {
         nombre: data.nombre || "",
+        datos: data.datos || {},
+        template_slug: data.template_slug || data.datos?.template_slug || "",
         subtitulo: data.subtitulo || "Celebración",
         mensaje: data.mensaje || data.bendicion || data.dedicatoria || "Que el amor nos encuentre siempre del mismo lado.",
         fontFamily: FONT_FAMILIES[data.fontFamily || data.fuente] || FONT_FAMILIES.playfair,
@@ -313,6 +320,27 @@ function normalizeEvent(data) {
             marcaAgua: multimedia.marcaAgua || ""
         }
     };
+}
+
+function normalizeTemplateSlug(value) {
+    const slug = String(value || "").trim();
+    return TEMPLATE_STYLESHEETS.has(slug) ? slug : DEFAULT_TEMPLATE_STYLESHEET;
+}
+
+function loadTemplateStylesheet(templateSlug) {
+    const href = `/css/templates/${templateSlug}.css`;
+    let link = document.getElementById("template-stylesheet");
+
+    if (!link) {
+        link = document.createElement("link");
+        link.id = "template-stylesheet";
+        link.rel = "stylesheet";
+        document.head.appendChild(link);
+    }
+
+    if (link.getAttribute("href") !== href) {
+        link.setAttribute("href", href);
+    }
 }
 
 function normalizeLayoutConfig(value) {
