@@ -421,8 +421,7 @@ body[data-theme="minimal"] #subtitulo {
 }
 
 body[data-theme="minimal"] #btnCalendar,
-body[data-theme="minimal"] #btnMaps,
-body[data-theme="minimal"] .rsvp-button.minimal {
+body[data-theme="minimal"] #btnMaps {
     background: linear-gradient(135deg, #1d3557 0%, #2a4f7a 100%);
     color: #f8fbff;
 }
