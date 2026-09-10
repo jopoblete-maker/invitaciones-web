@@ -1,4 +1,4 @@
-const editedImages = {
+﻿const editedImages = {
     capa1: [],
     capa2: [],
     capa3: []
@@ -154,16 +154,16 @@ function updateLivePreview() {
         button.style.setProperty("--audio-left", audio.horizontalEdge === "left" ? `${audio.horizontalOffset}%` : "auto");
         button.style.setProperty("--audio-right", audio.horizontalEdge === "right" ? `${audio.horizontalOffset}%` : "auto");
     });
-    const title = document.getElementById("nombre")?.value.trim() || "Nuestra boda";
-    const subtitle = document.getElementById("subtitulo")?.value.trim() || "Casamiento de civil";
+    const title = document.getElementById("nombre")?.value.trim() || "";
+    const subtitle = document.getElementById("subtitulo")?.value.trim() || "";
     document.getElementById("previewTitle").textContent = title;
     document.getElementById("previewSubtitle").textContent = subtitle;
-    document.getElementById("previewDate").textContent = document.getElementById("fecha")?.value || "Fecha del evento";
+    document.getElementById("previewDate").textContent = document.getElementById("fecha")?.value || "";
     const previewLocation = [
         document.getElementById("lugar")?.value.trim(),
         document.getElementById("direccion")?.value.trim()
     ].filter(Boolean).join(" - ");
-    document.getElementById("previewPlace").textContent = previewLocation || "Ubicación";
+    document.getElementById("previewPlace").textContent = previewLocation || "";
 }
 
 function getAdminLayerSource(index) {
@@ -181,7 +181,7 @@ function bindFontPreview() {
         const previewBox = document.getElementById("fontPreviewBox");
         if (!previewTitle || !previewBox) return;
 
-        previewTitle.textContent = titleInput.value.trim() || "Festejo de mis 60 años";
+        previewTitle.textContent = titleInput.value.trim() || "Festejo de mis 60 aÃ±os";
         previewBox.style.fontFamily = FONT_FAMILIES[fontSelect.value] || FONT_FAMILIES.playfair;
     };
 
@@ -227,7 +227,7 @@ function bindAuthentication() {
         const error = document.getElementById("authError");
 
         if (hash !== ADMIN_PASSWORD_HASH) {
-            error.textContent = "La clave de acceso no es válida.";
+            error.textContent = "La clave de acceso no es vÃ¡lida.";
             return;
         }
 
@@ -486,12 +486,6 @@ async function handleSubmit(event) {
 
     try {
         const audioTracks = await collectAudioTracks();
-        const marcaAguaFile = document.getElementById("fileMarcaAgua").files[0];
-        if (marcaAguaFile) validateFile(marcaAguaFile, ["image/png", "image/svg+xml"], MAX_IMAGE_SIZE);
-        const marcaAguaBase64 = marcaAguaFile
-            ? await tintWatermark(marcaAguaFile, document.getElementById("colorMarcaAgua").value)
-            : "";
-
         const layerSources = [1, 2, 3].map((index) => getLayerSource(index));
         const id = valueOf("idEvento");
         const selectTemplate = document.getElementById("template_slug");
@@ -506,8 +500,7 @@ async function handleSubmit(event) {
             personajeSeparador: layerSources[1],
             musica: "",
             audios: uniqueAudioTracks(audioTracks),
-            audioPlayMode: document.getElementById("audioPlayMode").value,
-            marcaAgua: marcaAguaBase64
+            audioPlayMode: document.getElementById("audioPlayMode").value
         };
         const payload = {
             password: valueOf("adminPassword"),
@@ -554,13 +547,13 @@ async function handleSubmit(event) {
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.error || "Ocurrió un error al guardar");
+            throw new Error(data.error || "OcurriÃ³ un error al guardar");
         }
 
         const linkInvitacion = `${window.location.origin}/invitacion.html?id=${data.id}`;
         resultBox.className = "success";
         resultBox.innerHTML = `
-            <strong>Invitación guardada con éxito.</strong><br><br>
+            <strong>InvitaciÃ³n guardada con Ã©xito.</strong><br><br>
             Enlace directo:<br>
             <a href="${linkInvitacion}" target="_blank" rel="noopener noreferrer">${linkInvitacion}</a>
         `;
@@ -623,31 +616,31 @@ function selectedImageUrl(target) {
 
 function validateMediaPayload(multimedia) {
     if (!multimedia || typeof multimedia !== "object") {
-        throw new Error("La configuración multimedia no es válida.");
+        throw new Error("La configuraciÃ³n multimedia no es vÃ¡lida.");
     }
 
     if (!Array.isArray(multimedia.audios)) {
-        throw new Error("La lista de audios no es válida.");
+        throw new Error("La lista de audios no es vÃ¡lida.");
     }
 
     multimedia.audios.forEach((audio, index) => {
         if (!audio || typeof audio !== "object" || typeof audio.src !== "string" || !audio.src.trim()) {
-            throw new Error(`El audio ${index + 1} tiene una estructura inválida.`);
+            throw new Error(`El audio ${index + 1} tiene una estructura invÃ¡lida.`);
         }
         if (audio.src.startsWith("data:") && !/^data:audio\/mpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(audio.src)) {
-            throw new Error(`El contenido Base64 del audio ${index + 1} no es válido.`);
+            throw new Error(`El contenido Base64 del audio ${index + 1} no es vÃ¡lido.`);
         }
     });
 
     if (!multimedia.capas || typeof multimedia.capas !== "object") {
-        throw new Error("Las imágenes de las capas no son válidas.");
+        throw new Error("Las imÃ¡genes de las capas no son vÃ¡lidas.");
     }
 
     Object.values(multimedia.capas).forEach((source, index) => {
         if (!source) return;
-        if (typeof source !== "string") throw new Error(`La imagen de la capa ${index + 1} es inválida.`);
+        if (typeof source !== "string") throw new Error(`La imagen de la capa ${index + 1} es invÃ¡lida.`);
         if (source.startsWith("data:") && !/^data:image\/(jpeg|png|svg\+xml);base64,[A-Za-z0-9+/]+={0,2}$/.test(source)) {
-            throw new Error(`El contenido Base64 de la capa ${index + 1} no es válido.`);
+            throw new Error(`El contenido Base64 de la capa ${index + 1} no es vÃ¡lido.`);
         }
         if (!source.startsWith("data:")) validateExternalUrl(source);
     });
@@ -665,7 +658,7 @@ function validateExternalUrl(value) {
     try {
         url = new URL(value);
     } catch {
-        throw new Error(`URL de imagen no válida: ${value}`);
+        throw new Error(`URL de imagen no vÃ¡lida: ${value}`);
     }
 
     if (!['http:', 'https:'].includes(url.protocol)) {
@@ -713,24 +706,8 @@ function validateFile(file, allowedTypes, maxSize) {
     }
 
     if (file.size > maxSize) {
-        throw new Error(`El archivo ${file.name} supera el tamaño máximo permitido.`);
+        throw new Error(`El archivo ${file.name} supera el tamaÃ±o mÃ¡ximo permitido.`);
     }
-}
-
-async function tintWatermark(file, color) {
-    const source = await fileToBase64(file);
-    const image = await loadImage(source);
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
-
-    canvas.width = image.naturalWidth;
-    canvas.height = image.naturalHeight;
-    context.drawImage(image, 0, 0);
-    context.globalCompositeOperation = "source-in";
-    context.fillStyle = color;
-    context.fillRect(0, 0, canvas.width, canvas.height);
-
-    return canvas.toDataURL("image/png");
 }
 
 function loadImage(source) {
@@ -751,3 +728,4 @@ function escapeHtml(value) {
         "'": "&#039;"
     })[char]);
 }
+

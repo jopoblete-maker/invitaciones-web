@@ -14,9 +14,7 @@ const THEMES = {
         body: '"Lato", Arial, sans-serif',
         button: "linear-gradient(135deg, #d8b36f 0%, #8e642b 100%)",
         background:
-            "linear-gradient(135deg, rgba(50, 30, 17, 0.18), rgba(250, 236, 212, 0.58)), url('https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85')",
-        watermark:
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><g fill="none" stroke="#8e642b" stroke-width="5" stroke-linecap="round"><path d="M91 26c23 25 47 39 76 42-23 17-37 38-41 66-21-18-44-28-70-30 21-20 32-45 35-78Z"/><path d="M58 102c-19 14-31 31-37 52 22-9 42-10 62-3-10-16-18-31-25-49Z"/></g></svg>'
+            "linear-gradient(135deg, rgba(50, 30, 17, 0.18), rgba(250, 236, 212, 0.58)), url('https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1800&q=85')"
     },
     frozen: {
         primary: "#6aaed6",
@@ -33,9 +31,7 @@ const THEMES = {
         body: '"Quicksand", Arial, sans-serif',
         button: "linear-gradient(135deg, #9fe2ff 0%, #4d9fcd 100%)",
         background:
-            "linear-gradient(135deg, rgba(232, 250, 255, 0.7), rgba(83, 154, 198, 0.3)), url('https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?auto=format&fit=crop&w=1800&q=85')",
-        watermark:
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><g fill="none" stroke="#4d9fcd" stroke-width="5" stroke-linecap="round"><path d="M90 14v152M14 90h152M36 36l108 108M144 36 36 144"/><path d="m90 14 16 24M90 14 74 38M90 166l16-24M90 166l-16-24M14 90l24-16M14 90l24 16M166 90l-24-16M166 90l-24 16"/></g></svg>'
+            "linear-gradient(135deg, rgba(232, 250, 255, 0.7), rgba(83, 154, 198, 0.3)), url('https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?auto=format&fit=crop&w=1800&q=85')"
     },
     pesca: {
         primary: "#2f8f92",
@@ -52,9 +48,7 @@ const THEMES = {
         body: '"Quicksand", Arial, sans-serif',
         button: "linear-gradient(135deg, #75b867 0%, #1f777b 100%)",
         background:
-            "linear-gradient(135deg, rgba(17, 58, 55, 0.15), rgba(227, 245, 224, 0.5)), url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1800&q=85')",
-        watermark:
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><g fill="none" stroke="#1f777b" stroke-width="5" stroke-linecap="round"><path d="M39 143C96 113 128 72 141 20"/><path d="M141 20c15 16 20 38 8 57"/><path d="M62 132c-16 1-28-6-36-20 16-7 31-5 43 7"/><path d="M42 112c10 0 18 8 18 18"/></g></svg>'
+            "linear-gradient(135deg, rgba(17, 58, 55, 0.15), rgba(227, 245, 224, 0.5)), url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1800&q=85')"
     },
     minimal: {
         primary: "#466a8d",
@@ -71,9 +65,7 @@ const THEMES = {
         body: '"Lato", Arial, sans-serif',
         button: "linear-gradient(135deg, #6f93b2 0%, #244966 100%)",
         background:
-            "linear-gradient(135deg, rgba(240, 248, 252, 0.72), rgba(83, 113, 139, 0.18)), url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=85')",
-        watermark:
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><g fill="none" stroke="#244966" stroke-width="5" stroke-linecap="round"><path d="M32 118c34-6 54-24 61-54 16 24 35 37 57 40-28 13-45 31-50 55-16-22-39-35-68-41Z"/><path d="M39 53h102"/></g></svg>'
+            "linear-gradient(135deg, rgba(240, 248, 252, 0.72), rgba(83, 113, 139, 0.18)), url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=85')"
     },
     minimalista: {
         primary: "#466a8d",
@@ -90,9 +82,7 @@ const THEMES = {
         body: '"Lato", Arial, sans-serif',
         button: "linear-gradient(135deg, #6f93b2 0%, #244966 100%)",
         background:
-            "linear-gradient(135deg, rgba(240, 248, 252, 0.72), rgba(83, 113, 139, 0.18)), url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=85')",
-        watermark:
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><g fill="none" stroke="#244966" stroke-width="5" stroke-linecap="round"><path d="M32 118c34-6 54-24 61-54 16 24 35 37 57 40-28 13-45 31-50 55-16-22-39-35-68-41Z"/><path d="M39 53h102"/></g></svg>'
+            "linear-gradient(135deg, rgba(240, 248, 252, 0.72), rgba(83, 113, 139, 0.18)), url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=85')"
     },
     fiesta: {
         primary: "#d95f8a",
@@ -109,9 +99,7 @@ const THEMES = {
         body: '"Quicksand", Arial, sans-serif',
         button: "linear-gradient(135deg, #f59bc3 0%, #d84683 100%)",
         background:
-            "linear-gradient(135deg, rgba(255, 239, 247, 0.72), rgba(255, 177, 209, 0.34)), url('https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1800&q=85')",
-        watermark:
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><g fill="none" stroke="#d84683" stroke-width="5" stroke-linecap="round"><path d="M90 39c12-23 52-20 58 8 8 38-42 70-58 88-16-18-66-50-58-88 6-28 46-31 58-8Z"/><path d="M44 133c23 13 69 14 92 0"/></g></svg>'
+            "linear-gradient(135deg, rgba(255, 239, 247, 0.72), rgba(255, 177, 209, 0.34)), url('https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1800&q=85')"
     },
     infantil: {
         primary: "#df5f95",
@@ -128,89 +116,77 @@ const THEMES = {
         body: '"Quicksand", Arial, sans-serif',
         button: "linear-gradient(135deg, #f59bc3 0%, #d84683 100%)",
         background:
-            "linear-gradient(135deg, rgba(255, 239, 247, 0.72), rgba(255, 177, 209, 0.34)), url('https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1800&q=85')",
-        watermark:
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><g fill="none" stroke="#d84683" stroke-width="5" stroke-linecap="round"><path d="M90 39c12-23 52-20 58 8 8 38-42 70-58 88-16-18-66-50-58-88 6-28 46-31 58-8Z"/><path d="M44 133c23 13 69 14 92 0"/></g></svg>'
+            "linear-gradient(135deg, rgba(255, 239, 247, 0.72), rgba(255, 177, 209, 0.34)), url('https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1800&q=85')"
     },
     vintage: {
         primary: "#a36f47", secondary: "#f0dfc3", accent: "#4e3025", text: "#493229", muted: "#866653",
         surface: "rgba(250, 240, 218, 0.8)", surfaceStrong: "rgba(255, 247, 230, 0.92)", surfaceSoft: "rgba(255, 255, 255, 0.25)",
         line: "rgba(126, 83, 54, 0.28)", shadow: "rgba(78, 48, 37, 0.2)", heading: '"Cormorant Garamond", serif', body: '"Lato", sans-serif',
         button: "linear-gradient(135deg, #c09261 0%, #835333 100%)",
-        background: "linear-gradient(135deg, rgba(96, 57, 35, 0.12), rgba(245, 225, 190, 0.52)), url('https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=1800&q=85')",
-        watermark: ''
+        background: "linear-gradient(135deg, rgba(96, 57, 35, 0.12), rgba(245, 225, 190, 0.52)), url('https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=1800&q=85')"
     },
     "dorado-premium": {
         primary: "#c89b3c", secondary: "#fff8e7", accent: "#46351b", text: "#45351e", muted: "#8d7546",
         surface: "rgba(255, 250, 235, 0.82)", surfaceStrong: "rgba(255, 253, 244, 0.94)", surfaceSoft: "rgba(255, 255, 255, 0.32)",
         line: "rgba(200, 155, 60, 0.34)", shadow: "rgba(109, 76, 20, 0.2)", heading: '"Cinzel", serif', body: '"Montserrat", sans-serif',
         button: "linear-gradient(135deg, #e7c66b 0%, #a97819 100%)",
-        background: "linear-gradient(135deg, rgba(255, 246, 211, 0.68), rgba(201, 153, 53, 0.2)), url('https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1800&q=85')",
-        watermark: ''
+        background: "linear-gradient(135deg, rgba(255, 246, 211, 0.68), rgba(201, 153, 53, 0.2)), url('https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1800&q=85')"
     },
     tropical: {
         primary: "#0d9488", secondary: "#e5fff5", accent: "#075e54", text: "#16443d", muted: "#4f8175",
         surface: "rgba(239, 255, 247, 0.78)", surfaceStrong: "rgba(248, 255, 251, 0.92)", surfaceSoft: "rgba(255, 255, 255, 0.28)",
         line: "rgba(13, 148, 136, 0.25)", shadow: "rgba(4, 87, 78, 0.2)", heading: '"Poppins", sans-serif', body: '"Quicksand", sans-serif',
         button: "linear-gradient(135deg, #f5c84b 0%, #0d9488 100%)",
-        background: "linear-gradient(135deg, rgba(226, 255, 241, 0.5), rgba(4, 120, 110, 0.2)), url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1800&q=85')",
-        watermark: ''
+        background: "linear-gradient(135deg, rgba(226, 255, 241, 0.5), rgba(4, 120, 110, 0.2)), url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1800&q=85')"
     },
     botanico: {
         primary: "#4f8a5b", secondary: "#edf7e8", accent: "#244b31", text: "#294534", muted: "#66806a",
         surface: "rgba(244, 251, 237, 0.8)", surfaceStrong: "rgba(251, 255, 247, 0.94)", surfaceSoft: "rgba(255, 255, 255, 0.3)",
         line: "rgba(79, 138, 91, 0.28)", shadow: "rgba(34, 77, 43, 0.18)", heading: '"Cormorant Garamond", serif', body: '"Poppins", sans-serif',
         button: "linear-gradient(135deg, #91b96e 0%, #39704a 100%)",
-        background: "linear-gradient(135deg, rgba(239, 250, 231, 0.58), rgba(64, 112, 72, 0.2)), url('https://images.unsplash.com/photo-1497250681960-ef046c08a56e?auto=format&fit=crop&w=1800&q=85')",
-        watermark: ''
+        background: "linear-gradient(135deg, rgba(239, 250, 231, 0.58), rgba(64, 112, 72, 0.2)), url('https://images.unsplash.com/photo-1497250681960-ef046c08a56e?auto=format&fit=crop&w=1800&q=85')"
     },
     "infantil-pastel": {
         primary: "#d88fb2", secondary: "#fff2f7", accent: "#70445c", text: "#634656", muted: "#a57b91",
         surface: "rgba(255, 247, 251, 0.84)", surfaceStrong: "rgba(255, 252, 254, 0.95)", surfaceSoft: "rgba(255, 255, 255, 0.34)",
         line: "rgba(216, 143, 178, 0.3)", shadow: "rgba(112, 68, 92, 0.16)", heading: '"Dancing Script", cursive', body: '"Poppins", sans-serif',
         button: "linear-gradient(135deg, #f5b9d0 0%, #c875a0 100%)",
-        background: "linear-gradient(135deg, rgba(255, 243, 249, 0.7), rgba(245, 190, 211, 0.35)), url('https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=1800&q=85')",
-        watermark: ''
+        background: "linear-gradient(135deg, rgba(255, 243, 249, 0.7), rgba(245, 190, 211, 0.35)), url('https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=1800&q=85')"
     },
     mistico: {
         primary: "#a855f7", secondary: "#17152d", accent: "#f5e9ff", text: "#f2eaff", muted: "#c6b9e0",
         surface: "rgba(24, 21, 52, 0.78)", surfaceStrong: "rgba(35, 29, 70, 0.9)", surfaceSoft: "rgba(168, 85, 247, 0.12)",
         line: "rgba(192, 132, 252, 0.28)", shadow: "rgba(16, 10, 40, 0.45)", heading: '"Cinzel", serif', body: '"Montserrat", sans-serif',
         button: "linear-gradient(135deg, #22d3ee 0%, #9333ea 100%)",
-        background: "linear-gradient(135deg, rgba(15, 23, 42, 0.72), rgba(88, 28, 135, 0.42)), url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=1800&q=85')",
-        watermark: ''
+        background: "linear-gradient(135deg, rgba(15, 23, 42, 0.72), rgba(88, 28, 135, 0.42)), url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=1800&q=85')"
     },
     urbano: {
         primary: "#22d3ee", secondary: "#111827", accent: "#f8fafc", text: "#e2e8f0", muted: "#94a3b8",
         surface: "rgba(17, 24, 39, 0.82)", surfaceStrong: "rgba(31, 41, 55, 0.92)", surfaceSoft: "rgba(34, 211, 238, 0.1)",
         line: "rgba(34, 211, 238, 0.3)", shadow: "rgba(2, 6, 23, 0.5)", heading: '"Bebas Neue", sans-serif', body: '"Montserrat", sans-serif',
         button: "linear-gradient(135deg, #f43f5e 0%, #06b6d4 100%)",
-        background: "linear-gradient(135deg, rgba(17, 24, 39, 0.7), rgba(8, 145, 178, 0.28)), url('https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1800&q=85')",
-        watermark: ''
+        background: "linear-gradient(135deg, rgba(17, 24, 39, 0.7), rgba(8, 145, 178, 0.28)), url('https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1800&q=85')"
     },
     "infantil-dinamico": {
         primary: "#f97316", secondary: "#fff7ed", accent: "#164e63", text: "#164e63", muted: "#55758a",
         surface: "rgba(255, 250, 239, 0.82)", surfaceStrong: "rgba(255, 253, 247, 0.94)", surfaceSoft: "rgba(255, 255, 255, 0.32)",
         line: "rgba(249, 115, 22, 0.28)", shadow: "rgba(22, 78, 99, 0.2)", heading: '"Bebas Neue", sans-serif', body: '"Poppins", sans-serif',
         button: "linear-gradient(135deg, #facc15 0%, #f97316 100%)",
-        background: "linear-gradient(135deg, rgba(255, 247, 218, 0.62), rgba(14, 165, 233, 0.2)), url('https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1800&q=85')",
-        watermark: ''
+        background: "linear-gradient(135deg, rgba(255, 247, 218, 0.62), rgba(14, 165, 233, 0.2)), url('https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1800&q=85')"
     },
     romantico: {
         primary: "#d86b91", secondary: "#fff3f6", accent: "#71334d", text: "#633c4d", muted: "#a87588",
         surface: "rgba(255, 247, 249, 0.82)", surfaceStrong: "rgba(255, 252, 253, 0.95)", surfaceSoft: "rgba(255, 255, 255, 0.34)",
         line: "rgba(216, 107, 145, 0.3)", shadow: "rgba(113, 51, 77, 0.18)", heading: '"Great Vibes", cursive', body: '"Lato", sans-serif',
         button: "linear-gradient(135deg, #f2a8bd 0%, #c8547d 100%)",
-        background: "linear-gradient(135deg, rgba(255, 241, 246, 0.64), rgba(216, 107, 145, 0.2)), url('https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=1800&q=85')",
-        watermark: ''
+        background: "linear-gradient(135deg, rgba(255, 241, 246, 0.64), rgba(216, 107, 145, 0.2)), url('https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=1800&q=85')"
     },
     corporativo: {
         primary: "#1677b7", secondary: "#eef7fc", accent: "#123b5d", text: "#183b55", muted: "#658198",
         surface: "rgba(246, 251, 254, 0.86)", surfaceStrong: "rgba(253, 254, 255, 0.96)", surfaceSoft: "rgba(255, 255, 255, 0.38)",
         line: "rgba(22, 119, 183, 0.25)", shadow: "rgba(18, 59, 93, 0.18)", heading: '"Montserrat", sans-serif', body: '"Poppins", sans-serif',
         button: "linear-gradient(135deg, #38bdf8 0%, #155e95 100%)",
-        background: "linear-gradient(135deg, rgba(239, 248, 253, 0.72), rgba(22, 119, 183, 0.16)), url('https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1800&q=85')",
-        watermark: ''
+        background: "linear-gradient(135deg, rgba(239, 248, 253, 0.72), rgba(22, 119, 183, 0.16)), url('https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1800&q=85')"
     }
 };
 
@@ -289,8 +265,8 @@ function normalizeEvent(data) {
         nombre: data.nombre || "",
         datos: data.datos || {},
         template_slug: data.template_slug || data.datos?.template_slug || "",
-        subtitulo: data.subtitulo || "Celebración",
-        mensaje: data.mensaje || data.bendicion || data.dedicatoria || "Que el amor nos encuentre siempre del mismo lado.",
+        subtitulo: data.subtitulo || "",
+        mensaje: data.mensaje || data.bendicion || data.dedicatoria || "",
         fontFamily: FONT_FAMILIES[data.fontFamily || data.fuente] || FONT_FAMILIES.playfair,
         fechaEvento: data.fechaEvento || data.fecha || "",
         fechaTexto: data.fechaTexto || data.fecha || "",
@@ -316,8 +292,7 @@ function normalizeEvent(data) {
             galeria: Array.isArray(multimedia.galeria) ? multimedia.galeria : [],
             musica: multimedia.musica || data.musica || "",
             audios: normalizeAudioTracks(multimedia.audios || data.audios, multimedia.musica || data.musica),
-            audioPlayMode: multimedia.audioPlayMode || data.audioPlayMode || "selector",
-            marcaAgua: multimedia.marcaAgua || ""
+            audioPlayMode: multimedia.audioPlayMode || data.audioPlayMode || "selector"
         }
     };
 }
@@ -419,7 +394,6 @@ function applyTheme(themeName, fontFamily, styles = {}) {
     root.style.setProperty("--font-primary", fontFamily || FONT_FAMILIES.playfair);
     root.style.setProperty("--title-shadow-color", normalizeColor(styles.colorSombra, "#000000"));
     root.style.setProperty("--decorative-border-color", normalizeColor(styles.colorBordeDecorativo, theme.primary));
-    root.style.setProperty("--watermark-image", `url("data:image/svg+xml,${encodeURIComponent(theme.watermark)}")`);
 }
 
 function normalizeColor(value, fallback) {
@@ -450,6 +424,7 @@ function renderInvitation(event) {
     setupMusic(event.multimedia.audios, event.multimedia.audioPlayMode);
     applyAudioButtonPosition(event.layoutConfig.audioButton);
     setupBrochureNavigation();
+    setupLocationActions();
     setupRsvpConfirmation();
     startCountdown(event.fechaEvento);
 }
@@ -467,22 +442,23 @@ function renderHero(event) {
         <section id="capa-1" class="wedding-section wedding-section--cover hero-section">
             ${event.multimedia.capas.portada ? `<div class="bg-image-wrapper" aria-hidden="true"><img src="${escapeAttr(event.multimedia.capas.portada)}" alt=""></div>` : ""}
             <div class="bg-overlay" aria-hidden="true"></div>
-            ${renderWatermark(event, "watermark-start")}
-            <div class="wedding-content hero-copy">
-                <p class="hero-subtitle">${escapeHtml(event.subtitulo || "Casamiento de civil")}</p>
-                <p class="cover-kicker">NUESTRA BODA</p>
-                <h1 class="title cover-names">${escapeHtml(event.nombre || "Jennifer & Gonzalo")}</h1>
-                <p class="hero-date">${escapeHtml(event.fechaTexto || "")}</p>
-            </div>
-            <div class="hero-footer">
-                <p class="cover-hint">Deslizá para descubrir todos los detalles</p>
-                ${renderBrochureNavigation()}
-            </div>
+            ${renderHeroCopy(event)}
+            <div class="hero-footer">${renderBrochureNavigation()}</div>
             <button class="hero-action hero-music-action" type="button" data-audio-trigger>
                 ${ICONS.music}<span>Música</span>
             </button>
         </section>
     `;
+}
+
+function renderHeroCopy(event) {
+    const content = [
+        event.subtitulo ? `<p class="hero-subtitle">${escapeHtml(event.subtitulo)}</p>` : "",
+        event.nombre ? `<h1 class="title cover-names">${escapeHtml(event.nombre)}</h1>` : "",
+        event.fechaTexto ? `<p class="hero-date">${escapeHtml(event.fechaTexto)}</p>` : ""
+    ].filter(Boolean).join("");
+
+    return content ? `<div class="wedding-content hero-copy">${content}</div>` : "";
 }
 
 function renderLocationPage(event) {
@@ -492,16 +468,16 @@ function renderLocationPage(event) {
     return `
         <section class="wedding-section wedding-section--location">
             <div class="wedding-content">
-                <p class="page-message">${escapeHtml(event.mensaje)}</p>
-                <div class="details-section">
-                    ${renderDetail("clock", "Horario", event.horarioTexto)}
-                    ${renderDetail("pin", "Lugar", locationText)}
-                </div>
+                ${event.mensaje ? `<p class="page-message">${escapeHtml(event.mensaje)}</p>` : ""}
+                ${renderDetailsList([
+                    renderDetail("clock", "Horario", event.horarioTexto),
+                    renderDetail("pin", "Lugar", locationText)
+                ])}
                 ${event.googleMapsUrl ? `
                     <div class="actions">
-                        <a class="button" href="${escapeAttr(event.googleMapsUrl)}" target="_blank" rel="noopener noreferrer">
+                        <button class="button" type="button" data-map-url="${escapeAttr(event.googleMapsUrl)}">
                             ${ICONS.map} Cómo Llegar
-                        </a>
+                        </button>
                     </div>
                 ` : ""}
                 ${calendar}
@@ -512,12 +488,16 @@ function renderLocationPage(event) {
 }
 
 function renderConfirmationPage(event) {
+    const content = [
+        event.fechaEvento ? renderCountdownContent() : "",
+        renderRsvpContent(event)
+    ].filter(Boolean).join("");
+
+    if (!content) return "";
+
     return `
         <section class="wedding-section wedding-section--confirmation">
-            <div class="wedding-content">
-                ${renderCountdownContent()}
-                ${renderRsvpContent(event)}
-            </div>
+            <div class="wedding-content">${content}</div>
             ${renderBrochureNavigation()}
         </section>
     `;
@@ -527,17 +507,27 @@ function renderBrochureNavigation() {
     return `
         <nav class="brochure-dots" aria-label="Páginas de la invitación">
             <button type="button" class="brochure-dot is-active" data-page-target="0" aria-label="Portada"></button>
-            <button type="button" class="brochure-dot" data-page-target="1" aria-label="Ubicación y agenda"></button>
-            <button type="button" class="brochure-dot" data-page-target="2" aria-label="Confirmación"></button>
+            <button type="button" class="brochure-dot" data-page-target="1" aria-label="Página 2"></button>
+            <button type="button" class="brochure-dot" data-page-target="2" aria-label="Página 3"></button>
         </nav>
     `;
+}
+
+function renderDetailsList(items) {
+    const content = items.filter(Boolean).join("");
+    return content ? `<div class="details-section">${content}</div>` : "";
 }
 
 function setupBrochureNavigation() {
     const brochure = getApp();
     const pages = Array.from(brochure.querySelectorAll(".wedding-section"));
-    const dots = Array.from(brochure.querySelectorAll(".brochure-dot"));
+    let dots = Array.from(brochure.querySelectorAll(".brochure-dot"));
     if (!pages.length) return;
+
+    dots.forEach((dot) => {
+        if (!pages[Number(dot.dataset.pageTarget)]) dot.remove();
+    });
+    dots = Array.from(brochure.querySelectorAll(".brochure-dot"));
 
     const setActivePage = (index) => {
         dots.forEach((dot) => dot.classList.toggle("is-active", Number(dot.dataset.pageTarget) === index));
@@ -555,53 +545,6 @@ function setupBrochureNavigation() {
     }, { root: brochure, threshold: [0.55, 0.8] });
 
     pages.forEach((page) => observer.observe(page));
-}
-
-function renderHeroActions(event, rsvpContact, rsvpMessage) {
-    return `
-        <nav class="hero-actions" aria-label="Acciones de la invitación">
-            ${event.googleMapsUrl ? `
-                <a class="hero-action" href="${escapeAttr(event.googleMapsUrl)}" target="_blank" rel="noopener noreferrer">
-                    ${ICONS.map}<span>Ubicación</span>
-                </a>
-            ` : ""}
-            ${event.googleCalendarUrl ? `
-                <a class="hero-action" href="${escapeAttr(event.googleCalendarUrl)}" target="_blank" rel="noopener noreferrer">
-                    ${ICONS.calendar}<span>Agendar</span>
-                </a>
-            ` : ""}
-            <button class="hero-action" type="button" data-audio-trigger>
-                ${ICONS.music}<span>Música</span>
-            </button>
-            ${rsvpContact ? `
-                <a class="hero-action" href="https://api.whatsapp.com/send?phone=${rsvpContact.telefono}&text=${rsvpMessage}" target="_blank" rel="noopener noreferrer">
-                    ${ICONS.whatsapp}<span>Confirmar</span>
-                </a>
-            ` : ""}
-        </nav>
-    `;
-}
-
-function renderDetails(event) {
-    const calendar = renderCalendarActions(event);
-    const locationText = getLocationText(event);
-
-    return `
-        <section class="invitation-section details-section">
-            ${renderWatermark(event, "watermark-middle")}
-            ${renderDetail("clock", "Horario", event.horarioTexto)}
-            ${renderDetail("pin", "Lugar", locationText)}
-            ${event.googleMapsUrl ? `
-                <div class="actions">
-                    <a class="button" href="${escapeAttr(event.googleMapsUrl)}" target="_blank" rel="noopener noreferrer">
-                        ${ICONS.map}
-                        Cómo Llegar
-                    </a>
-                </div>
-            ` : ""}
-            ${calendar}
-        </section>
-    `;
 }
 
 function renderCalendarActions(event) {
@@ -670,6 +613,24 @@ function formatCalendarDate(date) {
     return `${parts.join("")}T${String(date.getUTCHours()).padStart(2, "0")}${String(date.getUTCMinutes()).padStart(2, "0")}00Z`;
 }
 
+function setupLocationActions() {
+    document.querySelectorAll("[data-map-url]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const url = button.dataset.mapUrl;
+            if (isValidHttpUrl(url)) window.open(url, "_blank", "noopener,noreferrer");
+        });
+    });
+}
+
+function isValidHttpUrl(value) {
+    try {
+        const url = new URL(value);
+        return url.protocol === "https:" || url.protocol === "http:";
+    } catch {
+        return false;
+    }
+}
+
 function renderDetail(icon, label, value) {
     if (!value) return "";
 
@@ -686,94 +647,14 @@ function renderDetail(icon, label, value) {
     `;
 }
 
-function renderWatermark(event, position) {
-    if (!event.multimedia.marcaAgua) return "";
-
-    return `<img class="watermark ${position}" src="${escapeAttr(event.multimedia.marcaAgua)}" alt="" aria-hidden="true">`;
-}
-
-function renderWatermarkAnchor(event, position) {
-    if (!event.multimedia.marcaAgua) return "";
-
-    return `<div class="watermark-anchor"><img class="watermark ${position}" src="${escapeAttr(event.multimedia.marcaAgua)}" alt="" aria-hidden="true"></div>`;
-}
-
-function renderSeparator(src) {
-    if (!src) return "";
-
-    return `
-        <section class="invitation-section">
-            <img class="separator-media" src="${escapeAttr(src)}" alt="">
-        </section>
-    `;
-}
-
-function renderCountdown() {
-    return `
-        <section class="invitation-section">
-            ${renderCountdownContent()}
-        </section>
-    `;
-}
-
 function renderCountdownContent() {
     return `
-        <p class="eyebrow">Cuenta regresiva</p>
-        <h2 class="section-title">Faltan</h2>
         <div class="countdown" id="countdown">
             <div class="time-card"><span id="dias">00</span><label>Días</label></div>
             <div class="time-card"><span id="horas">00</span><label>Hs</label></div>
             <div class="time-card"><span id="minutos">00</span><label>Min</label></div>
             <div class="time-card"><span id="segundos">00</span><label>Seg</label></div>
         </div>
-    `;
-}
-
-function renderGallery(images) {
-    if (!images.length) return "";
-
-    if (images.length === 1) {
-        return `
-            <section class="invitation-section">
-                <p class="eyebrow">Recuerdos</p>
-                <h2 class="section-title">Galería</h2>
-                <div class="gallery">
-                    <img src="${escapeAttr(images[0])}" alt="Foto de la invitación" loading="lazy">
-                </div>
-            </section>
-        `;
-    }
-
-    const items = images
-        .map((src, index) => `
-            <figure class="carousel-slide" aria-label="Foto ${index + 1} de ${images.length}">
-                <img src="${escapeAttr(src)}" alt="Foto de la invitación" loading="lazy">
-            </figure>
-        `)
-        .join("");
-    const dots = images
-        .map((_, index) => `
-            <button class="carousel-dot${index === 0 ? " is-active" : ""}" type="button" data-slide="${index}" aria-label="Ver foto ${index + 1}"></button>
-        `)
-        .join("");
-
-    return `
-        <section class="invitation-section">
-            <p class="eyebrow">Recuerdos</p>
-            <h2 class="section-title">Galería</h2>
-            <div class="carousel" data-carousel>
-                <div class="carousel-viewport">
-                    <div class="carousel-track">${items}</div>
-                </div>
-                <button class="carousel-control prev" type="button" data-carousel-prev aria-label="Foto anterior">
-                    <span aria-hidden="true">‹</span>
-                </button>
-                <button class="carousel-control next" type="button" data-carousel-next aria-label="Foto siguiente">
-                    <span aria-hidden="true">›</span>
-                </button>
-                <div class="carousel-dots">${dots}</div>
-            </div>
-        </section>
     `;
 }
 
@@ -894,10 +775,11 @@ function renderRsvpContent(event) {
 
     const buttons = contacts
         .map((contact) => {
+            const label = contact.nombre ? `Confirmar con ${escapeHtml(contact.nombre)}` : "Confirmar asistencia";
             return `
                 <a class="button rsvp-button" href="https://wa.me/${contact.telefono}" data-phone="${contact.telefono}" target="_blank" rel="noopener noreferrer">
                     ${ICONS.whatsapp}
-                    Confirmar con ${escapeHtml(contact.nombre || "contacto")}
+                    ${label}
                 </a>
             `;
         })
@@ -905,8 +787,6 @@ function renderRsvpContent(event) {
 
     return `
         <div class="rsvp-block">
-            <p class="eyebrow">Asistencia</p>
-            <h2 class="section-title">Confirmar</h2>
             ${event.confirmacionLimite ? `<p class="detail-value">Hasta el ${escapeHtml(event.confirmacionLimite)}</p>` : ""}
             <div class="actions">${buttons}</div>
         </div>
@@ -917,16 +797,9 @@ function setupRsvpConfirmation() {
     document.querySelectorAll(".rsvp-button").forEach((button) => {
         button.addEventListener("click", (event) => {
             event.preventDefault();
-            const addMessage = window.confirm("¿Deseas agregar un mensaje o restricción alimentaria para los novios?\n\nAceptar: Enviar mensaje\nCancelar: Solo confirmar");
-            let text = "¡Hola! Confirmo mi asistencia al evento.";
-
-            if (addMessage) {
-                const message = window.prompt("Escribí un mensaje breve para los novios:", "");
-                if (message?.trim()) text += ` Mensaje: ${message.trim()}`;
-            }
-
+            const text = "Confirmo mi asistencia al evento.";
             const url = `https://wa.me/${button.dataset.phone}?text=${encodeURIComponent(text)}`;
-            window.location.assign(url);
+            window.open(url, "_blank", "noopener,noreferrer");
         });
     });
 }

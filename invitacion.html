@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#b88746">
     <title>Invitación Digital</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,8 +15,6 @@
 </head>
 
 <body>
-    <div class="page-vignette" aria-hidden="true"></div>
-
     <div class="loading-overlay" id="loadingOverlay" role="status" aria-live="polite">
         <div class="loading-content">
             <video class="loading-brand" id="loadingBrandVideo" autoplay loop muted playsinline preload="auto"
@@ -24,7 +22,6 @@
                 <source src="assets/ycor-brand.mp4" type="video/mp4">
             </video>
             <div class="loading-indicator" aria-hidden="true"></div>
-            <p>Cargando invitación...</p>
         </div>
     </div>
 
@@ -39,17 +36,7 @@
     </div>
     <audio id="bgMusic" loop></audio>
 
-    <main class="invitation-shell invitation-dashboard" id="app" aria-live="polite">
-        <section class="state-panel">
-            <p>Cargando invitación...</p>
-        </section>
-    </main>
-
-    <footer class="site-footer">
-        <span class="brand-signature">Creado por YCORDIGITAL</span>
-        <a
-            href="mailto:digitalycor@gmail.com?subject=Consulta%20sobre%20Invitaciones%20Web%20-%20YCORDIGITAL">Contactar</a>
-    </footer>
+    <main class="invitation-shell invitation-dashboard" id="app" aria-live="polite"></main>
 
     <script src="js/invitacion.js" defer></script>
 </body>
