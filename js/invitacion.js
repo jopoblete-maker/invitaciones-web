@@ -333,18 +333,31 @@ function normalizeColor(value, fallback) {
 function renderInvitation(event) {
     document.title = event.nombre ? `Invitación de ${event.nombre}` : "Invitación Digital";
 
-    const pageImages = getBrochureImages(event);
+    const renderableSections = SectionRenderer.getRenderableSections(event.sections, {
+        warn: (message) => console.warn(message)
+    });
+    const context = {
+        event,
+        renderers: {
+            hero: renderHero,
+            eventInfo: renderEventInfoPage,
+            location: renderLocationPage,
+            rsvp: renderConfirmationPage,
+            closing: renderClosingPage
+        },
+        renderBrochureNavigation,
+        getSectionImage: (section, pageIndex) => getSectionImage(event, section, pageIndex),
+        warn: (message) => console.warn(message)
+    };
 
-    const html = [
-        renderHero(event),
-        renderLocationPage(event),
-        renderConfirmationPage(event)
-    ].join("");
+    const html = SectionRenderer.renderSections(renderableSections, context).join("");
 
     getApp().innerHTML = html;
     document.querySelectorAll(".wedding-section").forEach((page, index) => {
-        const config = event.layoutConfig[`capa${index + 1}`];
-        if (pageImages[index]) page.style.setProperty("--page-image", `url("${pageImages[index]}")`);
+        const section = renderableSections[index];
+        const config = getSectionLayoutConfig(event, section, index);
+        const image = getSectionImage(event, section, index);
+        if (image) page.style.setProperty("--page-image", `url("${image}")`);
         page.style.setProperty("--page-position", config.objectPosition);
         page.style.setProperty("--page-scale", config.scale);
         page.style.setProperty("--content-offset-y", `${config.offsetY}%`);
@@ -359,21 +372,44 @@ function renderInvitation(event) {
     startCountdown(event.fechaEvento);
 }
 
-function getBrochureImages(event) {
-    return [
-        event.multimedia.capas.portada,
-        event.multimedia.capas.encuentro,
-        event.multimedia.capas.confirmacion
-    ];
+function getSectionImage(event, section, pageIndex) {
+    const sectionData = section?.data || {};
+    const byLayer = {
+        capa1: event.multimedia.capas.portada,
+        capa2: event.multimedia.capas.encuentro,
+        capa3: event.multimedia.capas.confirmacion
+    };
+    const byType = {
+        hero: event.multimedia.capas.portada,
+        "event-info": event.multimedia.capas.encuentro,
+        location: event.multimedia.capas.encuentro,
+        rsvp: event.multimedia.capas.confirmacion,
+        closing: event.multimedia.capas.confirmacion
+    };
+
+    return sectionData.backgroundImage
+        || sectionData.image
+        || byLayer[sectionData.legacyLayer]
+        || byType[section?.type]
+        || [event.multimedia.capas.portada, event.multimedia.capas.encuentro, event.multimedia.capas.confirmacion][Math.min(pageIndex, 2)]
+        || "";
 }
 
-function renderHero(event) {
+function getSectionLayoutConfig(event, section, pageIndex) {
+    const layer = section?.data?.legacyLayer || `capa${Math.min(pageIndex + 1, 3)}`;
+    return event.layoutConfig[layer] || event.layoutConfig.capa3 || event.layoutConfig.capa2 || event.layoutConfig.capa1;
+}
+
+function renderHero(section, context) {
+    const event = context.event;
+    const image = context.getSectionImage(section, context.pageIndex);
+
     return `
         <section id="capa-1" class="wedding-section wedding-section--cover hero-section">
-            ${event.multimedia.capas.portada ? `<div class="bg-image-wrapper" aria-hidden="true"><img src="${escapeAttr(event.multimedia.capas.portada)}" alt=""></div>` : ""}
+            ${image ? `<div class="bg-image-wrapper" aria-hidden="true"><img src="${escapeAttr(image)}" alt=""></div>` : ""}
             <div class="bg-overlay" aria-hidden="true"></div>
-            ${renderHeroCopy(event)}
-            <div class="hero-footer">${renderBrochureNavigation()}</div>
+            ${renderHeroCopy(section, event)}
+            <div class="hero-footer">${context.renderBrochureNavigation(context.pageCount)}</div>
             <button class="hero-action hero-music-action" type="button" data-audio-trigger>
                 ${ICONS.music}<span>Música</span>
             </button>
@@ -381,26 +417,53 @@ function renderHero(event) {
     `;
 }
 
-function renderHeroCopy(event) {
+function renderHeroCopy(section, event) {
+    const data = section?.data || {};
+    const subtitle = firstSectionValue(data.subtitle, event.subtitulo);
+    const title = firstSectionValue(data.title, event.nombre);
+    const dateText = firstSectionValue(data.dateText, event.fechaTexto);
     const content = [
-        event.subtitulo ? `<p class="hero-subtitle">${escapeHtml(event.subtitulo)}</p>` : "",
-        event.nombre ? `<h1 class="title cover-names">${escapeHtml(event.nombre)}</h1>` : "",
-        event.fechaTexto ? `<p class="hero-date">${escapeHtml(event.fechaTexto)}</p>` : ""
+        subtitle ? `<p class="hero-subtitle">${escapeHtml(subtitle)}</p>` : "",
+        title ? `<h1 class="title cover-names">${escapeHtml(title)}</h1>` : "",
+        dateText ? `<p class="hero-date">${escapeHtml(dateText)}</p>` : ""
     ].filter(Boolean).join("");
 
     return content ? `<div class="wedding-content hero-copy">${content}</div>` : "";
 }
 
-function renderLocationPage(event) {
-    const locationText = getLocationText(event);
+function renderEventInfoPage(section, context) {
+    const event = context.event;
+    const data = section?.data || {};
+    const locationText = firstSectionValue(data.locationText, data.place, getLocationText(event));
+
+    return `
+        <section class="wedding-section wedding-section--location">
+            <div class="wedding-content">
+                ${renderDetailsList([
+                    renderDetail("calendar", "Fecha", firstSectionValue(data.dateText, event.fechaTexto)),
+                    renderDetail("clock", "Horario", firstSectionValue(data.timeText, event.horarioTexto)),
+                    renderDetail("pin", "Lugar", locationText)
+                ])}
+            </div>
+            ${context.renderBrochureNavigation(context.pageCount)}
+        </section>
+    `;
+}
+
+function renderLocationPage(section, context) {
+    const event = context.event;
+    const data = section?.data || {};
+    const locationText = firstSectionValue(data.locationText, data.place, getLocationText(event));
+    const message = firstSectionValue(data.message, event.mensaje);
+    const timeText = firstSectionValue(data.timeText, event.horarioTexto);
     const calendar = renderCalendarActions(event);
 
     return `
         <section class="wedding-section wedding-section--location">
             <div class="wedding-content">
-                ${event.mensaje ? `<p class="page-message">${escapeHtml(event.mensaje)}</p>` : ""}
+                ${message ? `<p class="page-message">${escapeHtml(message)}</p>` : ""}
                 ${renderDetailsList([
-                    renderDetail("clock", "Horario", event.horarioTexto),
+                    renderDetail("clock", "Horario", timeText),
                     renderDetail("pin", "Lugar", locationText)
                 ])}
                 ${event.googleMapsUrl ? `
@@ -412,35 +475,58 @@ function renderLocationPage(event) {
                 ` : ""}
                 ${calendar}
             </div>
-            ${renderBrochureNavigation()}
+            ${context.renderBrochureNavigation(context.pageCount)}
         </section>
     `;
 }
 
-function renderConfirmationPage(event) {
+function renderConfirmationPage(section, context) {
+    const event = context.event;
     const content = [
         event.fechaEvento ? renderCountdownContent() : "",
         renderRsvpContent(event)
     ].filter(Boolean).join("");
 
-    if (!content) return "";
-
     return `
         <section class="wedding-section wedding-section--confirmation">
             <div class="wedding-content">${content}</div>
-            ${renderBrochureNavigation()}
+            ${context.renderBrochureNavigation(context.pageCount)}
         </section>
     `;
 }
 
-function renderBrochureNavigation() {
+function renderClosingPage(section, context) {
+    const data = section?.data || {};
+    const content = [
+        data.title ? `<h2 class="section-title">${escapeHtml(data.title)}</h2>` : "",
+        data.message ? `<p class="page-message">${escapeHtml(data.message)}</p>` : ""
+    ].filter(Boolean).join("");
+
+    return `
+        <section class="wedding-section wedding-section--confirmation">
+            <div class="wedding-content">${content}</div>
+            ${context.renderBrochureNavigation(context.pageCount)}
+        </section>
+    `;
+}
+
+function renderBrochureNavigation(pageCount = 3) {
+    if (pageCount <= 1) return "";
+    const dots = Array.from({ length: pageCount }, (_, index) => {
+        const label = index === 0 ? "Portada" : `Página ${index + 1}`;
+        return `<button type="button" class="brochure-dot${index === 0 ? " is-active" : ""}" data-page-target="${index}" aria-label="${label}"></button>`;
+    }).join("");
+
     return `
         <nav class="brochure-dots" aria-label="Páginas de la invitación">
-            <button type="button" class="brochure-dot is-active" data-page-target="0" aria-label="Portada"></button>
-            <button type="button" class="brochure-dot" data-page-target="1" aria-label="Página 2"></button>
-            <button type="button" class="brochure-dot" data-page-target="2" aria-label="Página 3"></button>
+            ${dots}
         </nav>
     `;
+}
+
+function firstSectionValue(...values) {
+    const value = values.find((item) => typeof item === "string" && item.trim());
+    return value ? value.trim() : "";
 }
 
 function renderDetailsList(items) {
