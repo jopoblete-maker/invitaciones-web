@@ -5,12 +5,16 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configura la clave que le darás a tus clientes cuando te paguen
-const ADMIN_PASSWORD = 'invitacion2026'; // <--- Cambia esto por la contraseña que quieras usar
+const REQUIRED_ENV_VARS = ['ADMIN_PASSWORD', 'SUPABASE_URL', 'SUPABASE_KEY'];
+const missingEnvVars = REQUIRED_ENV_VARS.filter((name) => !process.env[name]);
 
-// Configuración de Supabase
-const SUPABASE_URL = 'https://jqewkmebhdyrjeawdmon.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxZXdrbWViaGR5cmplYXdkbW9uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0NDc2OTMsImV4cCI6MjEwMzAyMzY5M30.bwBlacPpsOQSMKc3JBv9loS2pL_chyZr0wnKmK6EWqw'; // <--- Reemplaza con tu clave anon de Supabase
+if (missingEnvVars.length) {
+    throw new Error(`Faltan variables de entorno requeridas: ${missingEnvVars.join(', ')}`);
+}
+
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const SUPABASE_TIMEOUT_MS = 15000;
