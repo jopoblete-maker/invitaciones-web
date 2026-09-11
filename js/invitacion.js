@@ -221,9 +221,6 @@ const FONT_FAMILIES = {
     prata: '"Prata", serif'
 };
 
-const TEMPLATE_STYLESHEETS = new Set(["boda-vertical", "cumple-clasico"]);
-const DEFAULT_TEMPLATE_STYLESHEET = "boda-vertical";
-
 let countdownTimer = null;
 let carouselTimers = [];
 
@@ -232,24 +229,25 @@ document.addEventListener("DOMContentLoaded", initInvitation);
 async function initInvitation() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id");
+    const devFixture = params.get("devFixture");
 
-    if (!id) {
+    if (!id && !devFixture) {
         renderState("ID de invitación no especificado.");
         return;
     }
 
     try {
-        const response = await fetch(`/api/eventos/${encodeURIComponent(id)}`);
-        if (!response.ok) throw new Error("Invitación no encontrada");
-
-        const data = await response.json();
+        const data = devFixture
+            ? await loadLocalPreviewFixture(devFixture)
+            : await fetchEventById(id);
         const event = EventNormalizer.normalizeEvent(data, { fontFamilies: FONT_FAMILIES });
-        const themeName = inferTheme(event, id);
-        const templateSlug = normalizeTemplateSlug(event.template.slug || event.template_slug || DEFAULT_TEMPLATE_STYLESHEET);
+        const templateConfig = TemplateRegistry.resolveTemplate(event.template.slug || event.template_slug);
+        const themeName = inferTheme(event, id, templateConfig);
 
-        loadTemplateStylesheet(templateSlug);
+        applyTemplateConfig(templateConfig);
+        loadTemplateStylesheet(templateConfig);
         applyTheme(themeName, event.fontFamily, event.estilos);
-        renderInvitation(event);
+        renderInvitation(event, templateConfig);
         hideLoader();
     } catch (error) {
         console.error(error);
@@ -257,13 +255,8 @@ async function initInvitation() {
     }
 }
 
-function normalizeTemplateSlug(value) {
-    const slug = String(value || "").trim();
-    return TEMPLATE_STYLESHEETS.has(slug) ? slug : DEFAULT_TEMPLATE_STYLESHEET;
-}
-
-function loadTemplateStylesheet(templateSlug) {
-    const href = `/css/templates/${templateSlug}.css`;
+function loadTemplateStylesheet(templateConfig) {
+    const href = templateConfig.stylesheet;
     let link = document.getElementById("template-stylesheet");
 
     if (!link) {
@@ -278,6 +271,41 @@ function loadTemplateStylesheet(templateSlug) {
     }
 }
 
+async function fetchEventById(id) {
+    const response = await fetch(`/api/eventos/${encodeURIComponent(id)}`);
+    if (!response.ok) throw new Error("Invitación no encontrada");
+    return response.json();
+}
+
+async function loadLocalPreviewFixture(name) {
+    if (!isLocalPreviewHost()) {
+        throw new Error("Preview local no disponible en este entorno.");
+    }
+
+    if (name !== "boda-civil-esencial") {
+        throw new Error("Fixture de preview no permitido.");
+    }
+
+    const response = await fetch(`/__dev-fixtures/${encodeURIComponent(name)}.fixture.json`, {
+        cache: "no-store"
+    });
+    if (!response.ok) throw new Error("Fixture de preview no encontrado.");
+    return response.json();
+}
+
+function isLocalPreviewHost() {
+    return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+}
+
+function applyTemplateConfig(templateConfig) {
+    document.body.dataset.template = templateConfig.slug;
+    document.body.dataset.templateLayout = templateConfig.layout;
+    getApp().dataset.templateLayout = templateConfig.layout;
+    getApp().classList.toggle("invitation-dashboard", templateConfig.layout !== "vertical");
+    getApp().classList.toggle("invitation-vertical", templateConfig.layout === "vertical");
+    getApp().classList.add(templateConfig.className);
+}
+
 function applyAudioButtonPosition(config) {
     const root = document.documentElement;
     root.style.setProperty("--audio-top", config.verticalEdge === "top" ? `${config.verticalOffset}%` : "auto");
@@ -286,10 +314,11 @@ function applyAudioButtonPosition(config) {
     root.style.setProperty("--audio-right", config.horizontalEdge === "right" ? `${config.horizontalOffset}%` : "auto");
 }
 
-function inferTheme(data, id) {
+function inferTheme(data, id, templateConfig = {}) {
     const raw = `${data.tema || ""} ${id || ""} ${data.nombre || ""} ${data.subtitulo || ""}`.toLowerCase();
 
     if (data.tema && THEMES[data.tema]) return data.tema;
+    if (templateConfig.defaultTheme && THEMES[templateConfig.defaultTheme]) return templateConfig.defaultTheme;
     if (raw.includes("frozen") || raw.includes("nieve")) return "frozen";
     if (raw.includes("pesca") || raw.includes("pesc")) return "pesca";
     if (raw.includes("boda") || raw.includes("casamiento") || raw.includes("elegante")) return "elegante";
@@ -330,7 +359,7 @@ function normalizeColor(value, fallback) {
     return /^#[0-9a-f]{6}$/i.test(String(value || "")) ? value : fallback;
 }
 
-function renderInvitation(event) {
+function renderInvitation(event, templateConfig) {
     document.title = event.nombre ? `Invitación de ${event.nombre}` : "Invitación Digital";
 
     const renderableSections = SectionRenderer.getRenderableSections(event.sections, {
@@ -345,7 +374,8 @@ function renderInvitation(event) {
             rsvp: renderConfirmationPage,
             closing: renderClosingPage
         },
-        renderBrochureNavigation,
+        templateConfig,
+        renderBrochureNavigation: (pageCount) => templateConfig.layout === "vertical" ? "" : renderBrochureNavigation(pageCount),
         getSectionImage: (section, pageIndex) => getSectionImage(event, section, pageIndex),
         warn: (message) => console.warn(message)
     };
@@ -405,7 +435,7 @@ function renderHero(section, context) {
     const image = context.getSectionImage(section, context.pageIndex);
 
     return `
-        <section id="capa-1" class="wedding-section wedding-section--cover hero-section">
+        <section id="capa-1" class="wedding-section wedding-section--cover hero-section" data-section-type="${escapeAttr(section.type)}">
             ${image ? `<div class="bg-image-wrapper" aria-hidden="true"><img src="${escapeAttr(image)}" alt=""></div>` : ""}
             <div class="bg-overlay" aria-hidden="true"></div>
             ${renderHeroCopy(section, event)}
@@ -422,10 +452,12 @@ function renderHeroCopy(section, event) {
     const subtitle = firstSectionValue(data.subtitle, event.subtitulo);
     const title = firstSectionValue(data.title, event.nombre);
     const dateText = firstSectionValue(data.dateText, event.fechaTexto);
+    const message = firstSectionValue(data.message, data.text);
     const content = [
         subtitle ? `<p class="hero-subtitle">${escapeHtml(subtitle)}</p>` : "",
         title ? `<h1 class="title cover-names">${escapeHtml(title)}</h1>` : "",
-        dateText ? `<p class="hero-date">${escapeHtml(dateText)}</p>` : ""
+        dateText ? `<p class="hero-date">${escapeHtml(dateText)}</p>` : "",
+        message ? `<p class="page-message hero-note">${escapeHtml(message)}</p>` : ""
     ].filter(Boolean).join("");
 
     return content ? `<div class="wedding-content hero-copy">${content}</div>` : "";
@@ -437,8 +469,9 @@ function renderEventInfoPage(section, context) {
     const locationText = firstSectionValue(data.locationText, data.place, getLocationText(event));
 
     return `
-        <section class="wedding-section wedding-section--location">
+        <section class="wedding-section wedding-section--location" data-section-type="${escapeAttr(section.type)}">
             <div class="wedding-content">
+                ${data.message ? `<p class="page-message">${escapeHtml(data.message)}</p>` : ""}
                 ${renderDetailsList([
                     renderDetail("calendar", "Fecha", firstSectionValue(data.dateText, event.fechaTexto)),
                     renderDetail("clock", "Horario", firstSectionValue(data.timeText, event.horarioTexto)),
@@ -459,7 +492,7 @@ function renderLocationPage(section, context) {
     const calendar = renderCalendarActions(event);
 
     return `
-        <section class="wedding-section wedding-section--location">
+        <section class="wedding-section wedding-section--location" data-section-type="${escapeAttr(section.type)}">
             <div class="wedding-content">
                 ${message ? `<p class="page-message">${escapeHtml(message)}</p>` : ""}
                 ${renderDetailsList([
@@ -483,12 +516,12 @@ function renderLocationPage(section, context) {
 function renderConfirmationPage(section, context) {
     const event = context.event;
     const content = [
-        event.fechaEvento ? renderCountdownContent() : "",
+        context.templateConfig.layout === "vertical" ? "" : event.fechaEvento ? renderCountdownContent() : "",
         renderRsvpContent(event)
     ].filter(Boolean).join("");
 
     return `
-        <section class="wedding-section wedding-section--confirmation">
+        <section class="wedding-section wedding-section--confirmation" data-section-type="${escapeAttr(section.type)}">
             <div class="wedding-content">${content}</div>
             ${context.renderBrochureNavigation(context.pageCount)}
         </section>
@@ -499,11 +532,12 @@ function renderClosingPage(section, context) {
     const data = section?.data || {};
     const content = [
         data.title ? `<h2 class="section-title">${escapeHtml(data.title)}</h2>` : "",
-        data.message ? `<p class="page-message">${escapeHtml(data.message)}</p>` : ""
+        data.message ? `<p class="page-message">${escapeHtml(data.message)}</p>` : "",
+        data.names ? `<p class="hero-date closing-names">${escapeHtml(data.names)}</p>` : ""
     ].filter(Boolean).join("");
 
     return `
-        <section class="wedding-section wedding-section--confirmation">
+        <section class="wedding-section wedding-section--confirmation" data-section-type="${escapeAttr(section.type)}">
             <div class="wedding-content">${content}</div>
             ${context.renderBrochureNavigation(context.pageCount)}
         </section>

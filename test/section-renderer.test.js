@@ -1,5 +1,6 @@
 const assert = require("assert");
 const { normalizeEvent } = require("../js/core/event-normalizer");
+const { resolveTemplate } = require("../js/core/template-registry");
 const {
     SECTION_RENDERER_REGISTRY,
     getRenderableSections,
@@ -87,5 +88,14 @@ assert.deepStrictEqual(
     ["hero:only:0/1"]
 );
 assert.deepStrictEqual(Object.keys(SECTION_RENDERER_REGISTRY), ["hero", "event-info", "location", "rsvp", "closing"]);
+
+const civilTemplate = resolveTemplate("boda-civil-esencial");
+const legacyTemplate = resolveTemplate("boda-vertical");
+assert.strictEqual(civilTemplate.layout, "vertical");
+assert.strictEqual(legacyTemplate.layout, "paged");
+
+const navForTemplate = (template, pageCount) => template.layout === "vertical" ? "" : `dots:${pageCount}`;
+assert.strictEqual(navForTemplate(civilTemplate, 5), "");
+assert.strictEqual(navForTemplate(legacyTemplate, 3), "dots:3");
 
 console.log("section-renderer test passed");
