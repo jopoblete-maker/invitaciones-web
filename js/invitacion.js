@@ -243,9 +243,9 @@ async function initInvitation() {
         if (!response.ok) throw new Error("Invitación no encontrada");
 
         const data = await response.json();
-        const themeName = inferTheme(data, id);
-        const event = normalizeEvent(data);
-        const templateSlug = normalizeTemplateSlug(event.datos?.template_slug || event.template_slug || DEFAULT_TEMPLATE_STYLESHEET);
+        const event = EventNormalizer.normalizeEvent(data, { fontFamilies: FONT_FAMILIES });
+        const themeName = inferTheme(event, id);
+        const templateSlug = normalizeTemplateSlug(event.template.slug || event.template_slug || DEFAULT_TEMPLATE_STYLESHEET);
 
         loadTemplateStylesheet(templateSlug);
         applyTheme(themeName, event.fontFamily, event.estilos);
@@ -255,46 +255,6 @@ async function initInvitation() {
         console.error(error);
         renderState("Invitación no encontrada");
     }
-}
-
-function normalizeEvent(data) {
-    const multimedia = data.multimedia || {};
-    const capas = multimedia.capas || {};
-
-    return {
-        nombre: data.nombre || "",
-        datos: data.datos || {},
-        template_slug: data.template_slug || data.datos?.template_slug || "",
-        subtitulo: data.subtitulo || "",
-        mensaje: data.mensaje || data.bendicion || data.dedicatoria || "",
-        fontFamily: FONT_FAMILIES[data.fontFamily || data.fuente] || FONT_FAMILIES.playfair,
-        fechaEvento: data.fechaEvento || data.fecha || "",
-        fechaTexto: data.fechaTexto || data.fecha || "",
-        horarioTexto: data.horarioTexto || data.horario || "",
-        lugarNombre: data.lugarNombre || data.lugar || "",
-        lugarDireccion: data.lugarDireccion || data.direccion || "",
-        googleMapsUrl: data.googleMapsUrl || data.linkMaps || "",
-        googleCalendarUrl: data.googleCalendarUrl || "",
-        audioPlayMode: data.multimedia?.audioPlayMode || data.audioPlayMode || "selector",
-        confirmacionLimite: data.confirmacionLimite || "",
-        estilos: data.estilos || {},
-        layoutConfig: normalizeLayoutConfig(data.layoutConfig),
-        contactosRSVP: data.contactosRSVP || contactsFromConfirmation(data.confirmacion),
-        multimedia: {
-            capas: {
-                portada: capas.portada || multimedia.personajeHeader || multimedia.galeria?.[0] || "",
-                encuentro: capas.encuentro || multimedia.personajeSeparador || multimedia.galeria?.[1] || "",
-                confirmacion: capas.confirmacion || multimedia.fondoVentana3 || multimedia.galeria?.[2] || ""
-            },
-            personajeHeader: multimedia.personajeHeader || "",
-            personajeSeparador: multimedia.personajeSeparador || "",
-            fondoVentana3: multimedia.fondoVentana3 || "",
-            galeria: Array.isArray(multimedia.galeria) ? multimedia.galeria : [],
-            musica: multimedia.musica || data.musica || "",
-            audios: normalizeAudioTracks(multimedia.audios || data.audios, multimedia.musica || data.musica),
-            audioPlayMode: multimedia.audioPlayMode || data.audioPlayMode || "selector"
-        }
-    };
 }
 
 function normalizeTemplateSlug(value) {
@@ -316,36 +276,6 @@ function loadTemplateStylesheet(templateSlug) {
     if (link.getAttribute("href") !== href) {
         link.setAttribute("href", href);
     }
-}
-
-function normalizeLayoutConfig(value) {
-    const defaults = {
-        capa1: { objectPosition: "50% 25%", scale: 1, align: "flex-end", offsetY: 78, contentScale: "medium" },
-        capa2: { objectPosition: "50% 35%", scale: 1, align: "center", offsetY: 50, contentScale: "medium" },
-        capa3: { objectPosition: "50% 35%", scale: 1, align: "center", offsetY: 50, contentScale: "medium" }
-    };
-    const normalized = Object.fromEntries(Object.entries(defaults).map(([layer, config]) => {
-        const saved = value?.[layer] || {};
-        const offsetY = Number(saved.offsetY);
-        return [layer, {
-            ...config,
-            ...saved,
-            offsetY: Number.isFinite(offsetY) && offsetY >= 50 && offsetY <= 95 ? offsetY : config.offsetY
-        }];
-    }));
-    const audio = value?.audioButton || {};
-    normalized.audioButton = {
-        verticalEdge: audio.verticalEdge === "bottom" ? "bottom" : "top",
-        horizontalEdge: audio.horizontalEdge === "right" ? "right" : "left",
-        verticalOffset: clampPercent(audio.verticalOffset, 22),
-        horizontalOffset: clampPercent(audio.horizontalOffset, 22)
-    };
-    return normalized;
-}
-
-function clampPercent(value, fallback) {
-    const number = Number(value);
-    return Number.isFinite(number) ? Math.max(0, Math.min(95, number)) : fallback;
 }
 
 function applyAudioButtonPosition(config) {
@@ -814,14 +744,6 @@ function normalizeWhatsAppPhone(value) {
     return phone;
 }
 
-function normalizeAudioTracks(value, fallbackSource) {
-    const tracks = Array.isArray(value)
-        ? value.map((track, index) => typeof track === "string" ? { src: track, name: `Pista ${index + 1}` } : track)
-        : [];
-    if (tracks.length) return tracks.filter((track) => track?.src);
-    return fallbackSource ? [{ src: fallbackSource, name: "Música de fondo" }] : [];
-}
-
 function setupMusic(tracks, playMode) {
     const widget = document.getElementById("audioWidget");
     const button = document.getElementById("btnMusic");
@@ -909,15 +831,6 @@ function startCountdown(dateValue) {
 function setCountdownText(id, value) {
     const element = document.getElementById(id);
     if (element) element.innerText = String(value).padStart(2, "0");
-}
-
-function contactsFromConfirmation(confirmacion) {
-    if (!confirmacion) return [];
-
-    return [
-        { nombre: confirmacion.nombre1, telefono: confirmacion.tel1 },
-        { nombre: confirmacion.nombre2, telefono: confirmacion.tel2 }
-    ].filter((contact) => contact.telefono);
 }
 
 function renderState(message) {
