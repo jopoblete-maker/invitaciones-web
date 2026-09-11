@@ -230,16 +230,19 @@ async function initInvitation() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id");
     const devFixture = params.get("devFixture");
+    const devDraft = params.get("devDraft");
 
-    if (!id && !devFixture) {
+    if (!id && !devFixture && !devDraft) {
         renderState("ID de invitación no especificado.");
         return;
     }
 
     try {
-        const data = devFixture
-            ? await loadLocalPreviewFixture(devFixture)
-            : await fetchEventById(id);
+        const data = devDraft
+            ? await loadLocalPreviewDraft(devDraft)
+            : devFixture
+                ? await loadLocalPreviewFixture(devFixture)
+                : await fetchEventById(id);
         const event = EventNormalizer.normalizeEvent(data, { fontFamilies: FONT_FAMILIES });
         const templateConfig = TemplateRegistry.resolveTemplate(event.template.slug || event.template_slug);
         const themeName = inferTheme(event, id, templateConfig);
@@ -290,6 +293,22 @@ async function loadLocalPreviewFixture(name) {
         cache: "no-store"
     });
     if (!response.ok) throw new Error("Fixture de preview no encontrado.");
+    return response.json();
+}
+
+async function loadLocalPreviewDraft(name) {
+    if (!isLocalPreviewHost()) {
+        throw new Error("Preview local no disponible en este entorno.");
+    }
+
+    if (name !== "kaly-joha-boda-civil") {
+        throw new Error("Draft de preview no permitido.");
+    }
+
+    const response = await fetch(`/__dev-drafts/${encodeURIComponent(name)}.event.json`, {
+        cache: "no-store"
+    });
+    if (!response.ok) throw new Error("Draft de preview no encontrado.");
     return response.json();
 }
 
@@ -387,7 +406,7 @@ function renderInvitation(event, templateConfig) {
         const section = renderableSections[index];
         const config = getSectionLayoutConfig(event, section, index);
         const image = getSectionImage(event, section, index);
-        if (image) page.style.setProperty("--page-image", `url("${image}")`);
+        if (image && !shouldRenderContainedMedia(section)) page.style.setProperty("--page-image", `url("${image}")`);
         page.style.setProperty("--page-position", config.objectPosition);
         page.style.setProperty("--page-scale", config.scale);
         page.style.setProperty("--content-offset-y", `${config.offsetY}%`);
@@ -433,12 +452,14 @@ function getSectionLayoutConfig(event, section, pageIndex) {
 function renderHero(section, context) {
     const event = context.event;
     const image = context.getSectionImage(section, context.pageIndex);
+    const inlineMedia = shouldRenderContainedMedia(section);
 
     return `
-        <section id="capa-1" class="wedding-section wedding-section--cover hero-section" data-section-type="${escapeAttr(section.type)}">
-            ${image ? `<div class="bg-image-wrapper" aria-hidden="true"><img src="${escapeAttr(image)}" alt=""></div>` : ""}
-            <div class="bg-overlay" aria-hidden="true"></div>
-            ${renderHeroCopy(section, event)}
+        <section id="capa-1" class="wedding-section wedding-section--cover hero-section${inlineMedia ? " wedding-section--media-contained" : ""}" data-section-type="${escapeAttr(section.type)}">
+            ${image && inlineMedia ? renderSectionMedia(section, image) : ""}
+            ${image && !inlineMedia ? `<div class="bg-image-wrapper" aria-hidden="true"><img src="${escapeAttr(image)}" alt=""></div>` : ""}
+            ${!inlineMedia ? `<div class="bg-overlay" aria-hidden="true"></div>` : ""}
+            ${shouldRenderSectionCopy(section) ? renderHeroCopy(section, event) : ""}
             <div class="hero-footer">${context.renderBrochureNavigation(context.pageCount)}</div>
             <button class="hero-action hero-music-action" type="button" data-audio-trigger>
                 ${ICONS.music}<span>Música</span>
@@ -466,12 +487,16 @@ function renderHeroCopy(section, event) {
 function renderEventInfoPage(section, context) {
     const event = context.event;
     const data = section?.data || {};
+    const image = context.getSectionImage(section, context.pageIndex);
+    const inlineMedia = shouldRenderContainedMedia(section);
     const locationText = firstSectionValue(data.locationText, data.place, getLocationText(event));
+    const message = data.showMessage === false ? "" : firstSectionValue(data.message);
 
     return `
-        <section class="wedding-section wedding-section--location" data-section-type="${escapeAttr(section.type)}">
+        <section class="wedding-section wedding-section--location${inlineMedia ? " wedding-section--media-contained" : ""}" data-section-type="${escapeAttr(section.type)}">
             <div class="wedding-content">
-                ${data.message ? `<p class="page-message">${escapeHtml(data.message)}</p>` : ""}
+                ${image && inlineMedia ? renderSectionMedia(section, image) : ""}
+                ${message ? `<p class="page-message">${escapeHtml(message)}</p>` : ""}
                 ${renderDetailsList([
                     renderDetail("calendar", "Fecha", firstSectionValue(data.dateText, event.fechaTexto)),
                     renderDetail("clock", "Horario", firstSectionValue(data.timeText, event.horarioTexto)),
@@ -486,8 +511,10 @@ function renderEventInfoPage(section, context) {
 function renderLocationPage(section, context) {
     const event = context.event;
     const data = section?.data || {};
+    const hasEventInfo = hasEventInfoDetails(event);
     const locationText = firstSectionValue(data.locationText, data.place, getLocationText(event));
-    const message = firstSectionValue(data.message, event.mensaje);
+    const addressText = firstSectionValue(data.address, event.lugarDireccion, locationText);
+    const message = firstSectionValue(data.message, hasEventInfoMessage(event) ? "" : event.mensaje);
     const timeText = firstSectionValue(data.timeText, event.horarioTexto);
     const calendar = renderCalendarActions(event);
 
@@ -495,10 +522,14 @@ function renderLocationPage(section, context) {
         <section class="wedding-section wedding-section--location" data-section-type="${escapeAttr(section.type)}">
             <div class="wedding-content">
                 ${message ? `<p class="page-message">${escapeHtml(message)}</p>` : ""}
-                ${renderDetailsList([
-                    renderDetail("clock", "Horario", timeText),
-                    renderDetail("pin", "Lugar", locationText)
-                ])}
+                ${hasEventInfo
+                    ? renderDetailsList([
+                        renderDetail("pin", "DirecciÃ³n", addressText)
+                    ])
+                    : renderDetailsList([
+                        renderDetail("clock", "Horario", timeText),
+                        renderDetail("pin", "Lugar", locationText)
+                    ])}
                 ${event.googleMapsUrl ? `
                     <div class="actions">
                         <button class="button" type="button" data-map-url="${escapeAttr(event.googleMapsUrl)}">
@@ -530,14 +561,17 @@ function renderConfirmationPage(section, context) {
 
 function renderClosingPage(section, context) {
     const data = section?.data || {};
+    const image = context.getSectionImage(section, context.pageIndex);
+    const inlineMedia = shouldRenderContainedMedia(section);
     const content = [
+        image && inlineMedia ? renderSectionMedia(section, image) : "",
         data.title ? `<h2 class="section-title">${escapeHtml(data.title)}</h2>` : "",
         data.message ? `<p class="page-message">${escapeHtml(data.message)}</p>` : "",
         data.names ? `<p class="hero-date closing-names">${escapeHtml(data.names)}</p>` : ""
     ].filter(Boolean).join("");
 
     return `
-        <section class="wedding-section wedding-section--confirmation" data-section-type="${escapeAttr(section.type)}">
+        <section class="wedding-section wedding-section--confirmation${inlineMedia ? " wedding-section--media-contained" : ""}" data-section-type="${escapeAttr(section.type)}">
             <div class="wedding-content">${content}</div>
             ${context.renderBrochureNavigation(context.pageCount)}
         </section>
@@ -561,6 +595,41 @@ function renderBrochureNavigation(pageCount = 3) {
 function firstSectionValue(...values) {
     const value = values.find((item) => typeof item === "string" && item.trim());
     return value ? value.trim() : "";
+}
+
+function shouldRenderContainedMedia(section) {
+    const data = section?.data || {};
+    return firstSectionValue(data.mediaLayout, data.imageLayout) === "contained";
+}
+
+function shouldRenderSectionCopy(section) {
+    return section?.data?.showCopy !== false;
+}
+
+function renderSectionMedia(section, image) {
+    const data = section?.data || {};
+    const alt = firstSectionValue(data.imageAlt, data.alt);
+    return `
+        <figure class="section-media">
+            <img src="${escapeAttr(image)}" alt="${escapeAttr(alt)}">
+        </figure>
+    `;
+}
+
+function hasEventInfoMessage(event) {
+    return Array.isArray(event.sections) && event.sections.some((section) => {
+        if (!section || section.enabled === false || section.type !== "event-info") return false;
+        const data = section.data || {};
+        return Boolean(firstSectionValue(data.message, data.text));
+    });
+}
+
+function hasEventInfoDetails(event) {
+    return Array.isArray(event.sections) && event.sections.some((section) => {
+        if (!section || section.enabled === false || section.type !== "event-info") return false;
+        const data = section.data || {};
+        return Boolean(firstSectionValue(data.dateText, data.timeText, data.locationText, data.place));
+    });
 }
 
 function renderDetailsList(items) {
@@ -965,14 +1034,6 @@ function renderState(message) {
 function hideLoader() {
     const loader = document.getElementById("loadingOverlay");
     if (!loader) return;
-
-    const video = loader.querySelector("video");
-    if (video) {
-        video.pause();
-        video.removeAttribute("src");
-        video.querySelectorAll("source").forEach((source) => source.removeAttribute("src"));
-        video.load();
-    }
 
     loader.classList.add("is-hidden");
     const removeLoader = () => loader.remove();

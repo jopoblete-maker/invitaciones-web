@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "event": {
+    "type": "wedding-civil",
+    "title": "Kaly & Joha",
+    "subtitle": "Uni\u00f3n por Civil",
+    "message": "El amor nos trae hasta ac\u00e1\u2026\nY queremos dar el \u2018s\u00ed\u2019 rodeados de las personas que m\u00e1s queremos.\nLos invitamos a acompa\u00f1arnos en nuestro casamiento por civil.",
+    "date": "2026-12-04",
+    "dateText": "04/12/2026",
+    "timeText": "11:30 hs."
+  },
+  "template": {
+    "slug": "boda-civil-esencial"
+  },
+  "theme": {
+    "slug": "botanico",
+    "fontFamily": "cormorant-garamond",
+    "styles": {
+      "colorFondo": "#fbfbf7",
+      "colorTexto": "#25352f",
+      "colorBoton": "#6f7d57",
+      "colorSombra": "#1f2d28",
+      "colorBordeDecorativo": "#c1a35f"
+    }
+  },
+  "media": {
+    "capas": {
+      "portada": "",
+      "encuentro": "",
+      "confirmacion": ""
+    },
+    "galeria": []
+  },
+  "music": {
+    "tracks": [],
+    "playMode": "selector"
+  },
+  "location": {
+    "name": "Registro Civil",
+    "address": "Del Carmen 475",
+    "mapsUrl": ""
+  },
+  "rsvp": {
+    "deadline": "",
+    "contacts": []
+  },
+  "sections": [
+    {
+      "id": "hero",
+      "type": "hero",
+      "order": 10,
+      "enabled": true,
+      "data": {
+        "title": "Kaly & Joha",
+        "subtitle": "Uni\u00f3n por Civil",
+        "dateText": "04/12/2026",
+        "image": "/assets/events/kaly-joha/02-portada.png",
+        "imageAlt": "Portada de Kaly y Joha",
+        "mediaLayout": "contained",
+        "showCopy": false
+      }
+    },
+    {
+      "id": "event-info",
+      "type": "event-info",
+      "order": 20,
+      "enabled": true,
+      "data": {
+        "dateText": "04/12/2026",
+        "timeText": "11:30 hs.",
+        "place": "Registro Civil",
+        "message": "El amor nos trae hasta ac\u00e1\u2026\nY queremos dar el \u2018s\u00ed\u2019 rodeados de las personas que m\u00e1s queremos.\nLos invitamos a acompa\u00f1arnos en nuestro casamiento por civil.",
+        "image": "/assets/events/kaly-joha/01-invitacion.png",
+        "imageAlt": "Invitaci\u00f3n de Kaly y Joha",
+        "mediaLayout": "contained",
+        "showMessage": false
+      }
+    },
+    {
+      "id": "location",
+      "type": "location",
+      "order": 30,
+      "enabled": true,
+      "data": {
+        "name": "Registro Civil",
+        "address": "Del Carmen 475"
+      }
+    },
+    {
+      "id": "rsvp",
+      "type": "rsvp",
+      "order": 40,
+      "enabled": false,
+      "data": {}
+    },
+    {
+      "id": "closing",
+      "type": "closing",
+      "order": 50,
+      "enabled": true,
+      "data": {
+        "image": "/assets/events/kaly-joha/03-cierre.png",
+        "imageAlt": "Cierre de la invitaci\u00f3n de Kaly y Joha",
+        "mediaLayout": "contained"
+      }
+    }
+  ]
+}

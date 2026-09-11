@@ -23,7 +23,9 @@ const server = http.createServer((req, res) => {
     const pathname = decodeURIComponent(requestUrl.pathname);
     const relativePath = pathname.startsWith("/__dev-fixtures/")
         ? path.join(".dev", "fixtures", pathname.replace("/__dev-fixtures/", ""))
-        : pathname === "/" ? "invitacion.html" : pathname.slice(1);
+        : pathname.startsWith("/__dev-drafts/")
+            ? path.join(".dev", "drafts", pathname.replace("/__dev-drafts/", ""))
+            : pathname === "/" ? "invitacion.html" : pathname.slice(1);
     const filePath = path.resolve(ROOT, relativePath);
 
     if (!filePath.startsWith(ROOT + path.sep)) {
@@ -81,4 +83,5 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, HOST, () => {
     console.log(`Preview local: http://${HOST}:${PORT}/invitacion.html?devFixture=boda-civil-esencial`);
+    console.log(`Draft local: http://${HOST}:${PORT}/invitacion.html?devDraft=kaly-joha-boda-civil`);
 });
