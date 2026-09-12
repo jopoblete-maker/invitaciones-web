@@ -24,6 +24,7 @@ const TEMAS_VALIDOS = [
     'dorado-premium', 'tropical', 'botanico', 'infantil-pastel', 'mistico',
     'urbano', 'infantil-dinamico', 'romantico', 'corporativo'
 ];
+const EVENT_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*-?$/;
 
 app.use((req, res, next) => {
     res.setHeader('X-Frame-Options', 'DENY');
@@ -62,7 +63,7 @@ app.get('/', (req, res) => {
 // Endpoint para guardar o actualizar la invitación
 async function guardarEvento(req, res) {
     try {
-        const { password, ...evento } = req.body;
+        const { password, overwrite, ...evento } = req.body;
 
         // 1. Validar clave de acceso
         if (password !== ADMIN_PASSWORD) {
@@ -71,6 +72,10 @@ async function guardarEvento(req, res) {
 
         if (!evento.id) {
             return res.status(400).json({ error: 'Debes ingresar un ID para el evento.' });
+        }
+
+        if (!EVENT_ID_PATTERN.test(evento.id)) {
+            return res.status(400).json({ error: 'El ID del evento solo puede contener minusculas, numeros y guiones.' });
         }
 
         const payloadBytes = Buffer.byteLength(JSON.stringify(evento), 'utf8');
@@ -90,7 +95,7 @@ async function guardarEvento(req, res) {
             .maybeSingle());
 
         // Si el ID ya existe y no se autorizó sobrescribir
-        if (existente && !req.body.overwrite) {
+        if (existente && !overwrite) {
             return res.status(409).json({
                 error: `El ID "${evento.id}" ya está registrado. Por favor, elige otro ID diferente.`
             });
