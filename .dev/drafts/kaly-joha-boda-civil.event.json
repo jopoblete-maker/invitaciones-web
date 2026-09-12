@@ -32,7 +32,12 @@
     "galeria": []
   },
   "music": {
-    "tracks": [],
+    "tracks": [
+      {
+        "src": "/assets/events/kaly-joha/musica.mp3",
+        "name": "M\u00fasica"
+      }
+    ],
     "playMode": "selector"
   },
   "location": {

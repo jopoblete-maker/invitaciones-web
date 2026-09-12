@@ -64,8 +64,14 @@ assert.strictEqual([hero, eventInfo, closing].every((section) => section.data.im
 
 assert.strictEqual(normalized.music.playMode, "selector");
 assert.strictEqual(normalized.music.source, "");
-assert.deepStrictEqual(normalized.music.tracks, []);
-assert.deepStrictEqual(normalized.multimedia.audios, []);
+assert.strictEqual(normalized.music.tracks.length, 1);
+assert.strictEqual(normalized.music.tracks[0].src, "/assets/events/kaly-joha/musica.mp3");
+assert.strictEqual(normalized.music.tracks[0].name, "Música");
+assert.strictEqual(normalized.music.tracks[0].src.startsWith("/assets/"), true);
+assert.deepStrictEqual(normalized.multimedia.audios, [{
+    src: "/assets/events/kaly-joha/musica.mp3",
+    name: "Música"
+}]);
 assert.strictEqual(normalized.location.name, "Registro Civil");
 assert.strictEqual(normalized.location.address, "Del Carmen 475");
 assert.strictEqual(normalized.location.mapsUrl, "https://maps.app.goo.gl/kh3SMJyQ9WeGPJPf7");
