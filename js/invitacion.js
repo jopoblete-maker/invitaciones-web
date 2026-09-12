@@ -313,7 +313,14 @@ async function loadLocalPreviewDraft(name) {
 }
 
 function isLocalPreviewHost() {
-    return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+    const hostname = window.location.hostname;
+
+    return (
+        ["localhost", "127.0.0.1", "::1"].includes(hostname) ||
+        /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+        /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+        /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname)
+    );
 }
 
 function applyTemplateConfig(templateConfig) {
@@ -498,10 +505,10 @@ function renderEventInfoPage(section, context) {
                 ${image && inlineMedia ? renderSectionMedia(section, image) : ""}
                 ${message ? `<p class="page-message">${escapeHtml(message)}</p>` : ""}
                 ${renderDetailsList([
-                    renderDetail("calendar", "Fecha", firstSectionValue(data.dateText, event.fechaTexto)),
-                    renderDetail("clock", "Horario", firstSectionValue(data.timeText, event.horarioTexto)),
-                    renderDetail("pin", "Lugar", locationText)
-                ])}
+        renderDetail("calendar", "Fecha", firstSectionValue(data.dateText, event.fechaTexto)),
+        renderDetail("clock", "Horario", firstSectionValue(data.timeText, event.horarioTexto)),
+        renderDetail("pin", "Lugar", locationText)
+    ])}
             </div>
             ${context.renderBrochureNavigation(context.pageCount)}
         </section>
@@ -523,13 +530,13 @@ function renderLocationPage(section, context) {
             <div class="wedding-content">
                 ${message ? `<p class="page-message">${escapeHtml(message)}</p>` : ""}
                 ${hasEventInfo
-                    ? renderDetailsList([
-                        renderDetail("pin", "Dirección", addressText)
-                    ])
-                    : renderDetailsList([
-                        renderDetail("clock", "Horario", timeText),
-                        renderDetail("pin", "Lugar", locationText)
-                    ])}
+            ? renderDetailsList([
+                renderDetail("pin", "Dirección", addressText)
+            ])
+            : renderDetailsList([
+                renderDetail("clock", "Horario", timeText),
+                renderDetail("pin", "Lugar", locationText)
+            ])}
                 ${event.googleMapsUrl ? `
                     <div class="actions">
                         <button class="button" type="button" data-map-url="${escapeAttr(event.googleMapsUrl)}">

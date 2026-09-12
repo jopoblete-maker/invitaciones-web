@@ -297,6 +297,63 @@ body {
     padding: 0;
 }
 
+.wedding-section[data-section-type="event-info"].wedding-section--media-contained {
+    padding-block: clamp(12px, 3vw, 24px) clamp(18px, 4.8vw, 34px);
+}
+
+.wedding-section[data-section-type="event-info"] .wedding-content {
+    gap: clamp(7px, 2vw, 12px);
+}
+
+.wedding-section[data-section-type="event-info"] .details-section {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    padding-block: clamp(7px, 2vw, 10px);
+}
+
+.wedding-section[data-section-type="event-info"] .detail-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 5px;
+    min-width: 0;
+    text-align: center;
+}
+
+.wedding-section[data-section-type="event-info"] .detail-icon {
+    width: 32px;
+    height: 32px;
+    padding: 7px;
+}
+
+.wedding-section[data-section-type="event-info"] .detail-label {
+    font-size: clamp(0.58rem, 2.45vw, 0.68rem);
+    letter-spacing: 0.06em;
+    line-height: 1.15;
+}
+
+.wedding-section[data-section-type="event-info"] .detail-value {
+    margin-top: 0;
+    font-size: clamp(0.86rem, 3.4vw, 1rem);
+    line-height: 1.22;
+    overflow-wrap: anywhere;
+}
+
+.wedding-section[data-section-type="location"],
+.wedding-section[data-section-type="rsvp"] {
+    padding-block: clamp(22px, 5.8vw, 40px);
+}
+
+.wedding-section[data-section-type="rsvp"] .wedding-content {
+    gap: 10px;
+    padding: 0;
+}
+
+.wedding-section[data-section-type="rsvp"] .rsvp-block {
+    gap: 10px;
+    margin-top: 0;
+}
+
 .page-message {
     margin: 0;
     color: var(--text-color);
@@ -309,8 +366,8 @@ body {
 .wedding-section[data-section-type="closing"] .page-message {
     justify-self: center;
     max-width: min(100%, 18rem);
-    margin: clamp(6px, 2.6vw, 16px) auto clamp(12px, 4vw, 24px);
-    padding-block: clamp(12px, 3.8vw, 22px);
+    margin: clamp(4px, 1.8vw, 10px) auto clamp(6px, 2.4vw, 14px);
+    padding-block: clamp(9px, 2.8vw, 16px);
     color: var(--accent-color);
     font-family: var(--font-primary, var(--font-heading));
     font-size: clamp(1.85rem, 8.6vw, 3rem);
@@ -331,11 +388,11 @@ body {
 }
 
 .wedding-section[data-section-type="closing"] .page-message::before {
-    margin-bottom: clamp(10px, 3vw, 16px);
+    margin-bottom: clamp(8px, 2.4vw, 12px);
 }
 
 .wedding-section[data-section-type="closing"] .page-message::after {
-    margin-top: clamp(10px, 3vw, 16px);
+    margin-top: clamp(8px, 2.4vw, 12px);
 }
 
 .details-section {
@@ -444,6 +501,10 @@ body {
     backdrop-filter: blur(12px);
 }
 
+.template-boda-civil-esencial .hero-music-action {
+    display: none;
+}
+
 .hero-music-action span,
 .music-button span {
     position: absolute;
@@ -455,21 +516,22 @@ body {
 
 .audio-widget {
     position: fixed;
-    top: var(--audio-top, 14px);
-    right: var(--audio-right, 14px);
-    bottom: var(--audio-bottom, auto);
-    left: var(--audio-left, auto);
+    top: auto;
+    right: calc(12px + env(safe-area-inset-right));
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    left: auto;
     z-index: 10;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    max-width: min(calc(100vw - 28px), 286px);
-    padding: 5px;
-    border: 1px solid rgba(37, 53, 47, 0.14);
+    gap: 6px;
+    width: auto;
+    max-width: calc(100vw - 24px);
+    padding: 0;
+    border: 0;
     border-radius: 999px;
-    background: rgba(255, 253, 250, 0.9);
-    box-shadow: 0 16px 34px rgba(37, 53, 47, 0.14);
-    backdrop-filter: blur(12px);
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
 }
 
 .audio-widget.is-hidden {
@@ -491,9 +553,14 @@ body {
     outline: none;
 }
 
+#audioTrackSelector[hidden] {
+    display: none;
+}
+
 .music-button {
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
     padding: 0;
     border-radius: 999px;
 }
@@ -548,7 +615,22 @@ audio {
     }
 
     .wedding-section--media-contained {
-        padding-inline: 8px;
+        padding-inline: 4px;
+    }
+
+    .wedding-section[data-section-type="event-info"] .detail-value {
+        font-size: clamp(0.72rem, 3.2vw, 0.9rem);
+    }
+
+    .audio-widget {
+        right: calc(10px + env(safe-area-inset-right));
+        bottom: calc(12px + env(safe-area-inset-bottom));
+    }
+
+    .music-button {
+        width: 42px;
+        height: 42px;
+        min-height: 42px;
     }
 
     .cover-names {
@@ -563,15 +645,15 @@ audio {
     }
 
     .wedding-section--media-contained {
-        padding-inline: 7px;
+        padding-inline: 4px;
         padding-block: 14px;
     }
 
-    .detail-row {
+    .wedding-section:not([data-section-type="event-info"]) .detail-row {
         grid-template-columns: 36px minmax(0, 1fr);
     }
 
-    .detail-icon {
+    .wedding-section:not([data-section-type="event-info"]) .detail-icon {
         width: 36px;
         height: 36px;
     }

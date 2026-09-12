@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
-const HOST = "127.0.0.1";
+const HOST = process.env.PREVIEW_HOST || "127.0.0.1";
 const PORT = Number(process.env.PREVIEW_PORT || 4173);
 
 const CONTENT_TYPES = {
