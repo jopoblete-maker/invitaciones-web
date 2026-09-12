@@ -306,6 +306,38 @@ body {
     line-height: 1.28;
 }
 
+.wedding-section[data-section-type="closing"] .page-message {
+    justify-self: center;
+    max-width: min(100%, 18rem);
+    margin: clamp(6px, 2.6vw, 16px) auto clamp(12px, 4vw, 24px);
+    padding-block: clamp(12px, 3.8vw, 22px);
+    color: var(--accent-color);
+    font-family: var(--font-primary, var(--font-heading));
+    font-size: clamp(1.85rem, 8.6vw, 3rem);
+    font-style: normal;
+    font-weight: 600;
+    line-height: 1;
+    text-align: center;
+}
+
+.wedding-section[data-section-type="closing"] .page-message::before,
+.wedding-section[data-section-type="closing"] .page-message::after {
+    content: "";
+    display: block;
+    width: min(44%, 8rem);
+    height: 1px;
+    margin-inline: auto;
+    background: linear-gradient(90deg, transparent, var(--decorative-border-color), transparent);
+}
+
+.wedding-section[data-section-type="closing"] .page-message::before {
+    margin-bottom: clamp(10px, 3vw, 16px);
+}
+
+.wedding-section[data-section-type="closing"] .page-message::after {
+    margin-top: clamp(10px, 3vw, 16px);
+}
+
 .details-section {
     display: grid;
     gap: 12px;

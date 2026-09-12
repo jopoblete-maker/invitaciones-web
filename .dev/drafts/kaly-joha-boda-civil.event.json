@@ -38,11 +38,16 @@
   "location": {
     "name": "Registro Civil",
     "address": "Del Carmen 475",
-    "mapsUrl": ""
+    "mapsUrl": "https://maps.app.goo.gl/kh3SMJyQ9WeGPJPf7"
   },
   "rsvp": {
-    "deadline": "",
-    "contacts": []
+    "deadline": "15/11/2026",
+    "contacts": [
+      {
+        "name": "Joha",
+        "phone": "1157339281"
+      }
+    ]
   },
   "sections": [
     {
@@ -90,7 +95,7 @@
       "id": "rsvp",
       "type": "rsvp",
       "order": 40,
-      "enabled": false,
+      "enabled": true,
       "data": {}
     },
     {
@@ -101,7 +106,8 @@
       "data": {
         "image": "/assets/events/kaly-joha/03-cierre.png",
         "imageAlt": "Cierre de la invitaci\u00f3n de Kaly y Joha",
-        "mediaLayout": "contained"
+        "mediaLayout": "contained",
+        "message": "Los Esperamos"
       }
     }
   ]
