@@ -27,6 +27,7 @@ const normalized = normalizeEvent({
     location: {
         name: "Lugar de prueba",
         address: "Direccion de prueba",
+        city: "Ciudad de prueba",
         mapsUrl: "https://example.test/maps"
     },
     rsvp: {
@@ -43,6 +44,8 @@ assert.strictEqual(normalized.sections[1].enabled, false);
 assert.strictEqual(normalized.music.playMode, "playlist");
 assert.strictEqual(normalized.music.tracks.length, 1);
 assert.strictEqual(normalized.location.mapsUrl, "https://example.test/maps");
+assert.strictEqual(normalized.location.city, "Ciudad de prueba");
+assert.strictEqual(normalized.lugarCiudad, "Ciudad de prueba");
 assert.strictEqual(normalized.rsvp.contacts[0].telefono, "5491100000000");
 
 console.log("event-normalizer new schema test passed");

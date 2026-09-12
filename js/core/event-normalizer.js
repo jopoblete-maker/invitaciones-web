@@ -152,6 +152,7 @@
             horarioTexto: model.event.timeText,
             lugarNombre: model.location.name,
             lugarDireccion: model.location.address,
+            lugarCiudad: model.location.city,
             googleMapsUrl: model.location.mapsUrl,
             googleCalendarUrl: firstString(data.googleCalendarUrl, model.location.calendarUrl),
             audioPlayMode: model.music.playMode,
@@ -204,6 +205,7 @@
         return {
             name: firstString(location.name, location.lugarNombre),
             address: firstString(location.address, location.lugarDireccion),
+            city: firstString(location.city, location.locality, location.localidad, location.lugarCiudad),
             mapsUrl: firstString(location.mapsUrl, location.googleMapsUrl, location.linkMaps),
             calendarUrl: firstString(location.calendarUrl, location.googleCalendarUrl)
         };

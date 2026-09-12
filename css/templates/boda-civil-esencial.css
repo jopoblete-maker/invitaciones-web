@@ -354,6 +354,11 @@ body {
     margin-top: 0;
 }
 
+.wedding-section[data-section-type="rsvp"] .rsvp-block>.detail-value {
+    width: 100%;
+    text-align: center;
+}
+
 .page-message {
     margin: 0;
     color: var(--text-color);
@@ -409,6 +414,13 @@ body {
     align-items: start;
 }
 
+.detail-row--address {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 10px;
+    text-align: center;
+}
+
 .detail-icon,
 .button-icon,
 .music-icon {
@@ -436,6 +448,12 @@ body {
     font-weight: 600;
     line-height: 1.45;
     overflow-wrap: anywhere;
+}
+
+.detail-value--secondary {
+    margin-top: 2px;
+    color: var(--muted-color);
+    font-weight: 600;
 }
 
 .actions,

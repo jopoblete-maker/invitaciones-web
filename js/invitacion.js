@@ -497,6 +497,8 @@ function renderEventInfoPage(section, context) {
     const image = context.getSectionImage(section, context.pageIndex);
     const inlineMedia = shouldRenderContainedMedia(section);
     const locationText = firstSectionValue(data.locationText, data.place, getLocationText(event));
+    const addressText = firstSectionValue(data.address, event.lugarDireccion, event.location?.address, locationText);
+    const cityText = firstSectionValue(data.city, event.lugarCiudad, event.location?.city);
     const message = data.showMessage === false ? "" : firstSectionValue(data.message);
 
     return `
@@ -505,10 +507,10 @@ function renderEventInfoPage(section, context) {
                 ${image && inlineMedia ? renderSectionMedia(section, image) : ""}
                 ${message ? `<p class="page-message">${escapeHtml(message)}</p>` : ""}
                 ${renderDetailsList([
-        renderDetail("calendar", "Fecha", firstSectionValue(data.dateText, event.fechaTexto)),
-        renderDetail("clock", "Horario", firstSectionValue(data.timeText, event.horarioTexto)),
-        renderDetail("pin", "Lugar", locationText)
-    ])}
+                    renderDetail("calendar", "Fecha", firstSectionValue(data.dateText, event.fechaTexto)),
+                    renderDetail("clock", "Horario", firstSectionValue(data.timeText, event.horarioTexto)),
+                    renderAddressDetail(addressText, cityText)
+                ])}
             </div>
             ${context.renderBrochureNavigation(context.pageCount)}
         </section>
@@ -521,6 +523,7 @@ function renderLocationPage(section, context) {
     const hasEventInfo = hasEventInfoDetails(event);
     const locationText = firstSectionValue(data.locationText, data.place, getLocationText(event));
     const addressText = firstSectionValue(data.address, event.lugarDireccion, locationText);
+    const cityText = firstSectionValue(data.city, event.lugarCiudad, event.location?.city);
     const message = firstSectionValue(data.message, hasEventInfoMessage(event) ? "" : event.mensaje);
     const timeText = firstSectionValue(data.timeText, event.horarioTexto);
     const calendar = renderCalendarActions(event);
@@ -530,13 +533,11 @@ function renderLocationPage(section, context) {
             <div class="wedding-content">
                 ${message ? `<p class="page-message">${escapeHtml(message)}</p>` : ""}
                 ${hasEventInfo
-            ? renderDetailsList([
-                renderDetail("pin", "Dirección", addressText)
-            ])
-            : renderDetailsList([
-                renderDetail("clock", "Horario", timeText),
-                renderDetail("pin", "Lugar", locationText)
-            ])}
+                    ? ""
+                    : renderDetailsList([
+                        renderDetail("clock", "Horario", timeText),
+                        renderDetail("pin", "Lugar", locationText)
+                    ])}
                 ${event.googleMapsUrl ? `
                     <div class="actions">
                         <button class="button" type="button" data-map-url="${escapeAttr(event.googleMapsUrl)}">
@@ -548,6 +549,23 @@ function renderLocationPage(section, context) {
             </div>
             ${context.renderBrochureNavigation(context.pageCount)}
         </section>
+    `;
+}
+
+function renderAddressDetail(address, city) {
+    if (!address && !city) return "";
+
+    return `
+        <div class="detail-row detail-row--address">
+            <svg class="detail-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="${DETAIL_ICONS.pin}"></path>
+            </svg>
+            <div>
+                <p class="detail-label">Dirección</p>
+                ${address ? `<p class="detail-value">${escapeHtml(address)}</p>` : ""}
+                ${city ? `<p class="detail-value detail-value--secondary">${escapeHtml(city)}</p>` : ""}
+            </div>
+        </div>
     `;
 }
 

@@ -74,6 +74,8 @@ assert.deepStrictEqual(normalized.multimedia.audios, [{
 }]);
 assert.strictEqual(normalized.location.name, "Registro Civil");
 assert.strictEqual(normalized.location.address, "Del Carmen 475");
+assert.strictEqual(normalized.location.city, "Cañuelas");
+assert.strictEqual(normalized.lugarCiudad, "Cañuelas");
 assert.strictEqual(normalized.location.mapsUrl, "https://maps.app.goo.gl/kh3SMJyQ9WeGPJPf7");
 assert.strictEqual(normalized.googleMapsUrl, "https://maps.app.goo.gl/kh3SMJyQ9WeGPJPf7");
 assert.strictEqual(normalized.rsvp.deadline, "15/11/2026");
@@ -98,15 +100,28 @@ const locationHtml = browserContext.renderLocationPage(location, {
     pageCount: renderableSections.length,
     renderBrochureNavigation: () => ""
 });
-assert(locationHtml.includes("Dirección"));
-assert(!locationHtml.includes("DirecciÃ"));
-assert(locationHtml.includes("Del Carmen 475"));
+assert(!locationHtml.includes("Dirección"));
+assert(!locationHtml.includes("Del Carmen 475"));
+assert(!locationHtml.includes("Cañuelas"));
 assert(locationHtml.includes("data-map-url=\"https://maps.app.goo.gl/kh3SMJyQ9WeGPJPf7\""));
 assert(locationHtml.includes("Cómo Llegar"));
 assert(locationHtml.includes("Agendar Evento"));
 assert(locationHtml.includes("https://calendar.google.com/calendar/render?"));
 assert(!locationHtml.includes("Horario"));
 assert(!locationHtml.includes("<p class=\"detail-value\">11:30 hs.</p>"));
+
+const eventInfoHtml = browserContext.renderEventInfoPage(eventInfo, {
+    event: normalized,
+    pageCount: renderableSections.length,
+    getSectionImage: () => eventInfo.data.image,
+    renderBrochureNavigation: () => ""
+});
+assert(eventInfoHtml.includes("Dirección"));
+assert(eventInfoHtml.includes("Del Carmen 475"));
+assert(eventInfoHtml.includes("Cañuelas"));
+assert(eventInfoHtml.indexOf("Del Carmen 475") < eventInfoHtml.indexOf("Cañuelas"));
+assert(!eventInfoHtml.includes("Lugar"));
+assert(!eventInfoHtml.includes("Registro Civil"));
 
 const rsvpHtml = browserContext.renderConfirmationPage(rsvp, {
     event: normalized,
