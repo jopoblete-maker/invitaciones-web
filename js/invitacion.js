@@ -524,7 +524,7 @@ function renderLocationPage(section, context) {
                 ${message ? `<p class="page-message">${escapeHtml(message)}</p>` : ""}
                 ${hasEventInfo
                     ? renderDetailsList([
-                        renderDetail("pin", "DirecciÃ³n", addressText)
+                        renderDetail("pin", "Dirección", addressText)
                     ])
                     : renderDetailsList([
                         renderDetail("clock", "Horario", timeText),

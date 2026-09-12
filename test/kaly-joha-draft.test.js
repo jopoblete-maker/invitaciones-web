@@ -92,10 +92,11 @@ const locationHtml = browserContext.renderLocationPage(location, {
     pageCount: renderableSections.length,
     renderBrochureNavigation: () => ""
 });
-assert(locationHtml.includes("Direcci"));
+assert(locationHtml.includes("Dirección"));
+assert(!locationHtml.includes("DirecciÃ"));
 assert(locationHtml.includes("Del Carmen 475"));
 assert(locationHtml.includes("data-map-url=\"https://maps.app.goo.gl/kh3SMJyQ9WeGPJPf7\""));
-assert(locationHtml.includes("CÃ³mo Llegar") || locationHtml.includes("Cómo Llegar"));
+assert(locationHtml.includes("Cómo Llegar"));
 assert(locationHtml.includes("Agendar Evento"));
 assert(locationHtml.includes("https://calendar.google.com/calendar/render?"));
 assert(!locationHtml.includes("Horario"));
