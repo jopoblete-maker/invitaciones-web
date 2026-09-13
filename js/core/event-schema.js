@@ -26,12 +26,13 @@
         "event-info",
         "location",
         "rsvp",
-        "closing"
+        "closing",
+        "countdown",
+        "media-closing"
     ];
 
     const FUTURE_SECTION_TYPES = [
         "gallery",
-        "countdown",
         "dress-code",
         "gifts",
         "timeline",

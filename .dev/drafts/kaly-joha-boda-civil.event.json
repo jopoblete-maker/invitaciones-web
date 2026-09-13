@@ -65,7 +65,7 @@
         "title": "Kaly & Joha",
         "subtitle": "Uni\u00f3n por Civil",
         "dateText": "04/12/2026",
-        "image": "/assets/events/kaly-joha/02-portada.png",
+        "image": "/assets/events/kaly-joha/02-portada.gif",
         "imageAlt": "Portada de Kaly y Joha",
         "mediaLayout": "contained",
         "showCopy": false
@@ -81,7 +81,7 @@
         "timeText": "11:30 hs.",
         "place": "Registro Civil",
         "message": "El amor nos trae hasta ac\u00e1\u2026\nY queremos dar el \u2018s\u00ed\u2019 rodeados de las personas que m\u00e1s queremos.\nLos invitamos a acompa\u00f1arnos en nuestro casamiento por civil.",
-        "image": "/assets/events/kaly-joha/01-invitacion.png",
+        "image": "/assets/events/kaly-joha/01-invitacion.gif",
         "imageAlt": "Invitaci\u00f3n de Kaly y Joha",
         "mediaLayout": "contained",
         "showMessage": false
@@ -110,10 +110,31 @@
       "order": 50,
       "enabled": true,
       "data": {
-        "image": "/assets/events/kaly-joha/03-cierre.png",
+        "image": "/assets/events/kaly-joha/03-cierre.gif",
         "imageAlt": "Cierre de la invitaci\u00f3n de Kaly y Joha",
-        "mediaLayout": "contained",
-        "message": "Los Esperamos"
+        "mediaLayout": "contained"
+      }
+    },
+    {
+      "id": "countdown",
+      "type": "countdown",
+      "order": 55,
+      "enabled": true,
+      "data": {
+        "targetDateTime": "2026-12-04T11:30:00",
+        "eyebrow": "FALTAN",
+        "footer": "PARA NUESTRO GRAN D\u00cdA",
+        "completedMessage": "\u00a1Lleg\u00f3 nuestro gran d\u00eda!"
+      }
+    },
+    {
+      "id": "media-closing",
+      "type": "media-closing",
+      "order": 60,
+      "enabled": true,
+      "data": {
+        "src": "/assets/events/kaly-joha/cierre-animado.gif",
+        "alt": "Cierre de la invitaci\u00f3n de Kaly y Joha"
       }
     }
   ]

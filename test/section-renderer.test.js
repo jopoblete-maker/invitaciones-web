@@ -13,7 +13,9 @@ const renderers = {
     eventInfo: (section, context) => `event-info:${section.id}:${context.pageIndex}/${context.pageCount}`,
     location: (section, context) => `location:${section.id}:${context.pageIndex}/${context.pageCount}`,
     rsvp: (section, context) => `rsvp:${section.id}:${context.pageIndex}/${context.pageCount}`,
-    closing: (section, context) => `closing:${section.id}:${context.pageIndex}/${context.pageCount}`
+    closing: (section, context) => `closing:${section.id}:${context.pageIndex}/${context.pageCount}`,
+    countdown: (section, context) => `countdown:${section.id}:${context.pageIndex}/${context.pageCount}`,
+    mediaClosing: (section, context) => `media-closing:${section.id}:${context.pageIndex}/${context.pageCount}`
 };
 
 const legacy = normalizeEvent({
@@ -47,7 +49,9 @@ const schemaFiveSections = normalizeEvent({
         { id: "event-info", type: "event-info", enabled: true, order: 20, data: {} },
         { id: "location", type: "location", enabled: true, order: 30, data: {} },
         { id: "rsvp", type: "rsvp", enabled: true, order: 40, data: {} },
-        { id: "closing", type: "closing", enabled: true, order: 50, data: {} }
+        { id: "closing", type: "closing", enabled: true, order: 50, data: {} },
+        { id: "countdown", type: "countdown", enabled: true, order: 55, data: {} },
+        { id: "media-closing", type: "media-closing", enabled: true, order: 60, data: {} }
     ],
     music: {
         tracks: [{ src: "https://example.test/audio.mp3", name: "Audio" }]
@@ -57,11 +61,13 @@ const schemaFiveSections = normalizeEvent({
 assert.deepStrictEqual(
     renderSections(schemaFiveSections.sections, { renderers }),
     [
-        "hero:hero:0/5",
-        "event-info:event-info:1/5",
-        "location:location:2/5",
-        "rsvp:rsvp:3/5",
-        "closing:closing:4/5"
+        "hero:hero:0/7",
+        "event-info:event-info:1/7",
+        "location:location:2/7",
+        "rsvp:rsvp:3/7",
+        "closing:closing:4/7",
+        "countdown:countdown:5/7",
+        "media-closing:media-closing:6/7"
     ]
 );
 assert.strictEqual(schemaFiveSections.sections.some((section) => section.type === "music"), false);
@@ -87,7 +93,7 @@ assert.deepStrictEqual(
     renderSections([{ id: "only", type: "hero", enabled: true, order: 10, data: {} }], { renderers }),
     ["hero:only:0/1"]
 );
-assert.deepStrictEqual(Object.keys(SECTION_RENDERER_REGISTRY), ["hero", "event-info", "location", "rsvp", "closing"]);
+assert.deepStrictEqual(Object.keys(SECTION_RENDERER_REGISTRY), ["hero", "event-info", "location", "rsvp", "closing", "countdown", "media-closing"]);
 
 const civilTemplate = resolveTemplate("boda-civil-esencial");
 const legacyTemplate = resolveTemplate("boda-vertical");

@@ -27,11 +27,11 @@ assert.strictEqual(template.layout, "vertical");
 
 assert.deepStrictEqual(
     normalized.sections.map((section) => section.type),
-    ["hero", "event-info", "location", "rsvp", "closing"]
+    ["hero", "event-info", "location", "rsvp", "closing", "countdown", "media-closing"]
 );
 assert.deepStrictEqual(
     renderableSections.map((section) => section.type),
-    ["hero", "event-info", "location", "rsvp", "closing"]
+    ["hero", "event-info", "location", "rsvp", "closing", "countdown", "media-closing"]
 );
 assert.deepStrictEqual(
     renderableSections
@@ -46,18 +46,38 @@ const eventInfo = normalized.sections.find((section) => section.type === "event-
 const location = normalized.sections.find((section) => section.type === "location");
 const rsvp = normalized.sections.find((section) => section.type === "rsvp");
 const closing = normalized.sections.find((section) => section.type === "closing");
+const countdown = normalized.sections.find((section) => section.type === "countdown");
+const mediaClosing = normalized.sections.find((section) => section.type === "media-closing");
 
-assert.strictEqual(hero.data.image, "/assets/events/kaly-joha/02-portada.png");
+assert.strictEqual(hero.data.image, "/assets/events/kaly-joha/02-portada.gif");
 assert.strictEqual(hero.data.mediaLayout, "contained");
 assert.strictEqual(hero.data.showCopy, false);
-assert.strictEqual(eventInfo.data.image, "/assets/events/kaly-joha/01-invitacion.png");
+assert.strictEqual(eventInfo.data.image, "/assets/events/kaly-joha/01-invitacion.gif");
 assert.strictEqual(eventInfo.data.mediaLayout, "contained");
 assert.strictEqual(eventInfo.data.showMessage, false);
 assert.strictEqual(location.data.image, undefined);
-assert.strictEqual(closing.data.image, "/assets/events/kaly-joha/03-cierre.png");
+assert.strictEqual(closing.data.image, "/assets/events/kaly-joha/03-cierre.gif");
 assert.strictEqual(closing.data.mediaLayout, "contained");
-assert.strictEqual(closing.data.message, "Los Esperamos");
+assert.strictEqual(closing.data.message, undefined);
 assert.strictEqual(closing.enabled, true);
+assert.strictEqual(closing.order, 50);
+assert.strictEqual(countdown.enabled, true);
+assert.strictEqual(countdown.order, 55);
+assert.strictEqual(countdown.data.targetDateTime, "2026-12-04T11:30:00");
+assert.strictEqual(countdown.data.eyebrow, "FALTAN");
+assert.strictEqual(countdown.data.footer, "PARA NUESTRO GRAN DÍA");
+assert.strictEqual(countdown.data.completedMessage, "¡Llegó nuestro gran día!");
+assert.strictEqual(countdown.data.days, undefined);
+assert.strictEqual(countdown.data.hours, undefined);
+assert.strictEqual(countdown.data.minutes, undefined);
+assert.strictEqual(countdown.data.seconds, undefined);
+assert.strictEqual(mediaClosing.enabled, true);
+assert.strictEqual(mediaClosing.order, 60);
+assert.strictEqual(mediaClosing.data.src, "/assets/events/kaly-joha/cierre-animado.gif");
+assert.strictEqual(mediaClosing.data.alt, "Cierre de la invitación de Kaly y Joha");
+assert(renderableSections.indexOf(mediaClosing) > renderableSections.indexOf(closing));
+assert(renderableSections.indexOf(countdown) > renderableSections.indexOf(closing));
+assert(renderableSections.indexOf(countdown) < renderableSections.indexOf(mediaClosing));
 assert.strictEqual(rsvp.enabled, true);
 assert.strictEqual(JSON.stringify(TEMPLATES).includes("assets/events/kaly-joha"), false);
 assert.strictEqual([hero, eventInfo, closing].every((section) => section.data.image.startsWith("/assets/events/")), true);
@@ -140,8 +160,53 @@ const closingHtml = browserContext.renderClosingPage(closing, {
     getSectionImage: () => closing.data.image,
     renderBrochureNavigation: () => ""
 });
-assert(closingHtml.includes("Los Esperamos"));
-assert(closingHtml.includes("/assets/events/kaly-joha/03-cierre.png"));
+assert(!closingHtml.includes("Los Esperamos"));
+assert(closingHtml.includes("/assets/events/kaly-joha/03-cierre.gif"));
+
+const countdownHtml = browserContext.renderCountdownPage(countdown, {
+    event: normalized,
+    pageIndex: renderableSections.indexOf(countdown),
+    pageCount: renderableSections.length,
+    renderBrochureNavigation: () => ""
+});
+assert(countdownHtml.includes("data-section-type=\"countdown\""));
+assert(countdownHtml.includes("data-countdown-target=\"2026-12-04T11:30:00\""));
+assert(countdownHtml.includes("FALTAN"));
+assert(countdownHtml.includes("PARA NUESTRO GRAN DÍA"));
+assert(countdownHtml.includes("data-countdown-unit=\"days\""));
+assert(!countdownHtml.includes("82"));
+
+const remaining = browserContext.calculateCountdownParts(
+    "2026-12-04T11:30:00",
+    new Date("2026-12-03T10:29:20").getTime()
+);
+assert.strictEqual(remaining.completed, false);
+assert.strictEqual(remaining.days, 1);
+assert.strictEqual(remaining.hours, 1);
+assert.strictEqual(remaining.minutes, 0);
+assert.strictEqual(remaining.seconds, 40);
+
+const completed = browserContext.calculateCountdownParts(
+    "2026-12-04T11:30:00",
+    new Date("2026-12-04T11:30:00").getTime()
+);
+assert.strictEqual(completed.completed, true);
+assert.strictEqual(completed.days, 0);
+assert.strictEqual(completed.hours, 0);
+assert.strictEqual(completed.minutes, 0);
+assert.strictEqual(completed.seconds, 0);
+
+const mediaClosingHtml = browserContext.renderMediaClosingPage(mediaClosing, {
+    event: normalized,
+    pageIndex: renderableSections.indexOf(mediaClosing),
+    pageCount: renderableSections.length,
+    renderBrochureNavigation: () => ""
+});
+assert(mediaClosingHtml.includes("<img"));
+assert(mediaClosingHtml.includes("/assets/events/kaly-joha/cierre-animado.gif"));
+assert(mediaClosingHtml.includes("Cierre de la invitación de Kaly y Joha"));
+assert(!mediaClosingHtml.includes("<a "));
+assert(!mediaClosingHtml.includes("onclick"));
 
 const legacyLocationHtml = browserContext.renderLocationPage(location, {
     event: {

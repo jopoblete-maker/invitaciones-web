@@ -12,7 +12,9 @@
         "event-info": "eventInfo",
         location: "location",
         rsvp: "rsvp",
-        closing: "closing"
+        closing: "closing",
+        countdown: "countdown",
+        "media-closing": "mediaClosing"
     };
 
     function getRenderableSections(sections, context = {}) {

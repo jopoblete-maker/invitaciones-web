@@ -31,7 +31,9 @@ body {
     color: var(--text-color);
     font-family: var(--font-body);
     background:
-        linear-gradient(180deg, rgba(247, 242, 237, 0.96), rgba(230, 238, 232, 0.82)),
+        radial-gradient(circle at 16% 8%, rgba(193, 163, 95, 0.13), transparent 28rem),
+        radial-gradient(circle at 88% 18%, rgba(111, 125, 87, 0.12), transparent 24rem),
+        linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(244, 247, 239, 0.92) 48%, rgba(255, 253, 248, 0.96)),
         var(--canvas-background, var(--secondary-color));
     scroll-behavior: smooth;
 }
@@ -96,7 +98,11 @@ body {
     margin: 0 auto;
     overflow-x: hidden;
     overflow-y: auto;
-    background: var(--canvas-background, var(--secondary-color));
+    background:
+        radial-gradient(ellipse at 18% 12%, rgba(111, 125, 87, 0.1), transparent 34%),
+        radial-gradient(ellipse at 86% 52%, rgba(193, 163, 95, 0.09), transparent 30%),
+        linear-gradient(180deg, rgba(255, 253, 248, 0.94), rgba(246, 248, 242, 0.9)),
+        var(--canvas-background, var(--secondary-color));
     box-shadow: 0 28px 80px var(--shadow-color);
 }
 
@@ -114,7 +120,9 @@ body {
     overflow: hidden;
     isolation: isolate;
     background:
-        linear-gradient(180deg, rgba(247, 242, 237, 0.38), rgba(255, 253, 250, 0.78)),
+        radial-gradient(ellipse at 10% 0%, rgba(111, 125, 87, 0.07), transparent 38%),
+        radial-gradient(ellipse at 92% 100%, rgba(193, 163, 95, 0.06), transparent 34%),
+        linear-gradient(180deg, rgba(251, 251, 247, 0.76), rgba(255, 253, 248, 0.88)),
         var(--page-image, none);
     background-position: var(--page-position, center);
     background-size: cover;
@@ -146,7 +154,9 @@ body {
 .wedding-section--media-contained {
     padding: clamp(18px, 4vw, 34px) clamp(10px, 3.5vw, 28px);
     background:
-        linear-gradient(180deg, rgba(247, 242, 237, 0.48), rgba(255, 253, 250, 0.84)),
+        radial-gradient(ellipse at 12% 12%, rgba(111, 125, 87, 0.06), transparent 36%),
+        radial-gradient(ellipse at 88% 86%, rgba(193, 163, 95, 0.05), transparent 32%),
+        linear-gradient(180deg, rgba(251, 251, 247, 0.82), rgba(255, 253, 248, 0.92)),
         var(--canvas-background, var(--secondary-color));
 }
 
@@ -295,6 +305,114 @@ body {
 .wedding-section[data-section-type="location"] .wedding-content {
     gap: 14px;
     padding: 0;
+}
+
+.wedding-section[data-section-type="media-closing"] {
+    padding: clamp(18px, 5vw, 42px) clamp(6px, 2vw, 18px) clamp(28px, 7vw, 56px);
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(193, 163, 95, 0.08), transparent 34%),
+        linear-gradient(180deg, rgba(255, 253, 248, 0.9), rgba(246, 248, 242, 0.82)),
+        var(--canvas-background, var(--secondary-color));
+}
+
+.wedding-section[data-section-type="media-closing"]::after {
+    display: none;
+}
+
+.media-closing-media {
+    position: relative;
+    z-index: 2;
+    width: min(100%, 560px);
+    margin: 0 auto;
+}
+
+.media-closing-media img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+}
+
+.wedding-section[data-section-type="countdown"] {
+    padding-block: clamp(28px, 7vw, 52px);
+    background:
+        radial-gradient(ellipse at 50% 10%, rgba(193, 163, 95, 0.1), transparent 34%),
+        radial-gradient(ellipse at 12% 80%, rgba(111, 125, 87, 0.08), transparent 36%),
+        linear-gradient(180deg, rgba(255, 253, 248, 0.9), rgba(246, 248, 242, 0.92)),
+        var(--canvas-background, var(--secondary-color));
+}
+
+.wedding-section[data-section-type="countdown"] .wedding-content {
+    padding: 0;
+    text-align: center;
+}
+
+.countdown-panel {
+    display: grid;
+    gap: clamp(11px, 3vw, 16px);
+    width: min(100%, 520px);
+    margin: 0 auto;
+    padding: clamp(8px, 2vw, 14px) 0;
+    color: var(--accent-color);
+}
+
+.countdown-eyebrow,
+.countdown-footer {
+    margin: 0;
+    color: var(--muted-color);
+    font-family: var(--font-body);
+    font-size: clamp(0.68rem, 2.4vw, 0.8rem);
+    font-weight: 800;
+    letter-spacing: 0.11em;
+    line-height: 1.35;
+    text-transform: uppercase;
+}
+
+.countdown-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(6px, 2vw, 12px);
+    align-items: start;
+    width: 100%;
+}
+
+.countdown-item {
+    display: grid;
+    min-width: 0;
+    justify-items: center;
+    gap: 4px;
+    padding-block: clamp(4px, 1.6vw, 8px);
+    border-block: 1px solid rgba(193, 163, 95, 0.24);
+}
+
+.countdown-item span {
+    color: var(--accent-color);
+    font-family: var(--font-primary, var(--font-heading));
+    font-size: clamp(2rem, 10vw, 3.45rem);
+    font-weight: 600;
+    line-height: 0.92;
+}
+
+.countdown-item label {
+    color: var(--muted-color);
+    font-family: var(--font-body);
+    font-size: clamp(0.58rem, 2.3vw, 0.72rem);
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    line-height: 1.2;
+}
+
+.countdown-completed {
+    margin: 0;
+    color: var(--accent-color);
+    font-family: var(--font-primary, var(--font-heading));
+    font-size: clamp(1.8rem, 8vw, 3rem);
+    font-weight: 600;
+    line-height: 1.05;
+}
+
+.countdown-panel.is-complete .countdown-grid {
+    display: none;
 }
 
 .wedding-section[data-section-type="event-info"].wedding-section--media-contained {
