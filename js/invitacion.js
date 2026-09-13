@@ -471,8 +471,8 @@ function renderHero(section, context) {
 
     return `
         <section id="capa-1" class="wedding-section wedding-section--cover hero-section${inlineMedia ? " wedding-section--media-contained" : ""}" data-section-type="${escapeAttr(section.type)}">
-            ${image && inlineMedia ? renderSectionMedia(section, image) : ""}
-            ${image && !inlineMedia ? `<div class="bg-image-wrapper" aria-hidden="true"><img src="${escapeAttr(image)}" alt=""></div>` : ""}
+            ${image && inlineMedia ? renderSectionMedia(section, image, context) : ""}
+            ${image && !inlineMedia ? `<div class="bg-image-wrapper" aria-hidden="true"><img src="${escapeAttr(image)}" alt="" ${renderImageLoadingAttrs(context)}></div>` : ""}
             ${!inlineMedia ? `<div class="bg-overlay" aria-hidden="true"></div>` : ""}
             ${shouldRenderSectionCopy(section) ? renderHeroCopy(section, event) : ""}
             <div class="hero-footer">${context.renderBrochureNavigation(context.pageCount)}</div>
@@ -512,7 +512,7 @@ function renderEventInfoPage(section, context) {
     return `
         <section class="wedding-section wedding-section--location${inlineMedia ? " wedding-section--media-contained" : ""}" data-section-type="${escapeAttr(section.type)}">
             <div class="wedding-content">
-                ${image && inlineMedia ? renderSectionMedia(section, image) : ""}
+                ${image && inlineMedia ? renderSectionMedia(section, image, context) : ""}
                 ${message ? `<p class="page-message">${escapeHtml(message)}</p>` : ""}
                 ${renderDetailsList([
                     renderDetail("calendar", "Fecha", firstSectionValue(data.dateText, event.fechaTexto)),
@@ -597,7 +597,7 @@ function renderClosingPage(section, context) {
     const image = context.getSectionImage(section, context.pageIndex);
     const inlineMedia = shouldRenderContainedMedia(section);
     const content = [
-        image && inlineMedia ? renderSectionMedia(section, image) : "",
+        image && inlineMedia ? renderSectionMedia(section, image, context) : "",
         data.title ? `<h2 class="section-title">${escapeHtml(data.title)}</h2>` : "",
         data.message ? `<p class="page-message">${escapeHtml(data.message)}</p>` : "",
         data.names ? `<p class="hero-date closing-names">${escapeHtml(data.names)}</p>` : ""
@@ -611,7 +611,7 @@ function renderClosingPage(section, context) {
     `;
 }
 
-function renderMediaClosingPage(section) {
+function renderMediaClosingPage(section, context) {
     const data = section?.data || {};
     const src = firstSectionValue(data.src, data.image);
     const alt = firstSectionValue(data.alt, data.imageAlt);
@@ -620,7 +620,7 @@ function renderMediaClosingPage(section) {
     return `
         <section class="wedding-section wedding-section--media-closing" data-section-type="${escapeAttr(section.type)}">
             <figure class="media-closing-media">
-                <img src="${escapeAttr(src)}" alt="${escapeAttr(alt)}">
+                <img src="${escapeAttr(src)}" alt="${escapeAttr(alt)}" ${renderImageLoadingAttrs(context)}>
             </figure>
         </section>
     `;
@@ -763,14 +763,26 @@ function shouldRenderSectionCopy(section) {
     return section?.data?.showCopy !== false;
 }
 
-function renderSectionMedia(section, image) {
+function renderSectionMedia(section, image, context) {
     const data = section?.data || {};
     const alt = firstSectionValue(data.imageAlt, data.alt);
     return `
         <figure class="section-media">
-            <img src="${escapeAttr(image)}" alt="${escapeAttr(alt)}">
+            <img src="${escapeAttr(image)}" alt="${escapeAttr(alt)}" ${renderImageLoadingAttrs(context)}>
         </figure>
     `;
+}
+
+function renderImageLoadingAttrs(context) {
+    const isPriorityImage = context?.pageIndex === 0;
+    const attrs = [
+        `loading="${isPriorityImage ? "eager" : "lazy"}"`,
+        'decoding="async"'
+    ];
+
+    if (isPriorityImage) attrs.push('fetchpriority="high"');
+
+    return attrs.join(" ");
 }
 
 function hasEventInfoMessage(event) {
@@ -1109,6 +1121,7 @@ function setupMusic(tracks, playMode) {
     let currentTrack = 0;
     let clearFirstInteractionActivation = () => { };
     audio.loop = false;
+    audio.preload = "none";
     selector.innerHTML = tracks.map((track, index) => `<option value="${index}">${escapeHtml(track.name || `Pista ${index + 1}`)}</option>`).join("");
     selector.hidden = playMode === "playlist" || tracks.length === 1;
     widget.classList.remove("is-hidden");

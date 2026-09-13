@@ -19,6 +19,7 @@ const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const SUPABASE_TIMEOUT_MS = 15000;
 const MAX_EVENT_PAYLOAD_BYTES = 12 * 1024 * 1024;
+const ASSET_CACHE_MAX_AGE_MS = 60 * 60 * 1000;
 const TEMAS_VALIDOS = [
     'frozen', 'pesca', 'elegante', 'fiesta', 'minimalista', 'vintage',
     'dorado-premium', 'tropical', 'botanico', 'infantil-pastel', 'mistico',
@@ -53,6 +54,9 @@ app.use((err, req, res, next) => {
     });
 });
 
+app.use('/assets', express.static(path.join(__dirname, 'assets'), {
+    maxAge: ASSET_CACHE_MAX_AGE_MS
+}));
 app.use(express.static(__dirname));
 
 // Ruta principal para abrir el panel de administración

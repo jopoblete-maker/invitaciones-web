@@ -18,6 +18,9 @@
 <body>
     <div class="loading-overlay" id="loadingOverlay" role="status" aria-live="polite">
         <div class="loading-content">
+            <p class="loading-eyebrow">YCOR Digital</p>
+            <p class="loading-title">Invitaciones digitales</p>
+            <p class="loading-message">Preparando tu invitación...</p>
             <div class="loading-indicator" aria-hidden="true"></div>
         </div>
     </div>
@@ -31,7 +34,7 @@
             <span>Música</span>
         </button>
     </div>
-    <audio id="bgMusic" loop></audio>
+    <audio id="bgMusic" loop preload="none"></audio>
 
     <main class="invitation-shell invitation-dashboard" id="app" aria-live="polite"></main>
 
