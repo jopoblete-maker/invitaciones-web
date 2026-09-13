@@ -33,6 +33,17 @@ const normalized = normalizeEvent({
     rsvp: {
         deadline: "Fecha limite de prueba",
         contacts: [{ name: "Contacto de prueba", phone: "5491100000000" }]
+    },
+    branding: {
+        enabled: true,
+        brandName: "Marca de prueba",
+        badgeText: "Badge de prueba",
+        cta: "CTA de prueba",
+        serviceText: "Servicio de prueba",
+        whatsapp: "011 5555-5555",
+        whatsappMessage: "Mensaje de prueba",
+        portfolioUrl: "https://example.test/portfolio",
+        instagramUrl: "https://example.test/instagram"
     }
 });
 
@@ -47,6 +58,28 @@ assert.strictEqual(normalized.location.mapsUrl, "https://example.test/maps");
 assert.strictEqual(normalized.location.city, "Ciudad de prueba");
 assert.strictEqual(normalized.lugarCiudad, "Ciudad de prueba");
 assert.strictEqual(normalized.rsvp.contacts[0].telefono, "5491100000000");
+assert.strictEqual(normalized.branding.enabled, true);
+assert.strictEqual(normalized.branding.brandName, "Marca de prueba");
+assert.strictEqual(normalized.branding.badgeText, "Badge de prueba");
+assert.strictEqual(normalized.branding.portfolioUrl, "https://example.test/portfolio");
+
+const withoutBranding = normalizeEvent({
+    schema_version: CURRENT_SCHEMA_VERSION,
+    event: { title: "Sin branding" },
+    template: { slug: "cumple-clasico" },
+    sections: []
+});
+assert.strictEqual(withoutBranding.branding.enabled, false);
+
+const disabledBranding = normalizeEvent({
+    schema_version: CURRENT_SCHEMA_VERSION,
+    event: { title: "Branding apagado" },
+    template: { slug: "cumple-clasico" },
+    sections: [],
+    branding: { enabled: false, badgeText: "No mostrar" }
+});
+assert.strictEqual(disabledBranding.branding.enabled, false);
+assert.strictEqual(disabledBranding.branding.badgeText, "No mostrar");
 
 console.log("event-normalizer new schema test passed");
 
@@ -115,6 +148,7 @@ assert.strictEqual(normalizedLegacy.media.capas.portada, "https://example.test/p
 assert.strictEqual(normalizedLegacy.music.tracks[0].src, "https://example.test/legacy-audio.mp3");
 assert.strictEqual(normalizedLegacy.multimedia.audios[0].src, "https://example.test/legacy-audio.mp3");
 assert.strictEqual(normalizedLegacy.sections.some((section) => section.type === "music"), false);
+assert.strictEqual(normalizedLegacy.branding.enabled, false);
 assert.strictEqual(normalizedLegacy.location.name, "Lugar legacy");
 assert.strictEqual(normalizedLegacy.location.address, "Direccion legacy");
 assert.strictEqual(normalizedLegacy.location.mapsUrl, "https://example.test/legacy-maps");

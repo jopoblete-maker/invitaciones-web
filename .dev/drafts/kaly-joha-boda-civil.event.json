@@ -55,6 +55,17 @@
       }
     ]
   },
+  "branding": {
+    "enabled": true,
+    "brandName": "YCOR Digital",
+    "badgeText": "YCOR Digital \u2726 Ped\u00ed la tuya",
+    "cta": "\u00bfQuer\u00e9s una invitaci\u00f3n como esta para tu evento?",
+    "serviceText": "Invitaciones digitales",
+    "whatsapp": "5491157339281",
+    "whatsappMessage": "",
+    "portfolioUrl": "",
+    "instagramUrl": ""
+  },
   "sections": [
     {
       "id": "hero",

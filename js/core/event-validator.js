@@ -35,6 +35,7 @@
         validateOptionalObject(event.music, "music", errors);
         validateOptionalObject(event.location, "location", errors);
         validateOptionalObject(event.rsvp, "rsvp", errors);
+        validateOptionalObject(event.branding, "branding", errors);
 
         return {
             valid: errors.length === 0,

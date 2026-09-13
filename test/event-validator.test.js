@@ -11,6 +11,7 @@ const validEvent = {
     music: {},
     location: {},
     rsvp: {},
+    branding: {},
     sections: [
         { id: "hero", type: "hero", enabled: true, order: 10, data: {} },
         { id: "rsvp", type: "rsvp", enabled: false, order: 20, data: {} }
@@ -50,7 +51,8 @@ const incompleteOptional = validateNewEvent({
     ...validEvent,
     music: {},
     location: {},
-    rsvp: {}
+    rsvp: {},
+    branding: {}
 });
 assert.strictEqual(incompleteOptional.valid, true);
 

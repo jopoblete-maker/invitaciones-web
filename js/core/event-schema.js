@@ -18,7 +18,8 @@
         "media",
         "music",
         "location",
-        "rsvp"
+        "rsvp",
+        "branding"
     ];
 
     const INITIAL_SECTION_TYPES = [

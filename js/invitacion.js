@@ -408,7 +408,10 @@ function renderInvitation(event, templateConfig) {
         warn: (message) => console.warn(message)
     };
 
-    const html = SectionRenderer.renderSections(renderableSections, context).join("");
+    const html = [
+        SectionRenderer.renderSections(renderableSections, context).join(""),
+        renderBranding(event)
+    ].filter(Boolean).join("");
 
     getApp().innerHTML = html;
     document.querySelectorAll(".wedding-section").forEach((page, index) => {
@@ -427,6 +430,7 @@ function renderInvitation(event, templateConfig) {
     setupBrochureNavigation();
     setupLocationActions();
     setupRsvpConfirmation();
+    setupBranding();
     clearCountdownTimers();
     setupCountdownSections();
     startCountdown(event.fechaEvento);
@@ -662,6 +666,87 @@ function renderBrochureNavigation(pageCount = 3) {
             ${dots}
         </nav>
     `;
+}
+
+function renderBranding(event) {
+    const branding = event?.branding || {};
+    if (branding.enabled !== true) return "";
+
+    const badgeText = firstSectionValue(branding.badgeText, branding.brandName);
+    if (!badgeText) return "";
+
+    const panelId = "brandingPanel";
+    const whatsappUrl = buildBrandingWhatsappUrl(branding, event);
+    const portfolioUrl = safeExternalUrl(branding.portfolioUrl);
+    const instagramUrl = safeExternalUrl(branding.instagramUrl);
+    const actions = [
+        whatsappUrl ? `<a class="branding-link" href="${escapeAttr(whatsappUrl)}" target="_blank" rel="noopener noreferrer">Ped&iacute; la tuya por WhatsApp</a>` : "",
+        portfolioUrl ? `<a class="branding-link" href="${escapeAttr(portfolioUrl)}" target="_blank" rel="noopener noreferrer">Portfolio</a>` : "",
+        instagramUrl ? `<a class="branding-link" href="${escapeAttr(instagramUrl)}" target="_blank" rel="noopener noreferrer">Instagram</a>` : ""
+    ].filter(Boolean).join("");
+
+    return `
+        <aside class="branding-widget" data-branding-widget>
+            <div class="branding-panel" id="${panelId}" role="dialog" aria-label="${escapeAttr(firstSectionValue(branding.brandName, "YCOR Digital"))}" hidden>
+                <button class="branding-close" type="button" aria-label="Cerrar" data-branding-close>&times;</button>
+                ${branding.cta ? `<p class="branding-cta">${escapeHtml(branding.cta)}</p>` : ""}
+                ${branding.brandName ? `<p class="branding-name">${escapeHtml(branding.brandName)}</p>` : ""}
+                ${branding.serviceText ? `<p class="branding-service">${escapeHtml(branding.serviceText)}</p>` : ""}
+                ${actions ? `<div class="branding-actions">${actions}</div>` : ""}
+            </div>
+            <button class="branding-badge" type="button" aria-expanded="false" aria-controls="${panelId}" data-branding-toggle>
+                ${escapeHtml(badgeText)}
+            </button>
+        </aside>
+    `;
+}
+
+function setupBranding() {
+    const widget = document.querySelector("[data-branding-widget]");
+    if (!widget) return;
+
+    const toggle = widget.querySelector("[data-branding-toggle]");
+    const panel = widget.querySelector(".branding-panel");
+    const close = widget.querySelector("[data-branding-close]");
+    if (!toggle || !panel || !close) return;
+
+    const setOpen = (open) => {
+        panel.hidden = !open;
+        toggle.setAttribute("aria-expanded", String(open));
+        widget.classList.toggle("is-open", open);
+        if (open) close.focus();
+    };
+
+    toggle.addEventListener("click", () => setOpen(panel.hidden));
+    close.addEventListener("click", () => setOpen(false));
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !panel.hidden) setOpen(false);
+    });
+    document.addEventListener("pointerdown", (event) => {
+        if (!panel.hidden && !widget.contains(event.target)) setOpen(false);
+    });
+}
+
+function buildBrandingWhatsappUrl(branding, event) {
+    const phone = normalizeWhatsAppPhone(branding?.whatsapp);
+    if (!phone) return "";
+
+    const message = firstSectionValue(branding.whatsappMessage) || buildBrandingWhatsappMessage(event);
+    return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+}
+
+function buildBrandingWhatsappMessage(event) {
+    const label = getEventDisplayLabel(event);
+    const suffix = label ? ` de ${label}` : "";
+    return `Hola, vi la invitaci\u00f3n${suffix} y me gustar\u00eda cotizar una invitaci\u00f3n para mi evento.`;
+}
+
+function getEventDisplayLabel(event) {
+    return firstSectionValue(event?.event?.title, event?.nombre, event?.event?.name, event?.subtitulo);
+}
+
+function safeExternalUrl(value) {
+    return isValidHttpUrl(value) ? value.trim() : "";
 }
 
 function firstSectionValue(...values) {

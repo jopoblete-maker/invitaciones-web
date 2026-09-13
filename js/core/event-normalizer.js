@@ -64,6 +64,7 @@
             deadline: data.confirmacionLimite,
             contacts: data.contactosRSVP || contactsFromConfirmation(data.confirmacion)
         });
+        const branding = normalizeBranding(data.branding);
         const templateSlug = firstString(data.template?.slug, data.template_slug, data.datos?.template_slug);
         const eventType = firstString(data.event?.type, data.tipo, data.type);
 
@@ -84,6 +85,7 @@
             music,
             location,
             rsvp,
+            branding,
             sections: legacySections(media, location, rsvp, data)
         });
     }
@@ -96,6 +98,7 @@
         const music = normalizeMusic(data.music || data.multimedia || {});
         const location = normalizeLocation(data.location || {});
         const rsvp = normalizeRsvp(data.rsvp || {});
+        const branding = normalizeBranding(data.branding);
 
         return buildRendererShape(data, options, {
             event: {
@@ -113,6 +116,7 @@
             music,
             location,
             rsvp,
+            branding,
             sections: data.sections
         });
     }
@@ -140,6 +144,7 @@
             music: model.music,
             location: model.location,
             rsvp: model.rsvp,
+            branding: model.branding,
             sections: model.sections,
             nombre: model.event.title,
             datos: isPlainObject(data.datos) ? data.datos : {},
@@ -216,6 +221,21 @@
         return {
             deadline: firstString(rsvp.deadline, rsvp.confirmacionLimite),
             contacts: normalizeContacts(rsvp.contacts || rsvp.contactosRSVP)
+        };
+    }
+
+    function normalizeBranding(value) {
+        const branding = isPlainObject(value) ? value : {};
+        return {
+            enabled: branding.enabled === true,
+            brandName: firstString(branding.brandName, branding.name),
+            badgeText: firstString(branding.badgeText, branding.badge),
+            cta: firstString(branding.cta, branding.message),
+            serviceText: firstString(branding.serviceText, branding.service),
+            whatsapp: firstString(branding.whatsapp, branding.phone),
+            whatsappMessage: firstString(branding.whatsappMessage),
+            portfolioUrl: firstString(branding.portfolioUrl, branding.portfolio),
+            instagramUrl: firstString(branding.instagramUrl, branding.instagram)
         };
     }
 

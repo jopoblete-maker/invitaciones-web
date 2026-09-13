@@ -102,18 +102,54 @@ assert.strictEqual(normalized.rsvp.deadline, "15/11/2026");
 assert.strictEqual(normalized.confirmacionLimite, "15/11/2026");
 assert.deepStrictEqual(normalized.rsvp.contacts, [{ nombre: "Joha", telefono: "1157339281" }]);
 assert.deepStrictEqual(normalized.contactosRSVP, [{ nombre: "Joha", telefono: "1157339281" }]);
+assert.strictEqual(normalized.branding.enabled, true);
+assert.strictEqual(normalized.branding.brandName, "YCOR Digital");
+assert.strictEqual(normalized.branding.badgeText, "YCOR Digital ✦ Pedí la tuya");
+assert.strictEqual(normalized.branding.cta, "¿Querés una invitación como esta para tu evento?");
+assert.strictEqual(normalized.branding.serviceText, "Invitaciones digitales");
+assert.strictEqual(normalized.branding.whatsapp, "");
+assert.strictEqual(normalized.branding.whatsappMessage, "");
+assert.strictEqual(normalized.branding.portfolioUrl, "");
+assert.strictEqual(normalized.branding.instagramUrl, "");
 assert.strictEqual(normalized.theme.styles.colorFondo, "#fbfbf7");
 assert.strictEqual(normalized.theme.styles.colorBordeDecorativo, "#c1a35f");
 
 const invitationScript = fs.readFileSync(path.resolve(__dirname, "..", "js", "invitacion.js"), "utf8");
 const browserContext = {
     console,
+    URL,
     URLSearchParams,
     document: { addEventListener() {} },
     window: {}
 };
 vm.createContext(browserContext);
 vm.runInContext(invitationScript, browserContext);
+
+const brandingHtml = browserContext.renderBranding(normalized);
+assert(brandingHtml.includes("data-branding-widget"));
+assert(brandingHtml.includes("aria-expanded=\"false\""));
+assert(brandingHtml.includes("YCOR Digital ✦ Pedí la tuya"));
+assert(brandingHtml.includes("¿Querés una invitación como esta para tu evento?"));
+assert(brandingHtml.includes("Invitaciones digitales"));
+assert(!brandingHtml.includes("Ped&iacute; la tuya por WhatsApp"));
+assert(!brandingHtml.includes("Portfolio"));
+assert(!brandingHtml.includes("Instagram"));
+assert.strictEqual(browserContext.renderBranding({ ...normalized, branding: undefined }), "");
+assert.strictEqual(browserContext.renderBranding({ ...normalized, branding: { enabled: false, badgeText: "YCOR" } }), "");
+
+const contextualMessage = browserContext.buildBrandingWhatsappMessage(normalized);
+assert(contextualMessage.includes("Kaly & Joha"));
+assert(!invitationScript.includes("vi la invitación de Kaly & Joha"));
+assert.strictEqual(
+    browserContext.buildBrandingWhatsappUrl({
+        ...normalized.branding,
+        whatsapp: "11 2222-3333"
+    }, normalized),
+    `https://wa.me/5491122223333?text=${encodeURIComponent(contextualMessage)}`
+);
+assert.strictEqual(browserContext.buildBrandingWhatsappUrl(normalized.branding, normalized), "");
+assert.strictEqual(browserContext.safeExternalUrl("javascript:alert(1)"), "");
+assert.strictEqual(browserContext.safeExternalUrl("https://example.test"), "https://example.test");
 
 const locationHtml = browserContext.renderLocationPage(location, {
     event: normalized,
