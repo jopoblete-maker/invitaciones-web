@@ -1102,10 +1102,12 @@ function setupMusic(tracks, playMode) {
         widget.classList.add("is-hidden");
         document.querySelectorAll("[data-audio-trigger]").forEach((trigger) => trigger.remove());
         audio.removeAttribute("src");
+        setMusicButtonPlaying(button, false);
         return;
     }
 
     let currentTrack = 0;
+    let clearFirstInteractionActivation = () => { };
     audio.loop = false;
     selector.innerHTML = tracks.map((track, index) => `<option value="${index}">${escapeHtml(track.name || `Pista ${index + 1}`)}</option>`).join("");
     selector.hidden = playMode === "playlist" || tracks.length === 1;
@@ -1115,35 +1117,89 @@ function setupMusic(tracks, playMode) {
         currentTrack = (index + tracks.length) % tracks.length;
         selector.value = String(currentTrack);
         audio.src = tracks[currentTrack].src;
-        if (shouldPlay) audio.play().catch(() => { });
+        if (shouldPlay) requestAudioPlay(audio);
     };
 
+    const armFirstInteractionActivation = () => {
+        if (!audio.paused) return;
+
+        clearFirstInteractionActivation();
+        const activate = (event) => {
+            if (isAudioControlEvent(event)) return;
+
+            clearFirstInteractionActivation();
+            requestAudioPlay(audio);
+        };
+        const options = { capture: true, passive: true };
+
+        document.addEventListener("pointerdown", activate, options);
+        document.addEventListener("touchstart", activate, options);
+        document.addEventListener("click", activate, options);
+        clearFirstInteractionActivation = () => {
+            document.removeEventListener("pointerdown", activate, options);
+            document.removeEventListener("touchstart", activate, options);
+            document.removeEventListener("click", activate, options);
+            clearFirstInteractionActivation = () => { };
+        };
+    };
+
+    audio.onplay = () => {
+        clearFirstInteractionActivation();
+        setMusicButtonPlaying(button, true);
+    };
+    audio.onpause = () => setMusicButtonPlaying(button, false);
     loadTrack(0);
     selector.onchange = () => loadTrack(Number(selector.value), !audio.paused);
-    button.onclick = () => toggleMusic(audio, button);
+    button.onclick = () => {
+        clearFirstInteractionActivation();
+        toggleMusic(audio, button);
+    };
     document.querySelectorAll("[data-audio-trigger]").forEach((trigger) => {
         trigger.onclick = () => button.click();
     });
     audio.onended = () => {
         if (playMode !== "playlist" || tracks.length < 2) {
-            button.classList.add("is-paused");
+            setMusicButtonPlaying(button, false);
             return;
         }
         loadTrack(currentTrack + 1, true);
     };
+    requestAudioPlay(audio, armFirstInteractionActivation);
 }
 
-function toggleMusic(audio, button) {
+function toggleMusic(audio) {
     if (audio.paused) {
-        audio.play();
-        button.classList.remove("is-paused");
-        button.setAttribute("aria-label", "Pausar música");
+        requestAudioPlay(audio);
         return;
     }
 
     audio.pause();
-    button.classList.add("is-paused");
-    button.setAttribute("aria-label", "Reproducir música");
+}
+
+function requestAudioPlay(audio, onBlocked) {
+    let playRequest;
+    try {
+        playRequest = audio.play();
+    } catch {
+        if (typeof onBlocked === "function") onBlocked();
+        return null;
+    }
+
+    if (playRequest && typeof playRequest.catch === "function") {
+        playRequest.catch(() => {
+            if (typeof onBlocked === "function") onBlocked();
+        });
+    }
+    return playRequest;
+}
+
+function setMusicButtonPlaying(button, isPlaying) {
+    button.classList.toggle("is-paused", !isPlaying);
+    button.setAttribute("aria-label", isPlaying ? "Pausar música" : "Reproducir música");
+}
+
+function isAudioControlEvent(event) {
+    return Boolean(event.target?.closest?.("#audioWidget, [data-audio-trigger]"));
 }
 
 function startCountdown(dateValue) {

@@ -100,14 +100,14 @@ assert.strictEqual(normalized.location.mapsUrl, "https://maps.app.goo.gl/kh3SMJy
 assert.strictEqual(normalized.googleMapsUrl, "https://maps.app.goo.gl/kh3SMJyQ9WeGPJPf7");
 assert.strictEqual(normalized.rsvp.deadline, "15/11/2026");
 assert.strictEqual(normalized.confirmacionLimite, "15/11/2026");
-assert.deepStrictEqual(normalized.rsvp.contacts, [{ nombre: "Joha", telefono: "1157339281" }]);
-assert.deepStrictEqual(normalized.contactosRSVP, [{ nombre: "Joha", telefono: "1157339281" }]);
+assert.deepStrictEqual(normalized.rsvp.contacts, [{ nombre: "Joha", telefono: "5491140931362" }]);
+assert.deepStrictEqual(normalized.contactosRSVP, [{ nombre: "Joha", telefono: "5491140931362" }]);
 assert.strictEqual(normalized.branding.enabled, true);
 assert.strictEqual(normalized.branding.brandName, "YCOR Digital");
 assert.strictEqual(normalized.branding.badgeText, "YCOR Digital ✦ Pedí la tuya");
 assert.strictEqual(normalized.branding.cta, "¿Querés una invitación como esta para tu evento?");
 assert.strictEqual(normalized.branding.serviceText, "Invitaciones digitales");
-assert.strictEqual(normalized.branding.whatsapp, "");
+assert.strictEqual(normalized.branding.whatsapp, "5491157339281");
 assert.strictEqual(normalized.branding.whatsappMessage, "");
 assert.strictEqual(normalized.branding.portfolioUrl, "");
 assert.strictEqual(normalized.branding.instagramUrl, "");
@@ -131,7 +131,8 @@ assert(brandingHtml.includes("aria-expanded=\"false\""));
 assert(brandingHtml.includes("YCOR Digital ✦ Pedí la tuya"));
 assert(brandingHtml.includes("¿Querés una invitación como esta para tu evento?"));
 assert(brandingHtml.includes("Invitaciones digitales"));
-assert(!brandingHtml.includes("Ped&iacute; la tuya por WhatsApp"));
+assert(brandingHtml.includes("Ped&iacute; la tuya por WhatsApp"));
+assert(brandingHtml.includes("https://wa.me/5491157339281?text="));
 assert(!brandingHtml.includes("Portfolio"));
 assert(!brandingHtml.includes("Instagram"));
 assert.strictEqual(browserContext.renderBranding({ ...normalized, branding: undefined }), "");
@@ -147,7 +148,10 @@ assert.strictEqual(
     }, normalized),
     `https://wa.me/5491122223333?text=${encodeURIComponent(contextualMessage)}`
 );
-assert.strictEqual(browserContext.buildBrandingWhatsappUrl(normalized.branding, normalized), "");
+assert.strictEqual(
+    browserContext.buildBrandingWhatsappUrl(normalized.branding, normalized),
+    `https://wa.me/5491157339281?text=${encodeURIComponent(contextualMessage)}`
+);
 assert.strictEqual(browserContext.safeExternalUrl("javascript:alert(1)"), "");
 assert.strictEqual(browserContext.safeExternalUrl("https://example.test"), "https://example.test");
 
@@ -187,7 +191,8 @@ const rsvpHtml = browserContext.renderConfirmationPage(rsvp, {
 });
 assert(rsvpHtml.includes("Hasta el 15/11/2026"));
 assert(rsvpHtml.includes("Confirmar con Joha"));
-assert(rsvpHtml.includes("https://wa.me/5491157339281"));
+assert(rsvpHtml.includes("https://wa.me/5491140931362"));
+assert(!rsvpHtml.includes("https://wa.me/5491157339281"));
 
 const closingHtml = browserContext.renderClosingPage(closing, {
     event: normalized,

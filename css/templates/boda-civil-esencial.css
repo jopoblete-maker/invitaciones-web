@@ -31,9 +31,10 @@ body {
     color: var(--text-color);
     font-family: var(--font-body);
     background:
-        radial-gradient(circle at 16% 8%, rgba(193, 163, 95, 0.13), transparent 28rem),
-        radial-gradient(circle at 88% 18%, rgba(111, 125, 87, 0.12), transparent 24rem),
-        linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(244, 247, 239, 0.92) 48%, rgba(255, 253, 248, 0.96)),
+        radial-gradient(circle at 14% 8%, rgba(193, 163, 95, 0.16), transparent 27rem),
+        radial-gradient(circle at 88% 18%, rgba(111, 125, 87, 0.16), transparent 25rem),
+        radial-gradient(ellipse at 52% 58%, rgba(232, 238, 224, 0.52), transparent 34rem),
+        linear-gradient(180deg, rgba(251, 247, 237, 0.98), rgba(239, 244, 232, 0.95) 48%, rgba(250, 247, 238, 0.97)),
         var(--canvas-background, var(--secondary-color));
     scroll-behavior: smooth;
 }
@@ -99,9 +100,9 @@ body {
     overflow-x: hidden;
     overflow-y: auto;
     background:
-        radial-gradient(ellipse at 18% 12%, rgba(111, 125, 87, 0.1), transparent 34%),
-        radial-gradient(ellipse at 86% 52%, rgba(193, 163, 95, 0.09), transparent 30%),
-        linear-gradient(180deg, rgba(255, 253, 248, 0.94), rgba(246, 248, 242, 0.9)),
+        radial-gradient(ellipse at 18% 12%, rgba(111, 125, 87, 0.13), transparent 34%),
+        radial-gradient(ellipse at 86% 52%, rgba(193, 163, 95, 0.11), transparent 30%),
+        linear-gradient(180deg, rgba(250, 247, 237, 0.96), rgba(240, 245, 234, 0.93)),
         var(--canvas-background, var(--secondary-color));
     box-shadow: 0 28px 80px var(--shadow-color);
 }
@@ -120,9 +121,9 @@ body {
     overflow: hidden;
     isolation: isolate;
     background:
-        radial-gradient(ellipse at 10% 0%, rgba(111, 125, 87, 0.07), transparent 38%),
-        radial-gradient(ellipse at 92% 100%, rgba(193, 163, 95, 0.06), transparent 34%),
-        linear-gradient(180deg, rgba(251, 251, 247, 0.76), rgba(255, 253, 248, 0.88)),
+        radial-gradient(ellipse at 10% 0%, rgba(111, 125, 87, 0.09), transparent 38%),
+        radial-gradient(ellipse at 92% 100%, rgba(193, 163, 95, 0.08), transparent 34%),
+        linear-gradient(180deg, rgba(249, 246, 236, 0.82), rgba(252, 249, 240, 0.9)),
         var(--page-image, none);
     background-position: var(--page-position, center);
     background-size: cover;
@@ -154,9 +155,9 @@ body {
 .wedding-section--media-contained {
     padding: clamp(18px, 4vw, 34px) clamp(10px, 3.5vw, 28px);
     background:
-        radial-gradient(ellipse at 12% 12%, rgba(111, 125, 87, 0.06), transparent 36%),
-        radial-gradient(ellipse at 88% 86%, rgba(193, 163, 95, 0.05), transparent 32%),
-        linear-gradient(180deg, rgba(251, 251, 247, 0.82), rgba(255, 253, 248, 0.92)),
+        radial-gradient(ellipse at 12% 12%, rgba(111, 125, 87, 0.08), transparent 36%),
+        radial-gradient(ellipse at 88% 86%, rgba(193, 163, 95, 0.07), transparent 32%),
+        linear-gradient(180deg, rgba(249, 246, 236, 0.88), rgba(252, 249, 240, 0.94)),
         var(--canvas-background, var(--secondary-color));
 }
 
@@ -310,8 +311,9 @@ body {
 .wedding-section[data-section-type="media-closing"] {
     padding: clamp(18px, 5vw, 42px) clamp(6px, 2vw, 18px) clamp(28px, 7vw, 56px);
     background:
-        radial-gradient(ellipse at 50% 0%, rgba(193, 163, 95, 0.08), transparent 34%),
-        linear-gradient(180deg, rgba(255, 253, 248, 0.9), rgba(246, 248, 242, 0.82)),
+        radial-gradient(ellipse at 50% 0%, rgba(193, 163, 95, 0.1), transparent 34%),
+        radial-gradient(ellipse at 12% 88%, rgba(111, 125, 87, 0.08), transparent 32%),
+        linear-gradient(180deg, rgba(250, 247, 238, 0.92), rgba(240, 245, 234, 0.86)),
         var(--canvas-background, var(--secondary-color));
 }
 
@@ -336,9 +338,9 @@ body {
 .wedding-section[data-section-type="countdown"] {
     padding-block: clamp(28px, 7vw, 52px);
     background:
-        radial-gradient(ellipse at 50% 10%, rgba(193, 163, 95, 0.1), transparent 34%),
-        radial-gradient(ellipse at 12% 80%, rgba(111, 125, 87, 0.08), transparent 36%),
-        linear-gradient(180deg, rgba(255, 253, 248, 0.9), rgba(246, 248, 242, 0.92)),
+        radial-gradient(ellipse at 50% 10%, rgba(193, 163, 95, 0.12), transparent 34%),
+        radial-gradient(ellipse at 12% 80%, rgba(111, 125, 87, 0.1), transparent 36%),
+        linear-gradient(180deg, rgba(250, 247, 238, 0.92), rgba(240, 245, 234, 0.94)),
         var(--canvas-background, var(--secondary-color));
 }
 
