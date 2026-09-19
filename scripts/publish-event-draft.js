@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { validateNewEvent } = require("../js/core/event-validator");
+const { validateEventForPersistence } = require("../js/core/event-validator");
 
 const ROOT = path.resolve(__dirname, "..");
 const DRAFTS_DIR = path.join(ROOT, ".dev", "drafts");
@@ -93,12 +93,16 @@ function normalizeTarget(target) {
 
 function buildPayload({ draft, id, password, overwrite = false }) {
     const payload = {
+        ...draft,
         password,
-        id,
-        ...draft
+        id
     };
 
-    if (overwrite) payload.overwrite = true;
+    if (overwrite) {
+        payload.overwrite = true;
+    } else {
+        delete payload.overwrite;
+    }
     return payload;
 }
 
@@ -121,7 +125,7 @@ async function publishDraft(options, requestImpl = globalThis.fetch) {
 
     const target = normalizeTarget(options.target);
     const draft = loadDraft(options.draft);
-    const validation = validateNewEvent(draft);
+    const validation = validateEventForPersistence(draft);
 
     if (options.dryRun) {
         return {

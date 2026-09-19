@@ -1,5 +1,9 @@
 const assert = require("assert");
-const { validateNewEvent, validateV2Event } = require("../js/core/event-validator");
+const {
+    validateEventForPersistence,
+    validateNewEvent,
+    validateV2Event
+} = require("../js/core/event-validator");
 const { TEMPLATES } = require("../js/core/template-registry");
 
 function validEvent(overrides = {}) {
@@ -29,6 +33,8 @@ function expectError(event, fragment) {
 }
 
 assert.deepStrictEqual(validateV2Event(validEvent()), { valid: true, errors: [] });
+assert.deepStrictEqual(validateEventForPersistence(validEvent()), { valid: true, errors: [] });
+assert.deepStrictEqual(validateEventForPersistence({ nombre: "Legacy" }), { valid: true, errors: [] });
 expectError(validEvent({ schema_version: 1 }), "schema_version");
 expectError(validEvent({ event_type: "unknown" }), "event_type");
 expectError(validEvent({ plan: "unknown" }), "plan");
@@ -149,5 +155,6 @@ assert.deepStrictEqual(validateNewEvent(validV1), { valid: true, errors: [] });
 const v2ThroughV1 = validateNewEvent(validEvent());
 assert.strictEqual(v2ThroughV1.valid, false);
 assert(v2ThroughV1.errors.includes("schema_version no soportado: 2."));
+assert.strictEqual(validateEventForPersistence({ ...validV1, schema_version: 3 }).valid, false);
 
 console.log("event-validator v2 test passed");

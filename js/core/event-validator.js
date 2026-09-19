@@ -195,6 +195,20 @@
         return { valid: errors.length === 0, errors };
     }
 
+    function validateEventForPersistence(event) {
+        if (isPlainObject(event) && event.schema_version === V2_SCHEMA_VERSION) {
+            return validateV2Event(event);
+        }
+
+        const isNewSchema = isPlainObject(event) && (
+            Object.prototype.hasOwnProperty.call(event, "schema_version")
+            || Object.prototype.hasOwnProperty.call(event, "sections")
+        );
+        return isNewSchema
+            ? validateNewEvent(event)
+            : { valid: true, errors: [] };
+    }
+
     function validateV2Template(templateValue, errors) {
         if (!validateObject(templateValue, "template", errors)) return null;
         if (!nonEmptyString(templateValue.slug)) {
@@ -427,6 +441,7 @@
     return {
         CURRENT_SCHEMA_VERSION,
         validateNewEvent,
-        validateV2Event
+        validateV2Event,
+        validateEventForPersistence
     };
 });

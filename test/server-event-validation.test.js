@@ -1,12 +1,15 @@
 const assert = require("assert");
+const fs = require("fs");
 const Module = require("module");
+const path = require("path");
 
 const ADMIN_PASSWORD = "test-secret";
 const routes = {};
 const database = {
     calls: 0,
     writes: 0,
-    savedEvents: []
+    savedEvents: [],
+    existing: false
 };
 
 function createExpressStub() {
@@ -40,7 +43,7 @@ const supabase = {
                 return this;
             },
             maybeSingle() {
-                return Promise.resolve({ data: null });
+                return Promise.resolve({ data: database.existing ? { id: "existing" } : null });
             },
             upsert(record) {
                 database.writes += 1;
@@ -125,7 +128,13 @@ function resetDatabase() {
     database.calls = 0;
     database.writes = 0;
     database.savedEvents = [];
+    database.existing = false;
 }
+
+const v2Fixture = JSON.parse(fs.readFileSync(
+    path.resolve(__dirname, "fixtures", "event-v2-complete.json"),
+    "utf8"
+));
 
 (async () => {
     resetDatabase();
@@ -174,6 +183,75 @@ function resetDatabase() {
     assert.strictEqual(legacyResponse.statusCode, 200);
     assert.strictEqual(database.writes, 1);
     assert.strictEqual(database.savedEvents[0].datos.nombre, "Evento legacy");
+
+    resetDatabase();
+    const validV2Response = await request({
+        ...v2Fixture,
+        password: ADMIN_PASSWORD,
+        id: "evento-v2-publicado"
+    });
+    assert.strictEqual(validV2Response.statusCode, 200);
+    assert.strictEqual(database.calls, 2);
+    assert.strictEqual(database.writes, 1);
+    assert.strictEqual(database.savedEvents[0].datos.schema_version, 2);
+    assert.strictEqual(database.savedEvents[0].datos.id, "evento-v2-publicado");
+    assert.strictEqual(database.savedEvents[0].datos.tema, undefined);
+
+    resetDatabase();
+    const invalidV2 = JSON.parse(JSON.stringify(v2Fixture));
+    invalidV2.media.items = {};
+    const invalidV2Response = await request({ ...invalidV2, password: ADMIN_PASSWORD });
+    assert.strictEqual(invalidV2Response.statusCode, 400);
+    assert(invalidV2Response.body.validationErrors.some((error) => error.includes("media_id")));
+    assert.strictEqual(database.calls, 0);
+    assert.strictEqual(database.writes, 0);
+
+    resetDatabase();
+    const incompatibleV2 = JSON.parse(JSON.stringify(v2Fixture));
+    incompatibleV2.sections[0].type = "gallery";
+    const incompatibleResponse = await request({ ...incompatibleV2, password: ADMIN_PASSWORD });
+    assert.strictEqual(incompatibleResponse.statusCode, 400);
+    assert(incompatibleResponse.body.validationErrors.some((error) => error.includes("type no registrado")));
+    assert.strictEqual(database.calls, 0);
+
+    resetDatabase();
+    const missingRsvpV2 = JSON.parse(JSON.stringify(v2Fixture));
+    delete missingRsvpV2.modules.rsvp;
+    const missingRsvpResponse = await request({ ...missingRsvpV2, password: ADMIN_PASSWORD });
+    assert.strictEqual(missingRsvpResponse.statusCode, 400);
+    assert(missingRsvpResponse.body.validationErrors.some((error) => error.includes("modules.rsvp")));
+    assert.strictEqual(database.calls, 0);
+
+    resetDatabase();
+    const unknownSchemaResponse = await request(validNewEvent({ schema_version: 3 }));
+    assert.strictEqual(unknownSchemaResponse.statusCode, 400);
+    assert.strictEqual(database.calls, 0);
+
+    resetDatabase();
+    const invalidIdResponse = await request(validNewEvent({ id: "Evento-Invalido" }));
+    assert.strictEqual(invalidIdResponse.statusCode, 400);
+    assert.strictEqual(database.calls, 0);
+
+    resetDatabase();
+    const legacyTrailingHyphenResponse = await request({
+        password: ADMIN_PASSWORD,
+        id: "evento-legacy-",
+        nombre: "Evento legacy existente"
+    });
+    assert.strictEqual(legacyTrailingHyphenResponse.statusCode, 200);
+    assert.strictEqual(database.writes, 1);
+
+    resetDatabase();
+    database.existing = true;
+    const duplicateResponse = await request(validNewEvent());
+    assert.strictEqual(duplicateResponse.statusCode, 409);
+    assert.strictEqual(database.writes, 0);
+
+    resetDatabase();
+    database.existing = true;
+    const overwriteResponse = await request(validNewEvent({ overwrite: true }));
+    assert.strictEqual(overwriteResponse.statusCode, 200);
+    assert.strictEqual(database.writes, 1);
 
     resetDatabase();
     const unauthorizedResponse = await request(validNewEvent({ password: "incorrect" }));

@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
-const { validateNewEvent } = require('./js/core/event-validator');
+const { validateEventForPersistence } = require('./js/core/event-validator');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -93,7 +93,7 @@ async function guardarEvento(req, res) {
         const isNewSchema = Object.prototype.hasOwnProperty.call(evento, 'schema_version')
             || Object.prototype.hasOwnProperty.call(evento, 'sections');
         if (isNewSchema) {
-            const validation = validateNewEvent(evento);
+            const validation = validateEventForPersistence(evento);
             if (!validation.valid) {
                 return res.status(400).json({
                     error: 'El evento new-schema no es válido.',
@@ -102,7 +102,9 @@ async function guardarEvento(req, res) {
             }
         }
 
-        evento.tema = TEMAS_VALIDOS.includes(evento.tema) ? evento.tema : 'fiesta';
+        if (evento.schema_version !== 2) {
+            evento.tema = TEMAS_VALIDOS.includes(evento.tema) ? evento.tema : 'fiesta';
+        }
 
         // 2. Verificar si el ID ya existe en Supabase
         const { data: existente } = await withSupabaseTimeout(supabase
