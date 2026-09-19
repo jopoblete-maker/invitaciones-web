@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
+const { validateNewEvent } = require('./js/core/event-validator');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -87,6 +88,18 @@ async function guardarEvento(req, res) {
             return res.status(413).json({
                 error: 'Los archivos multimedia superan el peso recomendado. Comprime las imágenes o utiliza URLs externas para archivos pesados.'
             });
+        }
+
+        const isNewSchema = Object.prototype.hasOwnProperty.call(evento, 'schema_version')
+            || Object.prototype.hasOwnProperty.call(evento, 'sections');
+        if (isNewSchema) {
+            const validation = validateNewEvent(evento);
+            if (!validation.valid) {
+                return res.status(400).json({
+                    error: 'El evento new-schema no es válido.',
+                    validationErrors: validation.errors
+                });
+            }
         }
 
         evento.tema = TEMAS_VALIDOS.includes(evento.tema) ? evento.tema : 'fiesta';
