@@ -8,6 +8,42 @@
     root.EventSchema = schema;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
     const CURRENT_SCHEMA_VERSION = 1;
+    const V2_SCHEMA_VERSION = 2;
+
+    const V2_EVENT_MODEL_KEYS = Object.freeze([
+        "schema_version",
+        "id",
+        "event_type",
+        "plan",
+        "status",
+        "template",
+        "identity",
+        "schedule",
+        "location",
+        "theme",
+        "sections",
+        "modules",
+        "media",
+        "metadata"
+    ]);
+
+    const V2_EVENT_STATUSES = Object.freeze([
+        "draft",
+        "ready_for_preview",
+        "in_review",
+        "changes_requested",
+        "approved",
+        "published",
+        "archived"
+    ]);
+
+    const V2_EVENT_TYPES = Object.freeze([
+        "wedding",
+        "wedding-civil",
+        "birthday",
+        "corporate",
+        "other"
+    ]);
 
     const EVENT_MODEL_KEYS = [
         "schema_version",
@@ -50,6 +86,10 @@
 
     return {
         CURRENT_SCHEMA_VERSION,
+        V2_SCHEMA_VERSION,
+        V2_EVENT_MODEL_KEYS,
+        V2_EVENT_STATUSES,
+        V2_EVENT_TYPES,
         EVENT_MODEL_KEYS,
         INITIAL_SECTION_TYPES,
         FUTURE_SECTION_TYPES,
