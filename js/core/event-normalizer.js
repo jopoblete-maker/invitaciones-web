@@ -11,6 +11,7 @@
     root.EventNormalizer = normalizer;
 })(typeof globalThis !== "undefined" ? globalThis : this, function (schema) {
     const CURRENT_SCHEMA_VERSION = schema?.CURRENT_SCHEMA_VERSION || 1;
+    const V2_SCHEMA_VERSION = schema?.V2_SCHEMA_VERSION || 2;
     const LEGACY_SECTION_MAP = schema?.LEGACY_SECTION_MAP || [
         { id: "legacy-capa-1", type: "hero", order: 10 },
         { id: "legacy-capa-2", type: "location", order: 20 },
@@ -21,14 +22,19 @@
 
     function normalizeEvent(rawEvent, options = {}) {
         const data = isPlainObject(rawEvent) ? rawEvent : {};
-        const normalized = hasNewSchema(data)
-            ? normalizeNewSchema(data, options)
-            : normalizeLegacyEvent(data, options);
+        const isV2 = data.schema_version === V2_SCHEMA_VERSION;
+        const normalized = isV2
+            ? normalizeV2Event(data, options)
+            : hasNewSchema(data)
+                ? normalizeNewSchema(data, options)
+                : normalizeLegacyEvent(data, options);
 
         return {
             ...normalized,
             schema_version: normalized.schema_version || CURRENT_SCHEMA_VERSION,
-            sections: normalizeSections(normalized.sections)
+            sections: isV2
+                ? normalizeV2Sections(normalized.sections, normalized.media?.items)
+                : normalizeSections(normalized.sections)
         };
     }
 
@@ -121,6 +127,58 @@
         });
     }
 
+    function normalizeV2Event(data, options = {}) {
+        const identity = isPlainObject(data.identity) ? data.identity : {};
+        const schedule = isPlainObject(data.schedule) ? data.schedule : {};
+        const template = isPlainObject(data.template) ? data.template : {};
+        const canonicalTheme = isPlainObject(data.theme) ? data.theme : {};
+        const canonicalLocation = isPlainObject(data.location) ? data.location : {};
+        const modules = isPlainObject(data.modules) ? data.modules : {};
+        const canonicalMedia = isPlainObject(data.media) ? data.media : {};
+        const mediaItems = isPlainObject(canonicalMedia.items) ? canonicalMedia.items : {};
+        const theme = normalizeV2Theme(canonicalTheme);
+        const media = normalizeV2Media(canonicalMedia);
+        const music = normalizeV2Music(modules.music, mediaItems);
+        const location = normalizeV2Location(canonicalLocation);
+        const rsvp = normalizeRsvp(modules.rsvp);
+        const branding = normalizeBranding(modules.branding);
+        const compatibility = buildRendererShape(data, options, {
+            schema_version: V2_SCHEMA_VERSION,
+            event: {
+                type: firstString(data.event_type),
+                title: firstString(identity.title),
+                subtitle: firstString(identity.subtitle),
+                message: firstString(identity.message),
+                date: firstString(schedule.date),
+                dateText: firstString(schedule.date_text, schedule.date),
+                timeText: firstString(schedule.time_text, schedule.time)
+            },
+            template: { slug: firstString(template.slug) },
+            theme,
+            media,
+            music,
+            location,
+            rsvp,
+            branding,
+            sections: data.sections
+        });
+
+        return {
+            ...data,
+            ...compatibility,
+            schema_version: V2_SCHEMA_VERSION,
+            identity,
+            schedule,
+            template: { ...template, slug: compatibility.template.slug },
+            location: { ...canonicalLocation, ...location },
+            theme: { ...canonicalTheme, ...theme, overrides: canonicalTheme.overrides },
+            sections: data.sections,
+            modules,
+            media: { ...canonicalMedia, ...media, items: mediaItems },
+            metadata: data.metadata
+        };
+    }
+
     function buildRendererShape(data, options, model) {
         const fontFamilies = options.fontFamilies || {};
         const fontKey = data.fontFamily || data.fuente || model.theme?.fontFamily;
@@ -195,6 +253,15 @@
         };
     }
 
+    function normalizeV2Media(value) {
+        const media = isPlainObject(value) ? value : {};
+        return {
+            ...media,
+            ...normalizeMedia(media),
+            items: isPlainObject(media.items) ? media.items : {}
+        };
+    }
+
     function normalizeMusic(value) {
         const music = isPlainObject(value) ? value : {};
         const source = firstString(music.source, music.src, music.musica);
@@ -202,6 +269,20 @@
             source,
             tracks: normalizeAudioTracks(music.tracks || music.audios, source),
             playMode: firstString(music.playMode, music.audioPlayMode) || "selector"
+        };
+    }
+
+    function normalizeV2Music(value, mediaItems) {
+        const music = isPlainObject(value) ? value : {};
+        const directSource = firstString(music.source, resolveMediaSource(mediaItems, music.media_id));
+        const tracks = Array.isArray(music.tracks)
+            ? music.tracks.map((track) => resolveMediaTrack(track, mediaItems))
+            : [];
+        return {
+            ...music,
+            source: directSource,
+            tracks: normalizeAudioTracks(tracks, directSource),
+            playMode: firstString(music.playMode, music.play_mode) || "selector"
         };
     }
 
@@ -213,6 +294,19 @@
             city: firstString(location.city, location.locality, location.localidad, location.lugarCiudad),
             mapsUrl: firstString(location.mapsUrl, location.googleMapsUrl, location.linkMaps),
             calendarUrl: firstString(location.calendarUrl, location.googleCalendarUrl)
+        };
+    }
+
+    function normalizeV2Location(value) {
+        const location = isPlainObject(value) ? value : {};
+        return {
+            ...location,
+            name: firstString(location.name),
+            address: firstString(location.address),
+            city: firstString(location.city),
+            mapsUrl: firstString(location.maps_url, location.mapsUrl),
+            calendarUrl: firstString(location.calendar_url, location.calendarUrl),
+            message: firstString(location.message)
         };
     }
 
@@ -249,6 +343,26 @@
         };
     }
 
+    function normalizeV2Theme(value) {
+        const theme = isPlainObject(value) ? value : {};
+        const overrides = isPlainObject(theme.overrides) ? theme.overrides : {};
+        const styles = {
+            ...(isPlainObject(theme.styles) ? theme.styles : {}),
+            ...compactObject({
+                colorTexto: overrides.text,
+                colorFondo: overrides.surface,
+                colorSombra: overrides.shadow,
+                colorBordeDecorativo: overrides.line
+            })
+        };
+        return {
+            ...theme,
+            slug: firstString(theme.slug),
+            styles,
+            overrides
+        };
+    }
+
     function legacySections(media, location, rsvp, data) {
         const hasLocationData = Boolean(data.mensaje || data.horarioTexto || data.horario || location.name || location.address || location.mapsUrl);
         const hasRsvpData = Boolean(data.fechaEvento || data.fecha || rsvp.deadline || rsvp.contacts.length);
@@ -271,6 +385,40 @@
             .map((section, index) => normalizeSection(section, index))
             .filter(Boolean)
             .sort((first, second) => first.order - second.order || first.id.localeCompare(second.id));
+    }
+
+    function normalizeV2Sections(value, mediaItems) {
+        const source = Array.isArray(value) ? value : [];
+        return source
+            .map((section, index) => normalizeV2Section(section, index, mediaItems))
+            .filter(Boolean)
+            .sort((first, second) => first.order - second.order || first.id.localeCompare(second.id));
+    }
+
+    function normalizeV2Section(section, index, mediaItems) {
+        if (!isPlainObject(section)) return null;
+        const order = Number(section.order);
+        const type = firstString(section.type) || "event-info";
+        const data = isPlainObject(section.data) ? section.data : {};
+        const mediaSource = resolveMediaSource(mediaItems, data.media_id);
+        const mediaAliases = mediaSource
+            ? type === "media-closing"
+                ? { src: firstString(data.src, mediaSource) }
+                : { image: firstString(data.image, mediaSource) }
+            : {};
+        const countdownAliases = type === "countdown" && data.target_datetime
+            ? { targetDateTime: firstString(data.targetDateTime, data.target_datetime) }
+            : {};
+
+        return {
+            ...section,
+            id: firstString(section.id) || `${type}-${index + 1}`,
+            type,
+            enabled: section.enabled !== false,
+            order: Number.isFinite(order) ? order : (index + 1) * 10,
+            data: { ...data, ...mediaAliases, ...countdownAliases },
+            config: isPlainObject(section.config) ? section.config : {}
+        };
     }
 
     function normalizeSection(section, index) {
@@ -319,6 +467,23 @@
         return fallbackSource ? [{ src: fallbackSource, name: "Musica de fondo" }] : [];
     }
 
+    function resolveMediaTrack(track, mediaItems) {
+        if (typeof track === "string") return track;
+        if (!isPlainObject(track)) return track;
+        return {
+            ...track,
+            src: firstString(track.src, resolveMediaSource(mediaItems, track.media_id))
+        };
+    }
+
+    function resolveMediaSource(mediaItems, mediaId) {
+        if (!isPlainObject(mediaItems) || !firstString(mediaId)) return "";
+        const item = mediaItems[mediaId];
+        if (typeof item === "string") return firstString(item);
+        if (!isPlainObject(item)) return "";
+        return firstString(item.src, item.url, item.path);
+    }
+
     function contactsFromConfirmation(confirmacion) {
         if (!confirmacion) return [];
 
@@ -357,12 +522,17 @@
         return value ? value.trim() : "";
     }
 
+    function compactObject(value) {
+        return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined));
+    }
+
     function isPlainObject(value) {
         return Boolean(value && typeof value === "object" && !Array.isArray(value));
     }
 
     return {
         CURRENT_SCHEMA_VERSION,
+        V2_SCHEMA_VERSION,
         normalizeEvent,
         hasNewSchema,
         normalizeSections
