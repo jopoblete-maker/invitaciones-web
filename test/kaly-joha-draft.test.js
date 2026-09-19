@@ -6,6 +6,7 @@ const { normalizeEvent, hasNewSchema } = require("../js/core/event-normalizer");
 const { TEMPLATES, resolveTemplate } = require("../js/core/template-registry");
 const { getRenderableSections } = require("../js/core/section-renderer");
 const { validateNewEvent } = require("../js/core/event-validator");
+const CalendarActions = require("../js/core/calendar-actions");
 
 const draftPath = path.resolve(__dirname, "..", ".dev", "drafts", "kaly-joha-boda-civil.event.json");
 const raw = JSON.parse(fs.readFileSync(draftPath, "utf8"));
@@ -119,6 +120,7 @@ const browserContext = {
     console,
     URL,
     URLSearchParams,
+    CalendarActions,
     document: { addEventListener() {} },
     window: {}
 };
