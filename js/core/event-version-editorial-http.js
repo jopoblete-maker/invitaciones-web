@@ -1,0 +1,135 @@
+(function (root, factory) {
+    const http = factory();
+
+    if (typeof module === "object" && module.exports) {
+        module.exports = http;
+    }
+
+    root.EventVersionEditorialHttp = http;
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+    const STATUS_BY_CODE = Object.freeze({
+        INVALID_REQUEST: 400,
+        EVENT_NOT_FOUND: 404,
+        VERSION_NOT_FOUND: 404,
+        VERSION_EVENT_MISMATCH: 404,
+        VERSION_CONFLICT: 409,
+        INVALID_WORKFLOW: 409,
+        EVENT_ARCHIVED: 409,
+        INVALID_EVENT: 422
+    });
+
+    const MESSAGE_BY_CODE = Object.freeze({
+        INVALID_REQUEST: "Invalid request.",
+        EVENT_NOT_FOUND: "Event not found.",
+        VERSION_NOT_FOUND: "Version not found.",
+        VERSION_EVENT_MISMATCH: "Version not found.",
+        VERSION_CONFLICT: "The working version changed.",
+        INVALID_WORKFLOW: "The workflow operation is not allowed.",
+        EVENT_ARCHIVED: "Event is archived.",
+        INVALID_EVENT: "Event content is invalid."
+    });
+
+    function createEventVersionEditorialHttp({ service, readRepository, adminPassword }) {
+        if (!service || !readRepository) {
+            throw new TypeError("service and readRepository are required.");
+        }
+        if (typeof adminPassword !== "string" || adminPassword === "") {
+            throw new TypeError("adminPassword is required.");
+        }
+
+        function requestPassword(req) {
+            if (req && typeof req.get === "function") {
+                return req.get("X-Admin-Password");
+            }
+            return req?.headers?.["x-admin-password"];
+        }
+
+        function sendError(res, error) {
+            const status = STATUS_BY_CODE[error?.code] || 500;
+            const code = STATUS_BY_CODE[error?.code] ? error.code : "INTERNAL_ERROR";
+            const message = MESSAGE_BY_CODE[code] || "Unexpected server error.";
+            return res.status(status).json({ error: { code, message } });
+        }
+
+        function protect(handler) {
+            return async function protectedEditorialHandler(req, res) {
+                if (requestPassword(req) !== adminPassword) {
+                    return res.status(401).json({
+                        error: { code: "UNAUTHORIZED", message: "Unauthorized." }
+                    });
+                }
+                try {
+                    return await handler(req, res);
+                } catch (error) {
+                    return sendError(res, error);
+                }
+            };
+        }
+
+        const getEditorialState = protect(async (req, res) => {
+            const result = await readRepository.getEditorialState(req.params.eventId);
+            return res.status(200).json(result);
+        });
+
+        const createVersion = protect(async (req, res) => {
+            const body = req.body || {};
+            const options = {
+                eventId: req.params.eventId,
+                content: body.content,
+                sourceVersionId: body.sourceVersionId,
+                initialWorkflow: body.initialWorkflow
+            };
+            if (Object.prototype.hasOwnProperty.call(body, "expectedWorkingVersionId")) {
+                options.expectedWorkingVersionId = body.expectedWorkingVersionId;
+            }
+            const result = await service.createVersion(options);
+            return res.status(201).json(result);
+        });
+
+        const getVersion = protect(async (req, res) => {
+            const result = await readRepository.getVersion(
+                req.params.eventId,
+                req.params.versionId
+            );
+            return res.status(200).json(result);
+        });
+
+        const transitionWorkflow = protect(async (req, res) => {
+            const body = req.body || {};
+            const result = await service.transitionWorkflow({
+                eventId: req.params.eventId,
+                versionId: req.params.versionId,
+                expectedStatus: body.expectedStatus,
+                targetStatus: body.targetStatus
+            });
+            return res.status(200).json(result);
+        });
+
+        const publishVersion = protect(async (req, res) => {
+            const result = await service.publishVersion({
+                eventId: req.params.eventId,
+                versionId: req.params.versionId
+            });
+            return res.status(200).json(result);
+        });
+
+        const rollbackVersion = protect(async (req, res) => {
+            const result = await service.rollbackVersion({
+                eventId: req.params.eventId,
+                versionId: req.body?.versionId
+            });
+            return res.status(200).json(result);
+        });
+
+        return {
+            getEditorialState,
+            createVersion,
+            getVersion,
+            transitionWorkflow,
+            publishVersion,
+            rollbackVersion
+        };
+    }
+
+    return { createEventVersionEditorialHttp };
+});

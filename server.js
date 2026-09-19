@@ -3,6 +3,10 @@ const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const { validateEventForPersistence } = require('./js/core/event-validator');
 const { createPublicEventResolver } = require('./js/core/public-event-resolver');
+const { createEventVersionRpcAdapter } = require('./js/core/event-version-rpc-adapter');
+const { createEventVersionEditorialService } = require('./js/core/event-version-editorial-service');
+const { createEventVersionReadRepository } = require('./js/core/event-version-read-repository-supabase');
+const { createEventVersionEditorialHttp } = require('./js/core/event-version-editorial-http');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -162,6 +166,34 @@ function withSupabaseTimeout(query, timeoutMs = SUPABASE_TIMEOUT_MS) {
 
 app.post('/api/eventos', guardarEvento);
 app.put('/api/eventos', guardarEvento);
+
+const eventVersionRpcAdapter = createEventVersionRpcAdapter({
+    rpc(name, parameters) {
+        return withSupabaseTimeout(supabase.rpc(name, parameters));
+    }
+});
+const eventVersionEditorialService = createEventVersionEditorialService(eventVersionRpcAdapter);
+const eventVersionReadRepository = createEventVersionReadRepository(supabase, {
+    execute: withSupabaseTimeout
+});
+const eventVersionEditorialHttp = createEventVersionEditorialHttp({
+    service: eventVersionEditorialService,
+    readRepository: eventVersionReadRepository,
+    adminPassword: ADMIN_PASSWORD
+});
+
+app.get('/api/admin/eventos/:eventId', eventVersionEditorialHttp.getEditorialState);
+app.post('/api/admin/eventos/:eventId/versions', eventVersionEditorialHttp.createVersion);
+app.get('/api/admin/eventos/:eventId/versions/:versionId', eventVersionEditorialHttp.getVersion);
+app.post(
+    '/api/admin/eventos/:eventId/versions/:versionId/workflow',
+    eventVersionEditorialHttp.transitionWorkflow
+);
+app.post(
+    '/api/admin/eventos/:eventId/versions/:versionId/publish',
+    eventVersionEditorialHttp.publishVersion
+);
+app.post('/api/admin/eventos/:eventId/rollback', eventVersionEditorialHttp.rollbackVersion);
 
 const publicEventResolver = createPublicEventResolver({
     async getEvent(id) {
