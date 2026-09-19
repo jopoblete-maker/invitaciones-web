@@ -1,0 +1,182 @@
+{
+  "schema_version": 2,
+  "id": "evento-integracion-v2",
+  "event_type": "wedding",
+  "plan": "premium",
+  "status": "approved",
+  "template": {
+    "slug": "boda-civil-esencial"
+  },
+  "identity": {
+    "title": "Evento de Integracion",
+    "subtitle": "Una celebracion de prueba",
+    "message": "Fixture generico para verificar el pipeline v2."
+  },
+  "schedule": {
+    "date": "2027-10-16",
+    "time": "19:30",
+    "date_text": "16 DE OCTUBRE",
+    "time_text": "19:30 hs.",
+    "timezone": "America/Argentina/Buenos_Aires"
+  },
+  "location": {
+    "name": "Espacio Central",
+    "address": "Avenida Principal 123",
+    "city": "Buenos Aires",
+    "maps_url": "https://maps.google.com/?q=-34.6037,-58.3816",
+    "message": "Los esperamos para celebrar."
+  },
+  "theme": {
+    "slug": "romantico",
+    "overrides": {
+      "text": "#252525",
+      "surface": "#ffffff",
+      "line": "#d8d8d8"
+    }
+  },
+  "sections": [
+    {
+      "id": "closing",
+      "type": "closing",
+      "enabled": true,
+      "order": 60,
+      "data": {
+        "title": "Los esperamos",
+        "message": "Gracias por acompañarnos.",
+        "media_id": "cover-image"
+      },
+      "config": {
+        "mediaLayout": "contained"
+      }
+    },
+    {
+      "id": "location",
+      "type": "location",
+      "enabled": true,
+      "order": 30,
+      "data": {
+        "name": "Espacio Central",
+        "address": "Avenida Principal 123",
+        "city": "Buenos Aires"
+      },
+      "config": {
+        "show_maps": true,
+        "show_calendar": true
+      }
+    },
+    {
+      "id": "hero",
+      "type": "hero",
+      "enabled": true,
+      "order": 10,
+      "data": {
+        "title": "Evento de Integracion",
+        "subtitle": "Una celebracion de prueba",
+        "dateText": "16 DE OCTUBRE",
+        "media_id": "cover-image"
+      },
+      "config": {
+        "mediaLayout": "contained",
+        "showCopy": true
+      }
+    },
+    {
+      "id": "disabled-media-closing",
+      "type": "media-closing",
+      "enabled": false,
+      "order": 70,
+      "data": {
+        "media_id": "cover-image",
+        "alt": "Imagen de cierre"
+      },
+      "config": {}
+    },
+    {
+      "id": "rsvp",
+      "type": "rsvp",
+      "enabled": true,
+      "order": 40,
+      "data": {},
+      "config": {}
+    },
+    {
+      "id": "event-info",
+      "type": "event-info",
+      "enabled": true,
+      "order": 20,
+      "data": {
+        "dateText": "16 DE OCTUBRE",
+        "timeText": "19:30 hs.",
+        "place": "Espacio Central",
+        "address": "Avenida Principal 123",
+        "city": "Buenos Aires",
+        "message": "Fixture generico para verificar el pipeline v2."
+      },
+      "config": {
+        "showMessage": true
+      }
+    },
+    {
+      "id": "countdown",
+      "type": "countdown",
+      "enabled": true,
+      "order": 50,
+      "data": {
+        "target_datetime": "2027-10-16T19:30:00-03:00",
+        "eyebrow": "FALTAN",
+        "footer": "PARA EL EVENTO",
+        "completedMessage": "El evento ha comenzado"
+      },
+      "config": {}
+    }
+  ],
+  "modules": {
+    "music": {
+      "enabled": true,
+      "playMode": "playlist",
+      "tracks": [
+        {
+          "media_id": "background-audio",
+          "name": "Musica del evento"
+        }
+      ]
+    },
+    "rsvp": {
+      "enabled": true,
+      "deadline": "2027-10-01",
+      "contacts": [
+        {
+          "name": "Organizacion",
+          "phone": "5491100000000"
+        }
+      ]
+    },
+    "branding": {
+      "enabled": true,
+      "brandName": "YCOR Digital",
+      "badgeText": "YCOR Digital",
+      "cta": "Crea tu invitacion digital",
+      "serviceText": "Invitaciones digitales",
+      "whatsapp": "5491100000001",
+      "whatsappMessage": "Quiero conocer mas",
+      "portfolioUrl": "https://example.test/portfolio",
+      "instagramUrl": "https://example.test/instagram"
+    }
+  },
+  "media": {
+    "items": {
+      "cover-image": {
+        "type": "image",
+        "src": "/test-assets/event-v2/cover.jpg"
+      },
+      "background-audio": {
+        "type": "audio",
+        "src": "/test-assets/event-v2/background.mp3"
+      }
+    }
+  },
+  "metadata": {
+    "locale": "es-AR",
+    "fixture": true
+  }
+}
