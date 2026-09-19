@@ -132,6 +132,19 @@
             }));
         }
 
+        function transitionWorkflow({ eventId, versionId, expectedStatus, targetStatus }) {
+            return execute("transition_event_version_workflow", {
+                p_event_id: eventId,
+                p_version_id: versionId,
+                p_expected_status: expectedStatus,
+                p_target_status: targetStatus
+            }, (row) => ({
+                eventId: row.event_id,
+                versionId: row.version_id,
+                workflowStatus: row.workflow_status
+            }));
+        }
+
         function archiveEvent({ eventId }) {
             return execute("archive_event", {
                 p_event_id: eventId
@@ -145,6 +158,7 @@
             createVersion,
             publishVersion,
             rollbackVersion,
+            transitionWorkflow,
             archiveEvent
         };
     }

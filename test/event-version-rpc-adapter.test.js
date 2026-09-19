@@ -134,6 +134,59 @@ async function expectCode(expectedCode, action) {
         parameters: { p_event_id: EVENT_ID, p_version_id: SOURCE_ID }
     }]);
 
+    const transitions = createHarness([
+        success({
+            event_id: EVENT_ID,
+            version_id: VERSION_ID,
+            workflow_status: "in_review"
+        }),
+        success({
+            event_id: EVENT_ID,
+            version_id: VERSION_ID,
+            workflow_status: "approved"
+        })
+    ]);
+    assert.deepStrictEqual(await transitions.adapter.transitionWorkflow({
+        eventId: EVENT_ID,
+        versionId: VERSION_ID,
+        expectedStatus: "draft",
+        targetStatus: "in_review"
+    }), {
+        eventId: EVENT_ID,
+        versionId: VERSION_ID,
+        workflowStatus: "in_review"
+    });
+    assert.deepStrictEqual(await transitions.adapter.transitionWorkflow({
+        eventId: EVENT_ID,
+        versionId: VERSION_ID,
+        expectedStatus: "in_review",
+        targetStatus: "approved"
+    }), {
+        eventId: EVENT_ID,
+        versionId: VERSION_ID,
+        workflowStatus: "approved"
+    });
+    assert.deepStrictEqual(transitions.calls, [
+        {
+            name: "transition_event_version_workflow",
+            parameters: {
+                p_event_id: EVENT_ID,
+                p_version_id: VERSION_ID,
+                p_expected_status: "draft",
+                p_target_status: "in_review"
+            }
+        },
+        {
+            name: "transition_event_version_workflow",
+            parameters: {
+                p_event_id: EVENT_ID,
+                p_version_id: VERSION_ID,
+                p_expected_status: "in_review",
+                p_target_status: "approved"
+            }
+        }
+    ]);
+
     const archive = createHarness(success({
         event_id: EVENT_ID,
         event_status: "archived"
@@ -182,6 +235,23 @@ async function expectCode(expectedCode, action) {
         versionId: VERSION_ID
     }));
 
+    for (const code of [
+        "EVENT_NOT_FOUND",
+        "EVENT_ARCHIVED",
+        "VERSION_NOT_FOUND",
+        "VERSION_EVENT_MISMATCH",
+        "VERSION_CONFLICT",
+        "INVALID_WORKFLOW"
+    ]) {
+        const transitionError = createHarness(failure(code));
+        await expectCode(code, () => transitionError.adapter.transitionWorkflow({
+            eventId: EVENT_ID,
+            versionId: VERSION_ID,
+            expectedStatus: "draft",
+            targetStatus: "in_review"
+        }));
+    }
+
     const remoteError = {
         code: "XX999",
         message: "database detail that must not be exposed",
@@ -196,6 +266,23 @@ async function expectCode(expectedCode, action) {
             assert.strictEqual(error.message, "Versioning persistence operation failed.");
             assert.strictEqual(error.cause, remoteError);
             assert(!JSON.stringify(error).includes("private payload"));
+            return true;
+        }
+    );
+
+    const unknownTransition = createHarness({ data: null, error: remoteError });
+    await assert.rejects(
+        () => unknownTransition.adapter.transitionWorkflow({
+            eventId: EVENT_ID,
+            versionId: VERSION_ID,
+            expectedStatus: "draft",
+            targetStatus: "in_review"
+        }),
+        (error) => {
+            assert(error instanceof EventVersionRpcError);
+            assert.strictEqual(error.code, undefined);
+            assert.strictEqual(error.message, "Versioning persistence operation failed.");
+            assert.strictEqual(error.cause, remoteError);
             return true;
         }
     );
