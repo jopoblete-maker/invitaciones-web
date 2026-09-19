@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const { validateEventForPersistence } = require('./js/core/event-validator');
+const { createPublicEventResolver } = require('./js/core/public-event-resolver');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -162,23 +163,56 @@ function withSupabaseTimeout(query, timeoutMs = SUPABASE_TIMEOUT_MS) {
 app.post('/api/eventos', guardarEvento);
 app.put('/api/eventos', guardarEvento);
 
+const publicEventResolver = createPublicEventResolver({
+    async getEvent(id) {
+        const { data, error } = await withSupabaseTimeout(supabase
+            .from('eventos')
+            .select('id, datos, published_version_id, event_status')
+            .eq('id', id)
+            .maybeSingle());
+        if (error) throw error;
+        return data;
+    },
+    async getVersion(id) {
+        const { data, error } = await withSupabaseTimeout(supabase
+            .from('event_versions')
+            .select('id, event_id, content')
+            .eq('id', id)
+            .maybeSingle());
+        if (error) throw error;
+        return data;
+    }
+}, {
+    onFallback({ eventId, reason, publishedVersionId }) {
+        console.warn('Public event legacy fallback:', {
+            eventId,
+            reason,
+            publishedVersionId
+        });
+    }
+});
+
 // Endpoint para leer la invitación desde el frontend (invitacion.html)
 app.get('/api/eventos/:id', async (req, res) => {
     try {
-        const { data, error } = await supabase
-            .from('eventos')
-            .select('datos')
-            .eq('id', req.params.id)
-            .single();
-
-        if (error || !data) {
+        const event = await publicEventResolver.resolvePublicEvent(req.params.id);
+        res.json(event);
+    } catch (err) {
+        if (err.code === 'PUBLIC_EVENT_NOT_FOUND') {
             return res.status(404).json({ error: 'Invitación no encontrada' });
         }
-
-        res.json(data.datos);
-    } catch (err) {
-        console.error('Error al leer:', err);
-        res.status(500).json({ error: 'Error al consultar la base de datos' });
+        if (err.code === 'PUBLIC_EVENT_INVALID_CONTENT') {
+            console.error('Contenido público de invitación no disponible:', {
+                eventId: req.params.id,
+                code: err.code
+            });
+            return res.status(500).json({ error: 'Invitación no disponible' });
+        }
+        console.error('Error al leer invitación:', {
+            eventId: req.params.id,
+            code: err.code || 'PUBLIC_EVENT_READ_FAILED'
+        });
+        return res.status(500).json({ error: 'Error al consultar la base de datos' });
     }
 });
 
