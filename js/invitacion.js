@@ -428,7 +428,7 @@ function renderInvitation(event, templateConfig) {
     applyAudioButtonPosition(event.layoutConfig.audioButton);
     setupBrochureNavigation();
     setupLocationActions();
-    setupRsvpConfirmation();
+    Rsvp.setupConfirmation();
     setupBranding();
     Countdown.clearTimers();
     Countdown.setupSections();
@@ -580,7 +580,11 @@ function renderConfirmationPage(section, context) {
     const event = context.event;
     const content = [
         context.templateConfig.layout === "vertical" ? "" : event.fechaEvento ? Countdown.renderLegacyContent() : "",
-        renderRsvpContent(event)
+        Rsvp.renderContent(event, {
+            normalizePhone: normalizeWhatsAppPhone,
+            escapeHtml,
+            whatsappIcon: ICONS.whatsapp
+        })
     ].filter(Boolean).join("");
 
     return `
@@ -956,51 +960,6 @@ function setupCarousel() {
         });
 
         startAutoplay();
-    });
-}
-
-function renderRsvp(event) {
-    return `
-        <section class="invitation-section">
-            ${renderRsvpContent(event)}
-        </section>
-    `;
-}
-
-function renderRsvpContent(event) {
-    const contacts = event.contactosRSVP
-        .map((contact) => ({ ...contact, telefono: normalizeWhatsAppPhone(contact.telefono) }))
-        .filter((contact) => contact.telefono);
-    if (!contacts.length) return "";
-
-    const buttons = contacts
-        .map((contact) => {
-            const label = contact.nombre ? `Confirmar con ${escapeHtml(contact.nombre)}` : "Confirmar asistencia";
-            return `
-                <a class="button rsvp-button" href="https://wa.me/${contact.telefono}" data-phone="${contact.telefono}" target="_blank" rel="noopener noreferrer">
-                    ${ICONS.whatsapp}
-                    ${label}
-                </a>
-            `;
-        })
-        .join("");
-
-    return `
-        <div class="rsvp-block">
-            ${event.confirmacionLimite ? `<p class="detail-value">Hasta el ${escapeHtml(event.confirmacionLimite)}</p>` : ""}
-            <div class="actions">${buttons}</div>
-        </div>
-    `;
-}
-
-function setupRsvpConfirmation() {
-    document.querySelectorAll(".rsvp-button").forEach((button) => {
-        button.addEventListener("click", (event) => {
-            event.preventDefault();
-            const text = "Confirmo mi asistencia al evento.";
-            const url = `https://wa.me/${button.dataset.phone}?text=${encodeURIComponent(text)}`;
-            window.open(url, "_blank", "noopener,noreferrer");
-        });
     });
 }
 
