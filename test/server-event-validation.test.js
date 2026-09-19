@@ -135,6 +135,10 @@ const v2Fixture = JSON.parse(fs.readFileSync(
     path.resolve(__dirname, "fixtures", "event-v2-complete.json"),
     "utf8"
 ));
+const demoV2Draft = JSON.parse(fs.readFileSync(
+    path.resolve(__dirname, "..", ".dev", "drafts", "demo-event-v2.event.json"),
+    "utf8"
+));
 
 (async () => {
     resetDatabase();
@@ -195,6 +199,20 @@ const v2Fixture = JSON.parse(fs.readFileSync(
     assert.strictEqual(database.writes, 1);
     assert.strictEqual(database.savedEvents[0].datos.schema_version, 2);
     assert.strictEqual(database.savedEvents[0].datos.id, "evento-v2-publicado");
+    assert.strictEqual(database.savedEvents[0].datos.tema, undefined);
+
+    resetDatabase();
+    const demoV2Response = await request({
+        ...demoV2Draft,
+        password: ADMIN_PASSWORD,
+        id: "ycor-demo-v2-preview"
+    });
+    assert.strictEqual(demoV2Response.statusCode, 200);
+    assert.deepStrictEqual(demoV2Response.body, { success: true, id: "ycor-demo-v2-preview" });
+    assert.strictEqual(database.calls, 2);
+    assert.strictEqual(database.writes, 1);
+    assert.strictEqual(database.savedEvents[0].datos.schema_version, 2);
+    assert.strictEqual(database.savedEvents[0].datos.identity.title, "YCOR Demo V2");
     assert.strictEqual(database.savedEvents[0].datos.tema, undefined);
 
     resetDatabase();

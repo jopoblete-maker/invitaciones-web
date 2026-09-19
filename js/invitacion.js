@@ -300,7 +300,7 @@ async function loadLocalPreviewDraft(name) {
         throw new Error("Preview local no disponible en este entorno.");
     }
 
-    if (name !== "kaly-joha-boda-civil") {
+    if (!["kaly-joha-boda-civil", "demo-event-v2"].includes(name)) {
         throw new Error("Draft de preview no permitido.");
     }
 
