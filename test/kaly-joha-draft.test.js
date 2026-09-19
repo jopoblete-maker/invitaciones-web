@@ -7,6 +7,7 @@ const { TEMPLATES, resolveTemplate } = require("../js/core/template-registry");
 const { getRenderableSections } = require("../js/core/section-renderer");
 const { validateNewEvent } = require("../js/core/event-validator");
 const CalendarActions = require("../js/core/calendar-actions");
+const Countdown = require("../js/core/countdown");
 
 const draftPath = path.resolve(__dirname, "..", ".dev", "drafts", "kaly-joha-boda-civil.event.json");
 const raw = JSON.parse(fs.readFileSync(draftPath, "utf8"));
@@ -121,6 +122,7 @@ const browserContext = {
     URL,
     URLSearchParams,
     CalendarActions,
+    Countdown,
     document: { addEventListener() {} },
     window: {}
 };
@@ -206,7 +208,7 @@ const closingHtml = browserContext.renderClosingPage(closing, {
 assert(!closingHtml.includes("Los Esperamos"));
 assert(closingHtml.includes("/assets/events/kaly-joha/03-cierre.gif"));
 
-const countdownHtml = browserContext.renderCountdownPage(countdown, {
+const countdownHtml = Countdown.renderPage(countdown, {
     event: normalized,
     pageIndex: renderableSections.indexOf(countdown),
     pageCount: renderableSections.length,
@@ -219,7 +221,7 @@ assert(countdownHtml.includes("PARA NUESTRO GRAN DÍA"));
 assert(countdownHtml.includes("data-countdown-unit=\"days\""));
 assert(!countdownHtml.includes("82"));
 
-const remaining = browserContext.calculateCountdownParts(
+const remaining = Countdown.calculateParts(
     "2026-12-04T11:30:00",
     new Date("2026-12-03T10:29:20").getTime()
 );
@@ -229,7 +231,7 @@ assert.strictEqual(remaining.hours, 1);
 assert.strictEqual(remaining.minutes, 0);
 assert.strictEqual(remaining.seconds, 40);
 
-const completed = browserContext.calculateCountdownParts(
+const completed = Countdown.calculateParts(
     "2026-12-04T11:30:00",
     new Date("2026-12-04T11:30:00").getTime()
 );
