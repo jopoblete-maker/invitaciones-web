@@ -10,18 +10,18 @@
     const SECTION_CONTRACTS = createRegistry({
         hero: {
             type: "hero",
-            allowedDataKeys: ["title", "subtitle", "dateText", "message", "text", "image", "imageAlt", "alt", "backgroundImage"],
+            allowedDataKeys: ["title", "subtitle", "dateText", "message", "text", "image", "imageAlt", "alt", "backgroundImage", "media_id"],
             allowedConfigKeys: ["mediaLayout", "imageLayout", "showCopy"]
         },
         "event-info": {
             type: "event-info",
-            allowedDataKeys: ["dateText", "timeText", "locationText", "place", "address", "city", "message", "image", "imageAlt", "alt", "backgroundImage"],
+            allowedDataKeys: ["dateText", "timeText", "locationText", "place", "address", "city", "message", "image", "imageAlt", "alt", "backgroundImage", "media_id"],
             allowedConfigKeys: ["mediaLayout", "imageLayout", "showMessage"]
         },
         location: {
             type: "location",
             allowedDataKeys: ["name", "locationText", "place", "address", "city", "message", "timeText"],
-            allowedConfigKeys: []
+            allowedConfigKeys: ["show_maps", "show_calendar"]
         },
         rsvp: {
             type: "rsvp",
@@ -30,17 +30,17 @@
         },
         closing: {
             type: "closing",
-            allowedDataKeys: ["title", "message", "names", "image", "imageAlt", "alt", "backgroundImage"],
+            allowedDataKeys: ["title", "message", "names", "image", "imageAlt", "alt", "backgroundImage", "media_id"],
             allowedConfigKeys: ["mediaLayout", "imageLayout"]
         },
         countdown: {
             type: "countdown",
-            allowedDataKeys: ["targetDateTime", "target", "dateTime", "eyebrow", "footer", "completedMessage"],
+            allowedDataKeys: ["targetDateTime", "target", "dateTime", "target_datetime", "eyebrow", "footer", "completedMessage"],
             allowedConfigKeys: []
         },
         "media-closing": {
             type: "media-closing",
-            allowedDataKeys: ["src", "image", "alt", "imageAlt"],
+            allowedDataKeys: ["src", "image", "alt", "imageAlt", "media_id"],
             allowedConfigKeys: []
         }
     });

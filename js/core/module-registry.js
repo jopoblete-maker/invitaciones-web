@@ -10,7 +10,7 @@
     const MODULES = createRegistry({
         music: {
             slug: "music",
-            configKeys: ["enabled", "source", "tracks", "playMode"]
+            configKeys: ["enabled", "source", "tracks", "playMode", "media_id"]
         },
         rsvp: {
             slug: "rsvp",
