@@ -144,6 +144,15 @@ function resetDatabase() {
     assert.strictEqual(database.writes, 0);
 
     resetDatabase();
+    const unknownTemplateResponse = await request(validNewEvent({
+        template: { slug: "template-inexistente" }
+    }));
+    assert.strictEqual(unknownTemplateResponse.statusCode, 400);
+    assert(unknownTemplateResponse.body.validationErrors.some((error) => error.includes("template.slug")));
+    assert.strictEqual(database.calls, 0);
+    assert.strictEqual(database.writes, 0);
+
+    resetDatabase();
     const sectionsWithoutSchema = validNewEvent();
     delete sectionsWithoutSchema.schema_version;
     const missingSchemaResponse = await request(sectionsWithoutSchema);

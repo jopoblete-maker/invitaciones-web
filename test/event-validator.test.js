@@ -2,6 +2,7 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 const { validateNewEvent } = require("../js/core/event-validator");
+const { TEMPLATES } = require("../js/core/template-registry");
 
 const validEvent = {
     schema_version: 1,
@@ -19,6 +20,27 @@ const validEvent = {
 };
 
 assert.deepStrictEqual(validateNewEvent(validEvent), { valid: true, errors: [] });
+
+Object.keys(TEMPLATES).forEach((slug) => {
+    const registeredTemplate = validateNewEvent({
+        ...validEvent,
+        template: { slug }
+    });
+    assert.strictEqual(registeredTemplate.valid, true);
+});
+
+const unknownTemplate = validateNewEvent({
+    ...validEvent,
+    template: { slug: "template-inexistente" }
+});
+assert.strictEqual(unknownTemplate.valid, false);
+assert(unknownTemplate.errors.some((error) => error.includes("template.slug")));
+
+const emptyTemplateSlug = validateNewEvent({
+    ...validEvent,
+    template: { slug: "   " }
+});
+assert.deepStrictEqual(emptyTemplateSlug.errors, ["template.slug es obligatorio."]);
 
 const invalidSchema = validateNewEvent({ ...validEvent, schema_version: 999 });
 assert.strictEqual(invalidSchema.valid, false);

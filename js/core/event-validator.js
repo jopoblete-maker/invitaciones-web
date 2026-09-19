@@ -2,15 +2,19 @@
     const schema = typeof require === "function"
         ? require("./event-schema")
         : root.EventSchema;
-    const validator = factory(schema);
+    const templateRegistry = typeof require === "function"
+        ? require("./template-registry")
+        : root.TemplateRegistry;
+    const validator = factory(schema, templateRegistry);
 
     if (typeof module === "object" && module.exports) {
         module.exports = validator;
     }
 
     root.EventValidator = validator;
-})(typeof globalThis !== "undefined" ? globalThis : this, function (schema) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (schema, templateRegistry) {
     const CURRENT_SCHEMA_VERSION = schema?.CURRENT_SCHEMA_VERSION || 1;
+    const TEMPLATES = templateRegistry?.TEMPLATES || {};
 
     function validateNewEvent(event) {
         const errors = [];
@@ -47,6 +51,12 @@
         if (!validateObject(template, "template", errors)) return;
         if (!nonEmptyString(template.slug)) {
             errors.push("template.slug es obligatorio.");
+            return;
+        }
+
+        const slug = template.slug.trim();
+        if (!Object.prototype.hasOwnProperty.call(TEMPLATES, slug)) {
+            errors.push(`template.slug no registrado: ${slug}.`);
         }
     }
 
