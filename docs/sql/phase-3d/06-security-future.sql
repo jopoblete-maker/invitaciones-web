@@ -1,0 +1,38 @@
+-- ============================================================
+-- DO NOT EXECUTE YET
+-- Requires confirmed backend Supabase role.
+-- ============================================================
+--
+-- This proposal protects drafts from direct browser access. It deliberately
+-- does not change RLS, policies, or grants on public.eventos. Production 3D-B
+-- found eventos RLS disabled and broad anon/authenticated grants; hardening
+-- that legacy surface belongs to a separate phase.
+--
+-- Replace confirmed_backend_role only after identifying the role represented
+-- by SUPABASE_KEY. Do not expose a service-role credential to the browser.
+
+-- ALTER TABLE public.event_versions ENABLE ROW LEVEL SECURITY;
+--
+-- REVOKE ALL ON TABLE public.event_versions FROM anon, authenticated;
+--
+-- REVOKE ALL ON FUNCTION public.create_event_version(text, jsonb, uuid, uuid, text)
+--     FROM anon, authenticated;
+-- REVOKE ALL ON FUNCTION public.publish_event_version(text, uuid)
+--     FROM anon, authenticated;
+-- REVOKE ALL ON FUNCTION public.rollback_event_version(text, uuid)
+--     FROM anon, authenticated;
+-- REVOKE ALL ON FUNCTION public.archive_event(text)
+--     FROM anon, authenticated;
+--
+-- GRANT EXECUTE ON FUNCTION public.create_event_version(text, jsonb, uuid, uuid, text)
+--     TO confirmed_backend_role;
+-- GRANT EXECUTE ON FUNCTION public.publish_event_version(text, uuid)
+--     TO confirmed_backend_role;
+-- GRANT EXECUTE ON FUNCTION public.rollback_event_version(text, uuid)
+--     TO confirmed_backend_role;
+-- GRANT EXECUTE ON FUNCTION public.archive_event(text)
+--     TO confirmed_backend_role;
+--
+-- No SELECT policy is proposed for anon/authenticated. Public invitation reads
+-- must continue through Express, which will later resolve only the published
+-- version. Drafts must never be readable directly by browser roles.
