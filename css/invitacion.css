@@ -247,6 +247,27 @@
     outline-offset: 3px;
 }
 
+.private-preview-badge {
+    position: fixed;
+    z-index: 10000;
+    top: calc(10px + env(safe-area-inset-top));
+    left: 50%;
+    max-width: calc(100vw - 24px);
+    padding: 7px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 4px;
+    color: #ffffff;
+    background: #8b1e2d;
+    box-shadow: 0 4px 14px rgba(34, 9, 13, 0.28);
+    font-family: Arial, sans-serif;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    line-height: 1.2;
+    text-align: center;
+    transform: translateX(-50%);
+}
+
 @media (max-width: 360px) {
     .branding-widget {
         bottom: calc(12px + env(safe-area-inset-bottom));

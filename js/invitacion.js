@@ -226,25 +226,24 @@ let carouselTimers = [];
 document.addEventListener("DOMContentLoaded", initInvitation);
 
 async function initInvitation() {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get("id");
-    const devFixture = params.get("devFixture");
-    const devDraft = params.get("devDraft");
+    const source = InvitationDataSource.selectInvitationSource(
+        window.location.search,
+        window.location.hostname
+    );
 
-    if (!id && !devFixture && !devDraft) {
+    if (source.mode === "missing") {
         renderState("ID de invitación no especificado.");
         return;
     }
+    if (source.privatePreview) {
+        InvitationDataSource.showPrivatePreviewBadge(document);
+    }
 
     try {
-        const data = devDraft
-            ? await loadLocalPreviewDraft(devDraft)
-            : devFixture
-                ? await loadLocalPreviewFixture(devFixture)
-                : await fetchEventById(id);
+        const data = await InvitationDataSource.loadInvitationSource(source, fetch);
         const event = EventNormalizer.normalizeEvent(data, { fontFamilies: FONT_FAMILIES });
         const templateConfig = TemplateRegistry.resolveTemplate(event.template.slug || event.template_slug);
-        const themeName = inferTheme(event, id, templateConfig);
+        const themeName = inferTheme(event, source.eventId, templateConfig);
 
         applyTemplateConfig(templateConfig);
         loadTemplateStylesheet(templateConfig);
@@ -253,7 +252,9 @@ async function initInvitation() {
         hideLoader();
     } catch (error) {
         console.error(error);
-        renderState("Invitación no encontrada");
+        renderState(source.privatePreview
+            ? "Vista previa no disponible"
+            : "Invitación no encontrada");
     }
 }
 
@@ -271,55 +272,6 @@ function loadTemplateStylesheet(templateConfig) {
     if (link.getAttribute("href") !== href) {
         link.setAttribute("href", href);
     }
-}
-
-async function fetchEventById(id) {
-    const response = await fetch(`/api/eventos/${encodeURIComponent(id)}`);
-    if (!response.ok) throw new Error("Invitación no encontrada");
-    return response.json();
-}
-
-async function loadLocalPreviewFixture(name) {
-    if (!isLocalPreviewHost()) {
-        throw new Error("Preview local no disponible en este entorno.");
-    }
-
-    if (name !== "boda-civil-esencial") {
-        throw new Error("Fixture de preview no permitido.");
-    }
-
-    const response = await fetch(`/__dev-fixtures/${encodeURIComponent(name)}.fixture.json`, {
-        cache: "no-store"
-    });
-    if (!response.ok) throw new Error("Fixture de preview no encontrado.");
-    return response.json();
-}
-
-async function loadLocalPreviewDraft(name) {
-    if (!isLocalPreviewHost()) {
-        throw new Error("Preview local no disponible en este entorno.");
-    }
-
-    if (!["kaly-joha-boda-civil", "demo-event-v2"].includes(name)) {
-        throw new Error("Draft de preview no permitido.");
-    }
-
-    const response = await fetch(`/__dev-drafts/${encodeURIComponent(name)}.event.json`, {
-        cache: "no-store"
-    });
-    if (!response.ok) throw new Error("Draft de preview no encontrado.");
-    return response.json();
-}
-
-function isLocalPreviewHost() {
-    const hostname = window.location.hostname;
-
-    return (
-        ["localhost", "127.0.0.1", "::1"].includes(hostname) ||
-        /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
-        /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
-        /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname)
-    );
 }
 
 function applyTemplateConfig(templateConfig) {

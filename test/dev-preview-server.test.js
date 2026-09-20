@@ -1,9 +1,13 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { handleRequest, validateDraftContent } = require("../scripts/dev-preview-server");
+const {
+    createPreviewRequestHandler,
+    handleRequest,
+    validateDraftContent
+} = require("../scripts/dev-preview-server");
 
-function previewRequest(url) {
+function previewRequest(url, handler = handleRequest) {
     return new Promise((resolve) => {
         const response = {
             statusCode: 200,
@@ -20,7 +24,7 @@ function previewRequest(url) {
                 });
             }
         };
-        handleRequest({ url, headers: {} }, response);
+        handler({ url, method: "GET", headers: {} }, response);
     });
 }
 
@@ -57,8 +61,36 @@ function previewRequest(url) {
     assert.strictEqual(legacyResult.valid, true);
     assert.strictEqual(legacyResult.body.schema_version, undefined);
 
-    const invitationScript = fs.readFileSync(path.resolve(__dirname, "..", "js", "invitacion.js"), "utf8");
-    assert(invitationScript.includes('"demo-event-v2"'));
+    const hiddenFile = await previewRequest("/.env");
+    assert.strictEqual(hiddenFile.statusCode, 404);
+
+    const privateHandler = createPreviewRequestHandler({
+        apiBaseUrl: "https://backend.example.test",
+        adminPassword: "server-only-test-secret",
+        fetchImpl: async () => ({
+            ok: true,
+            status: 200,
+            json: async () => ({
+                eventId: "mock-event",
+                versionId: "11111111-1111-4111-8111-111111111111",
+                content: { id: "mock-event", nombre: "Persisted Preview" }
+            })
+        })
+    });
+    const privatePreview = await previewRequest(
+        "/api/preview/eventos/mock-event/versions/11111111-1111-4111-8111-111111111111",
+        privateHandler
+    );
+    assert.strictEqual(privatePreview.statusCode, 200);
+    assert.strictEqual(privatePreview.headers["Cache-Control"], "no-store");
+    assert.strictEqual(JSON.parse(privatePreview.body).nombre, "Persisted Preview");
+    assert(!privatePreview.body.includes("server-only-test-secret"));
+
+    const dataSourceScript = fs.readFileSync(
+        path.resolve(__dirname, "..", "js", "core", "invitation-data-source.js"),
+        "utf8"
+    );
+    assert(dataSourceScript.includes('"demo-event-v2"'));
 
     console.log("dev preview validation test passed");
 })().catch((error) => {

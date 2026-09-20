@@ -2,6 +2,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { validateEventForPersistence } = require("../js/core/event-validator");
+const { createPrivatePreviewBridge } = require("./private-preview-bridge");
 
 const ROOT = path.resolve(__dirname, "..");
 const HOST = process.env.PREVIEW_HOST || "127.0.0.1";
@@ -59,86 +60,108 @@ function sendJson(res, status, body) {
     res.end(content);
 }
 
-function handleRequest(req, res) {
-    const requestUrl = new URL(req.url, `http://${HOST}:${PORT}`);
-    const pathname = decodeURIComponent(requestUrl.pathname);
-    const isDraftRequest = pathname.startsWith("/__dev-drafts/");
-    const relativePath = pathname.startsWith("/__dev-fixtures/")
-        ? path.join(".dev", "fixtures", pathname.replace("/__dev-fixtures/", ""))
-        : isDraftRequest
-            ? path.join(".dev", "drafts", pathname.replace("/__dev-drafts/", ""))
-            : pathname === "/" ? "invitacion.html" : pathname.slice(1);
-    const filePath = path.resolve(ROOT, relativePath);
+function createPreviewRequestHandler(options = {}) {
+    const privatePreviewBridge = createPrivatePreviewBridge({
+        apiBaseUrl: options.apiBaseUrl ?? process.env.YCOR_API_BASE_URL,
+        adminPassword: options.adminPassword ?? process.env.YCOR_ADMIN_PASSWORD,
+        fetchImpl: options.fetchImpl ?? globalThis.fetch
+    });
 
-    if (!filePath.startsWith(ROOT + path.sep)) {
-        res.writeHead(403);
-        res.end("Forbidden");
-        return;
-    }
+    return function handlePreviewRequest(req, res) {
+        const requestUrl = new URL(req.url, `http://${HOST}:${PORT}`);
+        const pathname = decodeURIComponent(requestUrl.pathname);
 
-    if (isDraftRequest) {
-        fs.readFile(filePath, "utf8", (readError, raw) => {
-            if (readError) {
-                res.writeHead(readError.code === "ENOENT" ? 404 : 500);
-                res.end(readError.code === "ENOENT" ? "Not found" : "Server error");
-                return;
-            }
-
-            const result = validateDraftContent(raw);
-            sendJson(res, result.status, result.body);
-        });
-        return;
-    }
-
-    fs.stat(filePath, (statError, stat) => {
-        if (statError || !stat.isFile()) {
-            res.writeHead(statError?.code === "ENOENT" ? 404 : 500);
-            res.end(statError?.code === "ENOENT" ? "Not found" : "Server error");
+        if (privatePreviewBridge.matches(pathname)) {
+            privatePreviewBridge.handle(req, res, pathname);
             return;
         }
 
-        const contentType = CONTENT_TYPES[path.extname(filePath).toLowerCase()] || "application/octet-stream";
-        const range = req.headers.range;
+        if (pathname.split("/").some((segment) => segment.startsWith("."))) {
+            res.writeHead(404, { "Cache-Control": "no-store" });
+            res.end("Not found");
+            return;
+        }
 
-        if (range) {
-            const match = range.match(/^bytes=(\d*)-(\d*)$/);
-            if (!match) {
-                res.writeHead(416, { "Content-Range": `bytes */${stat.size}` });
-                res.end();
+        const isDraftRequest = pathname.startsWith("/__dev-drafts/");
+        const relativePath = pathname.startsWith("/__dev-fixtures/")
+            ? path.join(".dev", "fixtures", pathname.replace("/__dev-fixtures/", ""))
+            : isDraftRequest
+                ? path.join(".dev", "drafts", pathname.replace("/__dev-drafts/", ""))
+                : pathname === "/" ? "invitacion.html" : pathname.slice(1);
+        const filePath = path.resolve(ROOT, relativePath);
+
+        if (!filePath.startsWith(ROOT + path.sep)) {
+            res.writeHead(403);
+            res.end("Forbidden");
+            return;
+        }
+
+        if (isDraftRequest) {
+            fs.readFile(filePath, "utf8", (readError, raw) => {
+                if (readError) {
+                    res.writeHead(readError.code === "ENOENT" ? 404 : 500);
+                    res.end(readError.code === "ENOENT" ? "Not found" : "Server error");
+                    return;
+                }
+
+                const result = validateDraftContent(raw);
+                sendJson(res, result.status, result.body);
+            });
+            return;
+        }
+
+        fs.stat(filePath, (statError, stat) => {
+            if (statError || !stat.isFile()) {
+                res.writeHead(statError?.code === "ENOENT" ? 404 : 500);
+                res.end(statError?.code === "ENOENT" ? "Not found" : "Server error");
                 return;
             }
 
-            const start = match[1] ? Number(match[1]) : 0;
-            const end = match[2] ? Number(match[2]) : stat.size - 1;
-            if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || end >= stat.size) {
-                res.writeHead(416, { "Content-Range": `bytes */${stat.size}` });
-                res.end();
+            const contentType = CONTENT_TYPES[path.extname(filePath).toLowerCase()] || "application/octet-stream";
+            const range = req.headers.range;
+
+            if (range) {
+                const match = range.match(/^bytes=(\d*)-(\d*)$/);
+                if (!match) {
+                    res.writeHead(416, { "Content-Range": `bytes */${stat.size}` });
+                    res.end();
+                    return;
+                }
+
+                const start = match[1] ? Number(match[1]) : 0;
+                const end = match[2] ? Number(match[2]) : stat.size - 1;
+                if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || end >= stat.size) {
+                    res.writeHead(416, { "Content-Range": `bytes */${stat.size}` });
+                    res.end();
+                    return;
+                }
+
+                res.writeHead(206, {
+                    "Content-Type": contentType,
+                    "Content-Length": end - start + 1,
+                    "Content-Range": `bytes ${start}-${end}/${stat.size}`,
+                    "Accept-Ranges": "bytes",
+                    "Cache-Control": "no-store"
+                });
+                fs.createReadStream(filePath, { start, end }).pipe(res);
                 return;
             }
 
-            res.writeHead(206, {
+            res.writeHead(200, {
                 "Content-Type": contentType,
-                "Content-Length": end - start + 1,
-                "Content-Range": `bytes ${start}-${end}/${stat.size}`,
+                "Content-Length": stat.size,
                 "Accept-Ranges": "bytes",
                 "Cache-Control": "no-store"
             });
-            fs.createReadStream(filePath, { start, end }).pipe(res);
-            return;
-        }
-
-        res.writeHead(200, {
-            "Content-Type": contentType,
-            "Content-Length": stat.size,
-            "Accept-Ranges": "bytes",
-            "Cache-Control": "no-store"
+            fs.createReadStream(filePath).pipe(res);
         });
-        fs.createReadStream(filePath).pipe(res);
-    });
+    };
 }
 
-function createPreviewServer() {
-    return http.createServer(handleRequest);
+const handleRequest = createPreviewRequestHandler();
+
+function createPreviewServer(options) {
+    return http.createServer(createPreviewRequestHandler(options));
 }
 
 if (require.main === module) {
@@ -151,6 +174,7 @@ if (require.main === module) {
 
 module.exports = {
     createPreviewServer,
+    createPreviewRequestHandler,
     handleRequest,
     validateDraftContent
 };
