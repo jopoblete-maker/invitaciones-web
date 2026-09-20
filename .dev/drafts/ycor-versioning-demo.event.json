@@ -1,0 +1,185 @@
+{
+  "schema_version": 2,
+  "id": "ycor-versioning-demo",
+  "event_type": "other",
+  "plan": "esencial",
+  "status": "ready_for_preview",
+  "template": {
+    "slug": "boda-vertical"
+  },
+  "identity": {
+    "title": "YCOR Demo V2",
+    "subtitle": "Ciclo operativo del Domain Model",
+    "message": "Un evento ficticio creado exclusivamente para verificar el flujo v2."
+  },
+  "schedule": {
+    "date": "2027-11-20",
+    "time": "20:00",
+    "date_text": "20 DE NOVIEMBRE",
+    "time_text": "20:00 hs.",
+    "timezone": "America/Argentina/Buenos_Aires"
+  },
+  "location": {
+    "name": "Espacio Demo",
+    "address": "Avenida Ejemplo 200",
+    "city": "Buenos Aires",
+    "maps_url": "https://maps.google.com/?q=-34.6037,-58.3816",
+    "message": "Ubicacion ficticia para validacion tecnica."
+  },
+  "theme": {
+    "slug": "urbano",
+    "overrides": {
+      "text": "#202124",
+      "surface": "#ffffff",
+      "line": "#d7d9dc"
+    }
+  },
+  "sections": [
+    {
+      "id": "hero",
+      "type": "hero",
+      "enabled": true,
+      "order": 10,
+      "data": {
+        "title": "YCOR Demo V2",
+        "subtitle": "Ciclo operativo del Domain Model",
+        "dateText": "20 DE NOVIEMBRE",
+        "media_id": "demo-cover"
+      },
+      "config": {
+        "mediaLayout": "contained",
+        "showCopy": true
+      }
+    },
+    {
+      "id": "event-info",
+      "type": "event-info",
+      "enabled": true,
+      "order": 20,
+      "data": {
+        "dateText": "20 DE NOVIEMBRE",
+        "timeText": "20:00 hs.",
+        "place": "Espacio Demo",
+        "address": "Avenida Ejemplo 200",
+        "city": "Buenos Aires",
+        "message": "Este contenido no representa un evento ni un cliente real."
+      },
+      "config": {
+        "showMessage": true
+      }
+    },
+    {
+      "id": "location",
+      "type": "location",
+      "enabled": true,
+      "order": 30,
+      "data": {
+        "name": "Espacio Demo",
+        "address": "Avenida Ejemplo 200",
+        "city": "Buenos Aires",
+        "message": "Ubicacion ficticia para validacion tecnica.",
+        "timeText": "20:00 hs."
+      },
+      "config": {
+        "show_maps": true,
+        "show_calendar": true
+      }
+    },
+    {
+      "id": "countdown",
+      "type": "countdown",
+      "enabled": true,
+      "order": 40,
+      "data": {
+        "target_datetime": "2027-11-20T20:00:00-03:00",
+        "eyebrow": "FALTAN",
+        "footer": "PARA LA DEMO",
+        "completedMessage": "La demo ha comenzado"
+      },
+      "config": {}
+    },
+    {
+      "id": "rsvp",
+      "type": "rsvp",
+      "enabled": true,
+      "order": 50,
+      "data": {},
+      "config": {}
+    },
+    {
+      "id": "closing",
+      "type": "closing",
+      "enabled": true,
+      "order": 60,
+      "data": {
+        "title": "Fin de la demo",
+        "message": "Pipeline v2 verificado.",
+        "media_id": "demo-cover"
+      },
+      "config": {
+        "mediaLayout": "contained"
+      }
+    },
+    {
+      "id": "media-closing",
+      "type": "media-closing",
+      "enabled": true,
+      "order": 70,
+      "data": {
+        "media_id": "demo-cover",
+        "alt": "Imagen generica de cierre para la demo v2"
+      },
+      "config": {}
+    }
+  ],
+  "modules": {
+    "music": {
+      "enabled": true,
+      "playMode": "selector",
+      "tracks": [
+        {
+          "media_id": "demo-audio",
+          "name": "Audio Demo"
+        }
+      ]
+    },
+    "rsvp": {
+      "enabled": true,
+      "deadline": "2027-11-10",
+      "contacts": [
+        {
+          "name": "Contacto Demo",
+          "phone": "5491100000000"
+        }
+      ]
+    },
+    "branding": {
+      "enabled": true,
+      "brandName": "YCOR Digital",
+      "badgeText": "YCOR Demo",
+      "cta": "Conoce las invitaciones digitales",
+      "serviceText": "Demostracion tecnica",
+      "whatsapp": "5491100000001",
+      "whatsappMessage": "Consulta desde la demo v2",
+      "portfolioUrl": "https://example.test/portfolio",
+      "instagramUrl": "https://example.test/instagram"
+    }
+  },
+  "media": {
+    "items": {
+      "demo-cover": {
+        "type": "image",
+        "src": "https://assets.example.test/ycor-demo-v2-cover.jpg"
+      },
+      "demo-audio": {
+        "type": "audio",
+        "src": "https://assets.example.test/ycor-demo-v2-audio.mp3"
+      }
+    }
+  },
+  "metadata": {
+    "locale": "es-AR",
+    "purpose": "development-preview",
+    "demo": true
+  }
+}
