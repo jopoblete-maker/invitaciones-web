@@ -30,6 +30,7 @@ const FONT_FAMILIES = {
 };
 
 let carouselTimers = [];
+const templateStylesheetLoads = new WeakMap();
 
 document.addEventListener("DOMContentLoaded", initInvitation);
 
@@ -54,7 +55,7 @@ async function initInvitation() {
         const themeName = inferTheme(event, source.eventId, templateConfig);
 
         applyTemplateConfig(templateConfig);
-        loadTemplateStylesheet(templateConfig);
+        await loadTemplateStylesheet(templateConfig);
         applyTheme(themeName, event.fontFamily, event.estilos);
         renderInvitation(event, templateConfig);
         hideLoader();
@@ -68,6 +69,10 @@ async function initInvitation() {
 
 function loadTemplateStylesheet(templateConfig) {
     const href = templateConfig.stylesheet;
+    if (!href) {
+        return Promise.reject(new Error("El template no define un stylesheet."));
+    }
+
     let link = document.getElementById("template-stylesheet");
 
     if (!link) {
@@ -77,9 +82,60 @@ function loadTemplateStylesheet(templateConfig) {
         document.head.appendChild(link);
     }
 
-    if (link.getAttribute("href") !== href) {
-        link.setAttribute("href", href);
+    const currentHref = link.getAttribute("href");
+    const pendingLoad = templateStylesheetLoads.get(link);
+    if (pendingLoad?.href === href) return pendingLoad.promise;
+
+    if (currentHref === href && (link.dataset.loadedHref === href || link.sheet)) {
+        link.dataset.loadedHref = href;
+        return Promise.resolve(link);
     }
+
+    pendingLoad?.cancel();
+
+    let resolveLoad;
+    let rejectLoad;
+    const promise = new Promise((resolve, reject) => {
+        resolveLoad = resolve;
+        rejectLoad = reject;
+    });
+    const load = { href, promise, cancel: null };
+
+    const cleanup = () => {
+        link.removeEventListener("load", handleLoad);
+        link.removeEventListener("error", handleError);
+        if (templateStylesheetLoads.get(link) === load) {
+            templateStylesheetLoads.delete(link);
+        }
+    };
+    const handleLoad = () => {
+        cleanup();
+        link.dataset.loadedHref = href;
+        resolveLoad(link);
+    };
+    const handleError = () => {
+        cleanup();
+        if (link.dataset.loadedHref === href) delete link.dataset.loadedHref;
+        rejectLoad(new Error(`No se pudo cargar el stylesheet del template ${templateConfig.slug || "seleccionado"}.`));
+    };
+
+    load.cancel = () => {
+        cleanup();
+        rejectLoad(new Error("La carga del stylesheet fue reemplazada por otro template."));
+    };
+    templateStylesheetLoads.set(link, load);
+    link.addEventListener("load", handleLoad);
+    link.addEventListener("error", handleError);
+
+    try {
+        if (currentHref !== href) delete link.dataset.loadedHref;
+        link.setAttribute("href", href);
+    } catch (error) {
+        cleanup();
+        rejectLoad(error);
+    }
+
+    return promise;
 }
 
 function applyTemplateConfig(templateConfig) {
