@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const { validateEventForPersistence } = require('./js/core/event-validator');
+const ThemeRegistry = require('./js/core/theme-registry');
 const { createPublicEventResolver } = require('./js/core/public-event-resolver');
 const { createEventVersionRpcAdapter } = require('./js/core/event-version-rpc-adapter');
 const { createEventVersionEditorialService } = require('./js/core/event-version-editorial-service');
@@ -26,11 +27,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const SUPABASE_TIMEOUT_MS = 15000;
 const MAX_EVENT_PAYLOAD_BYTES = 12 * 1024 * 1024;
 const ASSET_CACHE_MAX_AGE_MS = 60 * 60 * 1000;
-const TEMAS_VALIDOS = [
-    'frozen', 'pesca', 'elegante', 'fiesta', 'minimalista', 'vintage',
-    'dorado-premium', 'tropical', 'botanico', 'infantil-pastel', 'mistico',
-    'urbano', 'infantil-dinamico', 'romantico', 'corporativo'
-];
+const TEMAS_VALIDOS = ThemeRegistry.listThemes().map((theme) => theme.slug);
 const EVENT_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*-?$/;
 
 app.use((req, res, next) => {

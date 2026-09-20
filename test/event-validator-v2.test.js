@@ -5,6 +5,7 @@ const {
     validateV2Event
 } = require("../js/core/event-validator");
 const TemplateRegistry = require("../js/core/template-registry");
+const ThemeRegistry = require("../js/core/theme-registry");
 function validEvent(overrides = {}) {
     return {
         schema_version: 2,
@@ -73,7 +74,14 @@ expectError(validEvent({
 expectError(validEvent({ modules: { unknown: {} } }), "modules.unknown");
 expectError(validEvent({ modules: { music: "yes" } }), "modules.music debe ser un objeto");
 expectError(validEvent({ theme: { slug: "unknown" } }), "theme.slug");
+expectError(validEvent({ theme: { slug: "minimal" } }), "theme.slug");
+expectError(validEvent({ theme: { slug: "infantil" } }), "theme.slug");
 expectError(validEvent({ theme: { slug: "romantico", overrides: { unknown: "value" } } }), "theme.overrides.unknown");
+ThemeRegistry.RUNTIME_TOKEN_KEYS.forEach((key) => {
+    assert.strictEqual(validateV2Event(validEvent({
+        theme: { slug: "romantico", overrides: { [key]: `value-${key}` } }
+    })).valid, true, `theme.overrides.${key} debe provenir de ThemeRegistry`);
+});
 
 const validatorPath = require.resolve("../js/core/event-validator");
 const registryPath = require.resolve("../js/core/template-registry");

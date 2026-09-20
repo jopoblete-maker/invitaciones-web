@@ -353,7 +353,7 @@
         if (theme.slug !== undefined) {
             if (!nonEmptyString(theme.slug)) {
                 errors.push("theme.slug debe ser un string no vacio.");
-            } else if (!themeRegistry?.has(theme.slug)) {
+            } else if (!themeRegistry?.hasTheme(theme.slug)) {
                 errors.push(`theme.slug no registrado: ${theme.slug.trim()}.`);
             }
         }

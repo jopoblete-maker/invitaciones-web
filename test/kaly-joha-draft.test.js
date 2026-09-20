@@ -9,6 +9,7 @@ const { validateNewEvent } = require("../js/core/event-validator");
 const CalendarActions = require("../js/core/calendar-actions");
 const Countdown = require("../js/core/countdown");
 const Rsvp = require("../js/core/rsvp");
+const ThemeRegistry = require("../js/core/theme-registry");
 
 const draftPath = path.resolve(__dirname, "..", ".dev", "drafts", "kaly-joha-boda-civil.event.json");
 const raw = JSON.parse(fs.readFileSync(draftPath, "utf8"));
@@ -125,6 +126,7 @@ const browserContext = {
     CalendarActions,
     Countdown,
     Rsvp,
+    ThemeRegistry,
     document: { addEventListener() {} },
     window: {}
 };

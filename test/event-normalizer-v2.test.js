@@ -190,4 +190,20 @@ assert(!JSON.stringify(minimal).includes("12:00"));
 assert.strictEqual(minimal.nombre, "Evento minimo");
 assert.deepStrictEqual(minimal.media.items, {});
 
+const allThemeOverrides = Object.fromEntries([
+    "primary", "secondary", "accent", "text", "muted", "surface", "surfaceStrong",
+    "surfaceSoft", "line", "shadow", "heading", "body", "button", "background"
+].map((key) => [key, `value-${key}`]));
+const normalizedOverrides = normalizeEvent({
+    ...v2Event,
+    theme: { slug: "romantico", overrides: allThemeOverrides }
+});
+assert.deepStrictEqual(normalizedOverrides.theme.overrides, allThemeOverrides);
+assert.deepStrictEqual(normalizedOverrides.estilos, {
+    colorTexto: "value-text",
+    colorFondo: "value-surface",
+    colorSombra: "value-shadow",
+    colorBordeDecorativo: "value-line"
+});
+
 console.log("event-normalizer v2 test passed");
