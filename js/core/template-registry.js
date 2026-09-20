@@ -26,7 +26,8 @@
             requiredSections: ["hero"],
             supportedModules: [...SUPPORTED_MODULES],
             supportedActions: [...TEMPLATE_ACTIONS],
-            status: "active"
+            status: "active",
+            catalog: defineCatalogMetadata(null)
         },
         "cumple-clasico": {
             slug: "cumple-clasico",
@@ -41,7 +42,8 @@
             requiredSections: ["hero"],
             supportedModules: [...SUPPORTED_MODULES],
             supportedActions: [...TEMPLATE_ACTIONS],
-            status: "active"
+            status: "active",
+            catalog: defineCatalogMetadata(null)
         },
         "boda-civil-esencial": {
             slug: "boda-civil-esencial",
@@ -56,7 +58,8 @@
             requiredSections: ["hero"],
             supportedModules: [...SUPPORTED_MODULES],
             supportedActions: [...TEMPLATE_ACTIONS],
-            status: "active"
+            status: "active",
+            catalog: defineCatalogMetadata(null)
         }
     });
 
@@ -64,6 +67,28 @@
         if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
         Object.values(value).forEach(deepFreeze);
         return Object.freeze(value);
+    }
+
+    function defineCatalogMetadata(catalog) {
+        if (catalog === null) return null;
+
+        const isObject = (value) => Boolean(value) && typeof value === "object" && !Array.isArray(value);
+        const isNonEmptyString = (value) => typeof value === "string" && value.trim().length > 0;
+        const validThumbnail = isObject(catalog?.thumbnail)
+            && isNonEmptyString(catalog.thumbnail.src)
+            && catalog.thumbnail.src.startsWith("/")
+            && isNonEmptyString(catalog.thumbnail.alt);
+        const validPreview = catalog?.preview === null
+            || (isObject(catalog?.preview) && isNonEmptyString(catalog.preview.eventId));
+
+        if (!isObject(catalog)
+            || !isNonEmptyString(catalog.description)
+            || !validThumbnail
+            || !validPreview) {
+            throw new TypeError("Metadata comercial de template invalida.");
+        }
+
+        return deepFreeze(catalog);
     }
 
     function normalizeSlug(value) {
@@ -82,6 +107,10 @@
         return Object.values(TEMPLATES);
     }
 
+    function listCatalogTemplates() {
+        return listTemplates().filter((template) => template.status === "active" && template.catalog !== null);
+    }
+
     function resolveTemplate(value) {
         return getTemplate(value) || TEMPLATES[DEFAULT_TEMPLATE_SLUG];
     }
@@ -90,9 +119,11 @@
         DEFAULT_TEMPLATE_SLUG,
         TEMPLATE_ACTIONS,
         TEMPLATES,
+        defineCatalogMetadata,
         hasTemplate,
         getTemplate,
         listTemplates,
+        listCatalogTemplates,
         resolveTemplate
     };
 });

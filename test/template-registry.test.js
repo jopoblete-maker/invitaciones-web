@@ -9,8 +9,10 @@ const {
     DEFAULT_TEMPLATE_SLUG,
     TEMPLATE_ACTIONS,
     TEMPLATES,
+    defineCatalogMetadata,
     getTemplate,
     hasTemplate,
+    listCatalogTemplates,
     listTemplates,
     resolveTemplate
 } = require("../js/core/template-registry");
@@ -47,7 +49,28 @@ const expectedMetadata = {
     "boda-civil-esencial": { name: "Boda civil esencial", category: "wedding", eventTypes: ["wedding", "wedding-civil"] }
 };
 
+const technicalFields = [
+    "slug",
+    "name",
+    "category",
+    "layout",
+    "className",
+    "stylesheet",
+    "defaultTheme",
+    "supportedEventTypes",
+    "supportedSections",
+    "requiredSections",
+    "supportedModules",
+    "supportedActions",
+    "status"
+];
+
 Object.values(TEMPLATES).forEach((template) => {
+    technicalFields.forEach((field) => {
+        assert(Object.prototype.hasOwnProperty.call(template, field), `${template.slug} no contiene ${field}`);
+    });
+    assert(Object.prototype.hasOwnProperty.call(template, "catalog"));
+    assert.strictEqual(template.catalog, null);
     assert.strictEqual(template.name, expectedMetadata[template.slug].name);
     assert.strictEqual(template.category, expectedMetadata[template.slug].category);
     assert.strictEqual(template.status, "active");
@@ -80,5 +103,58 @@ assert.strictEqual(getTemplate("boda-civil-esencial").name, "Boda civil esencial
 const listed = listTemplates();
 listed.pop();
 assert.strictEqual(listTemplates().length, 3);
+
+assert.strictEqual(typeof listCatalogTemplates, "function");
+assert.deepStrictEqual(listCatalogTemplates(), []);
+const catalogListed = listCatalogTemplates();
+catalogListed.push({ slug: "template-ajeno" });
+assert.deepStrictEqual(listCatalogTemplates(), []);
+assert.strictEqual(listTemplates().length, 3);
+
+const catalogWithoutPreview = defineCatalogMetadata({
+    description: "Plantilla demo",
+    thumbnail: {
+        src: "/assets/templates/demo/thumbnail.webp",
+        alt: "Vista previa de plantilla demo"
+    },
+    preview: null
+});
+assert.strictEqual(Object.isFrozen(catalogWithoutPreview), true);
+assert.strictEqual(Object.isFrozen(catalogWithoutPreview.thumbnail), true);
+assert.throws(() => { catalogWithoutPreview.description = "Mutada"; }, TypeError);
+assert.throws(() => { catalogWithoutPreview.thumbnail.src = "/otro.webp"; }, TypeError);
+
+const catalogWithPreview = defineCatalogMetadata({
+    description: "Plantilla demo",
+    thumbnail: {
+        src: "/assets/templates/demo/thumbnail.webp",
+        alt: "Vista previa de plantilla demo"
+    },
+    preview: {
+        eventId: "ycor-template-demo-demo"
+    }
+});
+assert.strictEqual(Object.isFrozen(catalogWithPreview.preview), true);
+assert.throws(() => { catalogWithPreview.preview.eventId = "mutado"; }, TypeError);
+
+const validCatalogBase = {
+    description: "Plantilla demo",
+    thumbnail: {
+        src: "/assets/templates/demo/thumbnail.webp",
+        alt: "Vista previa de plantilla demo"
+    },
+    preview: null
+};
+[
+    { ...validCatalogBase, description: "" },
+    { ...validCatalogBase, thumbnail: undefined },
+    { ...validCatalogBase, thumbnail: { ...validCatalogBase.thumbnail, src: "" } },
+    { ...validCatalogBase, thumbnail: { ...validCatalogBase.thumbnail, src: "https://example.test/demo.webp" } },
+    { ...validCatalogBase, thumbnail: { ...validCatalogBase.thumbnail, alt: "" } },
+    { ...validCatalogBase, preview: {} },
+    { ...validCatalogBase, preview: { eventId: "" } }
+].forEach((catalog) => {
+    assert.throws(() => defineCatalogMetadata(catalog), TypeError);
+});
 
 console.log("template-registry test passed");
