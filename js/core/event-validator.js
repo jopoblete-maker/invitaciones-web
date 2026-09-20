@@ -43,6 +43,18 @@
     const V2_SCHEMA_VERSION = schema?.V2_SCHEMA_VERSION || 2;
     const TEMPLATES = templateRegistry?.TEMPLATES || {};
 
+    function hasTemplate(slug) {
+        return typeof templateRegistry?.hasTemplate === "function"
+            ? templateRegistry.hasTemplate(slug)
+            : Object.prototype.hasOwnProperty.call(TEMPLATES, slug);
+    }
+
+    function getTemplate(slug) {
+        return typeof templateRegistry?.getTemplate === "function"
+            ? templateRegistry.getTemplate(slug)
+            : TEMPLATES[slug];
+    }
+
     function validateNewEvent(event) {
         const errors = [];
 
@@ -82,7 +94,7 @@
         }
 
         const slug = template.slug.trim();
-        if (!Object.prototype.hasOwnProperty.call(TEMPLATES, slug)) {
+        if (!hasTemplate(slug)) {
             errors.push(`template.slug no registrado: ${slug}.`);
         }
     }
@@ -168,6 +180,7 @@
         validateRegisteredValue(event.status, schema?.V2_EVENT_STATUSES, "status", errors);
 
         const template = validateV2Template(event.template, errors);
+        validateTemplateEventType(event.event_type, template, errors);
         const identityValid = validateObject(event.identity, "identity", errors);
         if (identityValid && !nonEmptyString(event.identity.title)) {
             errors.push("identity.title es obligatorio.");
@@ -182,6 +195,7 @@
         validateOptionalObject(event.location, "location", errors);
         validateV2Theme(event.theme, errors);
         const sections = validateV2Sections(event.sections, template, errors);
+        validateRequiredSections(sections, template, errors);
         const modules = validateV2Modules(event.modules, template, errors);
         const mediaValid = validateObject(event.media, "media", errors);
         validateOptionalObject(event.metadata, "metadata", errors);
@@ -217,11 +231,20 @@
         }
 
         const slug = templateValue.slug.trim();
-        if (!Object.prototype.hasOwnProperty.call(TEMPLATES, slug)) {
+        if (!hasTemplate(slug)) {
             errors.push(`template.slug no registrado: ${slug}.`);
             return null;
         }
-        return TEMPLATES[slug];
+        return getTemplate(slug);
+    }
+
+    function validateTemplateEventType(eventTypeValue, template, errors) {
+        if (!template || !nonEmptyString(eventTypeValue)) return;
+        const eventType = eventTypeValue.trim();
+        if (!Array.isArray(schema?.V2_EVENT_TYPES) || !schema.V2_EVENT_TYPES.includes(eventType)) return;
+        if (!template.supportedEventTypes.includes(eventType)) {
+            errors.push(`event_type no soportado por template.slug: ${eventType}.`);
+        }
     }
 
     function validateRegisteredValue(value, allowedValues, path, errors) {
@@ -289,6 +312,16 @@
                 validateAllowedKeys(section.config, contract.allowedConfigKeys, `${prefix}.config`, errors);
             }
             return section;
+        });
+    }
+
+    function validateRequiredSections(sections, template, errors) {
+        if (!template || !Array.isArray(sections)) return;
+        template.requiredSections.forEach((type) => {
+            const present = sections.some((section) => section && section.type === type && isEnabled(section));
+            if (!present) {
+                errors.push(`template.slug requiere una seccion habilitada de type: ${type}.`);
+            }
         });
     }
 
