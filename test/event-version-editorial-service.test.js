@@ -21,6 +21,7 @@ function createHarness() {
     const calls = [];
     const adapter = {};
     for (const method of [
+        "createEvent",
         "createVersion",
         "transitionWorkflow",
         "publishVersion",
@@ -45,6 +46,33 @@ async function expectCode(code, action) {
     const nullWorking = createHarness();
     const content = validContent();
     const before = JSON.stringify(content);
+    const newEvent = createHarness();
+    await newEvent.service.createEvent({ eventId: "event-one", content });
+    assert.deepStrictEqual(newEvent.calls, [{
+        method: "createEvent",
+        options: { eventId: "event-one", content }
+    }]);
+    assert.strictEqual(newEvent.calls[0].options.content, content);
+    assert.strictEqual(JSON.stringify(content), before);
+    assert.throws(
+        () => createHarness().service.createEvent({ eventId: "invalid-", content }),
+        (error) => error.code === "INVALID_EVENT_ID"
+    );
+    assert.throws(
+        () => createHarness().service.createEvent({
+            eventId: "event-one",
+            content: { ...content, id: "different-event" }
+        }),
+        (error) => error.code === "INVALID_EVENT"
+    );
+    assert.throws(
+        () => createHarness().service.createEvent({
+            eventId: "event-one",
+            content: { schema_version: 999 }
+        }),
+        (error) => error.code === "INVALID_EVENT"
+    );
+
     await nullWorking.service.createVersion({
         eventId: "event-one",
         content,

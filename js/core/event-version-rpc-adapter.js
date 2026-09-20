@@ -9,6 +9,8 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
     const ERROR_MESSAGES = Object.freeze({
         EVENT_NOT_FOUND: "Event not found.",
+        EVENT_ALREADY_EXISTS: "Event already exists.",
+        INVALID_EVENT_ID: "Event id is invalid.",
         EVENT_ARCHIVED: "Event is archived.",
         VERSION_CONFLICT: "The working version changed.",
         INVALID_EVENT: "Event content is invalid.",
@@ -93,6 +95,18 @@
             }
         }
 
+        function createEvent({ eventId, content }) {
+            return execute("create_versioned_event", {
+                p_event_id: eventId,
+                p_content: content
+            }, (row) => ({
+                eventId: row.event_id,
+                versionId: row.version_id,
+                versionNumber: normalizeVersionNumber(row.version_number),
+                workflowStatus: row.workflow_status
+            }));
+        }
+
         function createVersion({
             eventId,
             content,
@@ -155,6 +169,7 @@
         }
 
         return {
+            createEvent,
             createVersion,
             publishVersion,
             rollbackVersion,

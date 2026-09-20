@@ -33,6 +33,7 @@
 
     function createEventVersionEditorialService(adapter) {
         const requiredMethods = [
+            "createEvent",
             "createVersion",
             "transitionWorkflow",
             "publishVersion",
@@ -40,6 +41,29 @@
         ];
         if (!adapter || requiredMethods.some((method) => typeof adapter[method] !== "function")) {
             throw new TypeError(`adapter must implement ${requiredMethods.join(", ")}.`);
+        }
+
+        function createEvent(options = {}) {
+            requireString(options.eventId, "eventId");
+            if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(options.eventId)) {
+                throw editorialError("INVALID_EVENT_ID", "eventId is invalid.");
+            }
+            if (!isPlainObject(options.content)) {
+                throw editorialError("INVALID_EVENT", "Event content is invalid.");
+            }
+            if (Object.prototype.hasOwnProperty.call(options.content, "id")
+                && options.content.id !== options.eventId) {
+                throw editorialError("INVALID_EVENT", "Event content id does not match eventId.");
+            }
+
+            const validation = validator.validateEventForPersistence(options.content);
+            if (!validation.valid) {
+                throw editorialError("INVALID_EVENT", "Event content is invalid.", validation.errors);
+            }
+            return adapter.createEvent({
+                eventId: options.eventId,
+                content: options.content
+            });
         }
 
         async function createVersion(options = {}) {
@@ -111,6 +135,7 @@
         }
 
         return {
+            createEvent,
             createVersion,
             transitionWorkflow,
             publishVersion,

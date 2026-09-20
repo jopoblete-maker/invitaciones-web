@@ -36,6 +36,17 @@ const supabase = {
     },
     rpc(name, parameters) {
         rpcCalls.push({ name, parameters });
+        if (name === "create_versioned_event") {
+            return Promise.resolve({
+                data: [{
+                    event_id: "new-event",
+                    version_id: "11111111-1111-4111-8111-111111111111",
+                    version_number: 1,
+                    workflow_status: "draft"
+                }],
+                error: null
+            });
+        }
         return Promise.resolve({
             data: [{
                 version_id: "11111111-1111-4111-8111-111111111111",
@@ -74,6 +85,7 @@ try {
 }
 
 const expectedRoutes = [
+    "POST /api/admin/eventos",
     "GET /api/admin/eventos/:eventId",
     "POST /api/admin/eventos/:eventId/versions",
     "GET /api/admin/eventos/:eventId/versions/:versionId",
@@ -104,6 +116,28 @@ function responseDouble() {
     assert.strictEqual(typeof routes["POST /api/eventos"], "function");
     assert.strictEqual(typeof routes["PUT /api/eventos"], "function");
 
+    const createEventResponse = responseDouble();
+    const newEventContent = {
+        schema_version: 1,
+        event: {},
+        template: { slug: "boda-civil-esencial" },
+        sections: [
+            { id: "hero", type: "hero", enabled: true, order: 10, data: {} }
+        ]
+    };
+    await routes["POST /api/admin/eventos"]({
+        headers: { "x-admin-password": "test-secret" },
+        params: {},
+        body: { eventId: "new-event", content: newEventContent }
+    }, createEventResponse);
+    assert.strictEqual(createEventResponse.statusCode, 201);
+    assert.deepStrictEqual(createEventResponse.body, {
+        eventId: "new-event",
+        versionId: "11111111-1111-4111-8111-111111111111",
+        versionNumber: 1,
+        workflowStatus: "draft"
+    });
+
     const createResponse = responseDouble();
     const content = {
         schema_version: 1,
@@ -123,16 +157,22 @@ function responseDouble() {
         versionId: "11111111-1111-4111-8111-111111111111",
         versionNumber: 2
     });
-    assert.deepStrictEqual(rpcCalls, [{
-        name: "create_event_version",
-        parameters: {
-            p_event_id: "event-one",
-            p_content: content,
-            p_expected_working_version_id: null,
-            p_source_version_id: null,
-            p_initial_workflow: "draft"
+    assert.deepStrictEqual(rpcCalls, [
+        {
+            name: "create_versioned_event",
+            parameters: { p_event_id: "new-event", p_content: newEventContent }
+        },
+        {
+            name: "create_event_version",
+            parameters: {
+                p_event_id: "event-one",
+                p_content: content,
+                p_expected_working_version_id: null,
+                p_source_version_id: null,
+                p_initial_workflow: "draft"
+            }
         }
-    }]);
+    ]);
     console.log("server editorial routes tests passed");
 })().catch((error) => {
     console.error(error);

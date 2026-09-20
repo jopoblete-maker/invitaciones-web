@@ -3,79 +3,76 @@ const fs = require("fs");
 const path = require("path");
 const {
     buildPayload,
+    environmentForMode,
+    loadDraft,
     normalizeTarget,
     parseArgs,
     publishDraft,
     resolveDraftPath,
+    resolveSourceVersionId,
     validatePublicId
 } = require("../scripts/publish-event-draft");
 
-assert.strictEqual(validatePublicId("kaly-joha"), true);
-assert.strictEqual(validatePublicId("kaly"), true);
-assert.strictEqual(validatePublicId("Kaly"), false);
-assert.strictEqual(validatePublicId("kaly-joha-"), false);
-assert.strictEqual(validatePublicId("../kaly"), false);
+const WORKING_ID = "11111111-1111-4111-8111-111111111111";
+const PUBLISHED_ID = "22222222-2222-4222-8222-222222222222";
+const CREATED_ID = "33333333-3333-4333-8333-333333333333";
 
-assert.throws(() => resolveDraftPath("../kaly"), /draft/i);
-assert.throws(() => resolveDraftPath("C:\\temp\\kaly"), /draft/i);
-assert(resolveDraftPath("kaly-joha-boda-civil").endsWith("kaly-joha-boda-civil.event.json"));
+assert.strictEqual(validatePublicId("existing-event"), true);
+assert.strictEqual(validatePublicId("Existing"), false);
+assert.strictEqual(validatePublicId("../event"), false);
+assert.throws(() => resolveDraftPath("../event"), /draft/i);
+assert(resolveDraftPath("demo-event-v2").endsWith("demo-event-v2.event.json"));
+assert.strictEqual(normalizeTarget("https://example.test/"), "https://example.test");
+assert.throws(() => loadDraft("publisher-file-does-not-exist"), /no encontrado/i);
 
-assert.strictEqual(normalizeTarget("http://127.0.0.1:3000/"), "http://127.0.0.1:3000");
-assert.strictEqual(normalizeTarget("https://example.com/base//"), "https://example.com/base");
+const originalReadFileSyncForInvalidJson = fs.readFileSync;
+fs.readFileSync = (filePath, encoding) => String(filePath).endsWith("invalid-json.event.json")
+    ? "{"
+    : originalReadFileSyncForInvalidJson(filePath, encoding);
+try {
+    assert.throws(() => loadDraft("invalid-json"), /JSON invalido/i);
+} finally {
+    fs.readFileSync = originalReadFileSyncForInvalidJson;
+}
 
 assert.deepStrictEqual(parseArgs([
-    "--draft", "kaly-joha-boda-civil",
-    "--id", "kaly-joha",
-    "--target", "http://127.0.0.1:3000",
-    "--dry-run",
-    "--overwrite"
+    "--draft", "demo-event-v2",
+    "--id", "existing-event",
+    "--dry-run"
 ]), {
-    overwrite: true,
+    overwrite: false,
     dryRun: true,
-    draft: "kaly-joha-boda-civil",
-    id: "kaly-joha",
-    target: "http://127.0.0.1:3000"
+    legacy: false,
+    draft: "demo-event-v2",
+    id: "existing-event"
 });
-
-const draft = {
-    schema_version: 1,
-    event: {},
-    template: { slug: "boda-civil-esencial" },
-    sections: [{ id: "hero", type: "hero", enabled: true, order: 10, data: {} }]
-};
-const payload = buildPayload({
-    draft,
-    id: "kaly-joha",
-    password: "secret",
-    overwrite: false
+assert.deepStrictEqual(parseArgs(["--help"]), {
+    overwrite: false,
+    dryRun: false,
+    legacy: false,
+    help: true
 });
-assert.strictEqual(payload.id, "kaly-joha");
-assert.strictEqual(payload.password, "secret");
-assert.strictEqual(payload.schema_version, 1);
-assert.strictEqual(payload.datos, undefined);
-assert.strictEqual(payload.overwrite, undefined);
-assert.strictEqual(draft.password, undefined);
-
-const overwritePayload = buildPayload({
-    draft,
-    id: "kaly-joha",
-    password: "secret",
-    overwrite: true
-});
-assert.strictEqual(overwritePayload.overwrite, true);
-
-const protectedPayload = buildPayload({
-    draft: { ...draft, id: "draft-id", password: "draft-password", overwrite: true },
-    id: "operational-id",
-    password: "operational-password",
-    overwrite: false
-});
-assert.strictEqual(protectedPayload.id, "operational-id");
-assert.strictEqual(protectedPayload.password, "operational-password");
-assert.strictEqual(protectedPayload.overwrite, undefined);
+assert.strictEqual(environmentForMode(false, {
+    YCOR_API_BASE_URL: "https://api.test",
+    YCOR_ADMIN_PASSWORD: "preferred",
+    ADMIN_PASSWORD: "legacy"
+}).password, "preferred");
+assert.strictEqual(environmentForMode(false, { ADMIN_PASSWORD: "legacy" }).password, "legacy");
+assert.strictEqual(resolveSourceVersionId({
+    currentWorkingVersionId: WORKING_ID,
+    publishedVersionId: PUBLISHED_ID
+}), WORKING_ID);
+assert.strictEqual(resolveSourceVersionId({
+    currentWorkingVersionId: null,
+    publishedVersionId: PUBLISHED_ID
+}), PUBLISHED_ID);
+assert.strictEqual(resolveSourceVersionId({
+    currentWorkingVersionId: null,
+    publishedVersionId: null
+}), null);
 
 const fixturePath = path.resolve(__dirname, "fixtures", "event-v2-complete.json");
-const v2Fixture = JSON.parse(fs.readFileSync(fixturePath, "utf8"));
+const validDraft = JSON.parse(fs.readFileSync(fixturePath, "utf8"));
 
 async function withDraft(name, value, callback) {
     const originalReadFileSync = fs.readFileSync;
@@ -89,115 +86,324 @@ async function withDraft(name, value, callback) {
     }
 }
 
-function successfulResponse(id) {
+function options(overrides = {}) {
     return {
-        ok: true,
-        status: 200,
-        async json() {
-            return { success: true, id };
-        }
+        draft: "publisher-test",
+        id: "existing-event",
+        dryRun: false,
+        overwrite: false,
+        legacy: false,
+        ...overrides
+    };
+}
+
+function dependencies(overrides = {}) {
+    return {
+        env: {
+            YCOR_API_BASE_URL: "https://api.example.test/",
+            YCOR_ADMIN_PASSWORD: "editorial-secret"
+        },
+        ...overrides
+    };
+}
+
+function clientFactoryFor(state, calls, createResult = {
+    versionId: CREATED_ID,
+    versionNumber: 2
+}) {
+    return (configuration) => {
+        calls.push({ type: "configuration", configuration });
+        return {
+            async getEditorialState(eventId) {
+                calls.push({ type: "get", eventId });
+                return state;
+            },
+            async createVersion(eventId, payload) {
+                calls.push({ type: "create", eventId, payload });
+                return createResult;
+            }
+        };
     };
 }
 
 (async () => {
-    let called = false;
-    const dryRun = await publishDraft({
-        draft: "kaly-joha-boda-civil",
-        id: "kaly-joha",
-        target: "http://127.0.0.1:3000",
-        dryRun: true,
-        overwrite: false
-    }, () => {
-        called = true;
-    });
-
-    assert.strictEqual(called, false);
+    let httpCalls = 0;
+    const dryRun = await withDraft("publisher-test", validDraft, () => publishDraft(
+        options({ dryRun: true }),
+        {
+            env: {},
+            fetchImpl: async () => { httpCalls += 1; },
+            clientFactory: () => { httpCalls += 1; }
+        }
+    ));
     assert.strictEqual(dryRun.dryRun, true);
     assert.strictEqual(dryRun.validation.valid, true);
-    assert(dryRun.summary.some((line) => line === "status: VALID"));
-    assert(dryRun.summary.every((line) => !line.includes("secret")));
+    assert.strictEqual(httpCalls, 0);
+    assert(dryRun.summary.includes("mode: versioned create draft"));
 
-    const previousPassword = process.env.ADMIN_PASSWORD;
-    process.env.ADMIN_PASSWORD = "operational-secret";
-    try {
-        let v1Request;
-        const v1Result = await withDraft("valid-v1", draft, () => publishDraft({
-            draft: "valid-v1",
-            id: "published-v1",
-            target: "https://example.test",
-            dryRun: false,
-            overwrite: true
-        }, async (url, options) => {
-            v1Request = { url, options };
-            return successfulResponse("published-v1");
-        }));
-        assert.strictEqual(v1Result.validation.valid, true);
-        assert.strictEqual(v1Request.url, "https://example.test/api/eventos");
-        assert.strictEqual(JSON.parse(v1Request.options.body).overwrite, true);
+    let invalidHttpCalls = 0;
+    const invalidDraft = JSON.parse(JSON.stringify(validDraft));
+    invalidDraft.media.items = {};
+    const invalidResult = await withDraft("publisher-test", invalidDraft, () => publishDraft(
+        options(),
+        dependencies({
+            fetchImpl: async () => { invalidHttpCalls += 1; },
+            clientFactory: () => { invalidHttpCalls += 1; }
+        })
+    ));
+    assert.strictEqual(invalidResult.validation.valid, false);
+    assert.strictEqual(invalidResult.skipped, true);
+    assert.strictEqual(invalidHttpCalls, 0);
 
-        let invalidV1Called = false;
-        const invalidV1 = await withDraft("invalid-v1", { ...draft, schema_version: 99 }, () => publishDraft({
-            draft: "invalid-v1",
-            id: "invalid-v1",
-            target: "https://example.test",
-            dryRun: false,
-            overwrite: false
-        }, () => {
-            invalidV1Called = true;
-        }));
-        assert.strictEqual(invalidV1.validation.valid, false);
-        assert.strictEqual(invalidV1.skipped, true);
-        assert.strictEqual(invalidV1Called, false);
+    await assert.rejects(
+        withDraft("publisher-test", validDraft, () => publishDraft(options(), { env: {} })),
+        /YCOR_API_BASE_URL/
+    );
+    await assert.rejects(
+        withDraft("publisher-test", validDraft, () => publishDraft(
+            options({ target: "https://api.example.test" }),
+            { env: {} }
+        )),
+        /YCOR_ADMIN_PASSWORD/
+    );
 
-        let v2Request;
-        const v2Result = await withDraft("complete-v2", v2Fixture, () => publishDraft({
-            draft: "complete-v2",
-            id: "published-v2",
-            target: "https://example.test",
-            dryRun: false,
-            overwrite: false
-        }, async (url, options) => {
-            v2Request = { url, options };
-            return successfulResponse("published-v2");
-        }));
-        assert.deepStrictEqual(v2Result.validation, { valid: true, errors: [] });
-        const v2Payload = JSON.parse(v2Request.options.body);
-        assert.strictEqual(v2Payload.schema_version, 2);
-        assert.strictEqual(v2Payload.id, "published-v2");
-        assert.strictEqual(v2Payload.password, "operational-secret");
-        assert.strictEqual(v2Payload.overwrite, undefined);
+    const noWorkingCalls = [];
+    const noWorking = await withDraft("publisher-test", validDraft, () => publishDraft(
+        options(),
+        dependencies({
+            clientFactory: clientFactoryFor({
+                eventId: "existing-event",
+                eventStatus: "active",
+                currentWorkingVersionId: null,
+                publishedVersionId: null
+            }, noWorkingCalls)
+        })
+    ));
+    const noWorkingCreate = noWorkingCalls.find((call) => call.type === "create");
+    assert.strictEqual(noWorkingCreate.payload.expectedWorkingVersionId, null);
+    assert.strictEqual(noWorkingCreate.payload.sourceVersionId, null);
+    assert.deepStrictEqual(noWorkingCreate.payload.content, validDraft);
+    assert.strictEqual(noWorkingCreate.payload.content.status, validDraft.status);
+    assert.strictEqual(noWorkingCreate.payload.password, undefined);
+    assert.strictEqual(noWorkingCreate.payload.initialWorkflow, undefined);
+    assert.deepStrictEqual(noWorking.response, { versionId: CREATED_ID, versionNumber: 2 });
+    assert.strictEqual(noWorking.createdEvent, false);
 
-        let invalidV2Called = false;
-        const invalidV2Draft = JSON.parse(JSON.stringify(v2Fixture));
-        invalidV2Draft.media.items = {};
-        const invalidV2 = await withDraft("invalid-v2", invalidV2Draft, () => publishDraft({
-            draft: "invalid-v2",
-            id: "invalid-v2",
-            target: "https://example.test",
-            dryRun: false,
-            overwrite: false
-        }, () => {
-            invalidV2Called = true;
-        }));
-        assert.strictEqual(invalidV2.validation.valid, false);
-        assert.strictEqual(invalidV2Called, false);
+    const newEventCalls = [];
+    const newEvent = await withDraft("publisher-test", validDraft, () => publishDraft(
+        options({ id: "new-event" }),
+        dependencies({
+            clientFactory: (configuration) => {
+                newEventCalls.push({ type: "configuration", configuration });
+                return {
+                    async getEditorialState(eventId) {
+                        newEventCalls.push({ type: "get", eventId });
+                        const error = new Error("Evento inexistente.");
+                        error.code = "EVENT_NOT_FOUND";
+                        error.status = 404;
+                        throw error;
+                    },
+                    async createEvent(eventId, content) {
+                        newEventCalls.push({ type: "createEvent", eventId, content });
+                        return {
+                            eventId,
+                            versionId: CREATED_ID,
+                            versionNumber: 1,
+                            workflowStatus: "draft"
+                        };
+                    }
+                };
+            }
+        })
+    ));
+    assert.strictEqual(newEvent.createdEvent, true);
+    assert.deepStrictEqual(newEvent.response, {
+        eventId: "new-event",
+        versionId: CREATED_ID,
+        versionNumber: 1,
+        workflowStatus: "draft"
+    });
+    const newEventCreate = newEventCalls.find((call) => call.type === "createEvent");
+    assert.strictEqual(newEventCreate.eventId, "new-event");
+    assert.deepStrictEqual(newEventCreate.content, validDraft);
+    assert.strictEqual(newEventCalls.some((call) => call.type === "create"), false);
 
-        let unknownSchemaCalled = false;
-        const unknownSchema = await withDraft("unknown-schema", { ...draft, schema_version: 3 }, () => publishDraft({
-            draft: "unknown-schema",
-            id: "unknown-schema",
-            target: "https://example.test",
-            dryRun: false,
-            overwrite: false
-        }, () => {
-            unknownSchemaCalled = true;
-        }));
-        assert.strictEqual(unknownSchema.validation.valid, false);
-        assert.strictEqual(unknownSchemaCalled, false);
-    } finally {
-        if (previousPassword === undefined) delete process.env.ADMIN_PASSWORD;
-        else process.env.ADMIN_PASSWORD = previousPassword;
-    }
+    const httpNewEventCalls = [];
+    const httpNewEvent = await withDraft("publisher-test", validDraft, () => publishDraft(
+        options({ id: "http-new-event" }),
+        dependencies({
+            fetchImpl: async (url, requestOptions) => {
+                httpNewEventCalls.push({ url, options: requestOptions });
+                if (httpNewEventCalls.length === 1) {
+                    return {
+                        ok: false,
+                        status: 404,
+                        async json() {
+                            return { error: { code: "EVENT_NOT_FOUND" } };
+                        }
+                    };
+                }
+                return {
+                    ok: true,
+                    status: 201,
+                    async json() {
+                        return {
+                            eventId: "http-new-event",
+                            versionId: CREATED_ID,
+                            versionNumber: 1,
+                            workflowStatus: "draft"
+                        };
+                    }
+                };
+            }
+        })
+    ));
+    assert.strictEqual(httpNewEvent.createdEvent, true);
+    assert.deepStrictEqual(httpNewEventCalls.map((call) => call.url), [
+        "https://api.example.test/api/admin/eventos/http-new-event",
+        "https://api.example.test/api/admin/eventos"
+    ]);
+    assert(httpNewEventCalls.every((call) => (
+        call.options.headers["X-Admin-Password"] === "editorial-secret"
+    )));
+    const httpCreateBody = JSON.parse(httpNewEventCalls[1].options.body);
+    assert.strictEqual(httpCreateBody.eventId, "http-new-event");
+    assert.deepStrictEqual(httpCreateBody.content, validDraft);
+    assert.strictEqual(httpNewEventCalls[1].options.body.includes("editorial-secret"), false);
+    assert.strictEqual(httpNewEventCalls.some((call) => call.url.endsWith("/api/eventos")), false);
+
+    let duplicateAttempts = 0;
+    await assert.rejects(
+        withDraft("publisher-test", validDraft, () => publishDraft(
+            options({ id: "new-event" }),
+            dependencies({
+                clientFactory: () => ({
+                    async getEditorialState() {
+                        const error = new Error("Evento inexistente.");
+                        error.code = "EVENT_NOT_FOUND";
+                        throw error;
+                    },
+                    async createEvent() {
+                        duplicateAttempts += 1;
+                        const error = new Error("El evento ya existe.");
+                        error.code = "EVENT_ALREADY_EXISTS";
+                        throw error;
+                    }
+                })
+            })
+        )),
+        (error) => error.code === "EVENT_ALREADY_EXISTS"
+    );
+    assert.strictEqual(duplicateAttempts, 1);
+
+    const workingCalls = [];
+    await withDraft("publisher-test", validDraft, () => publishDraft(
+        options(),
+        dependencies({
+            clientFactory: clientFactoryFor({
+                eventId: "existing-event",
+                eventStatus: "active",
+                currentWorkingVersionId: WORKING_ID,
+                publishedVersionId: PUBLISHED_ID
+            }, workingCalls)
+        })
+    ));
+    const workingCreate = workingCalls.find((call) => call.type === "create");
+    assert.strictEqual(workingCreate.payload.expectedWorkingVersionId, WORKING_ID);
+    assert.strictEqual(workingCreate.payload.sourceVersionId, WORKING_ID);
+
+    const publishedCalls = [];
+    await withDraft("publisher-test", validDraft, () => publishDraft(
+        options(),
+        dependencies({
+            clientFactory: clientFactoryFor({
+                eventId: "existing-event",
+                eventStatus: "active",
+                currentWorkingVersionId: null,
+                publishedVersionId: PUBLISHED_ID
+            }, publishedCalls)
+        })
+    ));
+    assert.strictEqual(
+        publishedCalls.find((call) => call.type === "create").payload.sourceVersionId,
+        PUBLISHED_ID
+    );
+
+    let conflictCreateCalls = 0;
+    await assert.rejects(
+        withDraft("publisher-test", validDraft, () => publishDraft(
+            options(),
+            dependencies({
+                clientFactory: () => ({
+                    async getEditorialState() {
+                        return { currentWorkingVersionId: WORKING_ID, publishedVersionId: null };
+                    },
+                    async createVersion() {
+                        conflictCreateCalls += 1;
+                        const error = new Error("Conflicto de version: la version de trabajo cambio.");
+                        error.code = "VERSION_CONFLICT";
+                        throw error;
+                    }
+                })
+            })
+        )),
+        (error) => error.code === "VERSION_CONFLICT"
+    );
+    assert.strictEqual(conflictCreateCalls, 1);
+
+    await assert.rejects(
+        withDraft("publisher-test", validDraft, () => publishDraft(
+            options({ overwrite: true }),
+            dependencies({ clientFactory: () => { throw new Error("no debe ejecutarse"); } })
+        )),
+        /--legacy/
+    );
+
+    let legacyRequest;
+    const legacyResult = await withDraft("publisher-test", validDraft, () => publishDraft(
+        options({ legacy: true, overwrite: true }),
+        {
+            env: {
+                YCOR_API_BASE_URL: "https://legacy.example.test/",
+                ADMIN_PASSWORD: "legacy-secret"
+            },
+            fetchImpl: async (url, requestOptions) => {
+                legacyRequest = { url, options: requestOptions };
+                return {
+                    ok: true,
+                    status: 200,
+                    async json() { return { success: true, id: "existing-event" }; }
+                };
+            }
+        }
+    ));
+    assert.strictEqual(legacyResult.mode, "legacy");
+    assert.strictEqual(legacyRequest.url, "https://legacy.example.test/api/eventos");
+    const legacyPayload = JSON.parse(legacyRequest.options.body);
+    assert.strictEqual(legacyPayload.password, "legacy-secret");
+    assert.strictEqual(legacyPayload.overwrite, true);
+
+    const originalDraft = JSON.parse(JSON.stringify(validDraft));
+    await withDraft("publisher-test", originalDraft, () => publishDraft(
+        options(),
+        dependencies({
+            clientFactory: clientFactoryFor({
+                currentWorkingVersionId: null,
+                publishedVersionId: null
+            }, [])
+        })
+    ));
+    assert.deepStrictEqual(originalDraft, validDraft);
+
+    const legacyPayloadUnit = buildPayload({
+        draft: validDraft,
+        id: "existing-event",
+        password: "legacy-secret",
+        overwrite: false
+    });
+    assert.strictEqual(legacyPayloadUnit.id, "existing-event");
+    assert.strictEqual(legacyPayloadUnit.password, "legacy-secret");
+    assert.strictEqual(validDraft.password, undefined);
 
     console.log("publish-event-draft test passed");
 })().catch((error) => {

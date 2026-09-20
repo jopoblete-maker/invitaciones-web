@@ -52,6 +52,36 @@ async function expectCode(expectedCode, action) {
         sections: [{ id: "hero", enabled: true }]
     };
     const contentBefore = JSON.stringify(content);
+    const createEvent = createHarness(success({
+        event_id: EVENT_ID,
+        version_id: VERSION_ID,
+        version_number: 1,
+        workflow_status: "draft"
+    }));
+    assert.deepStrictEqual(await createEvent.adapter.createEvent({
+        eventId: EVENT_ID,
+        content
+    }), {
+        eventId: EVENT_ID,
+        versionId: VERSION_ID,
+        versionNumber: 1,
+        workflowStatus: "draft"
+    });
+    assert.deepStrictEqual(createEvent.calls, [{
+        name: "create_versioned_event",
+        parameters: { p_event_id: EVENT_ID, p_content: content }
+    }]);
+    assert.strictEqual(createEvent.calls[0].parameters.p_content, content);
+    assert.strictEqual(JSON.stringify(content), contentBefore);
+
+    for (const code of ["EVENT_ALREADY_EXISTS", "INVALID_EVENT"]) {
+        const createEventError = createHarness(failure(code));
+        await expectCode(code, () => createEventError.adapter.createEvent({
+            eventId: EVENT_ID,
+            content
+        }));
+    }
+
     const createWithNulls = createHarness(success({
         version_id: VERSION_ID,
         version_number: 1

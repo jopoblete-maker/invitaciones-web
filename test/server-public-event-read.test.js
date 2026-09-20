@@ -124,7 +124,10 @@ function reset() {
     assert.strictEqual(versioned.statusCode, 200);
     assert.deepStrictEqual(versioned.body, { source: "version" });
     assert.deepStrictEqual(queries.map((query) => query.table), ["eventos", "event_versions"]);
-    assert.strictEqual(queries[0].columns, "id, datos, published_version_id, event_status");
+    assert.strictEqual(
+        queries[0].columns,
+        "id, datos, published_version_id, current_working_version_id, event_status"
+    );
     assert.strictEqual(queries[1].columns, "id, event_id, content");
 
     reset();
@@ -144,6 +147,19 @@ function reset() {
     }
     assert.strictEqual(legacy.statusCode, 200);
     assert.deepStrictEqual(legacy.body, { source: "legacy" });
+    assert.deepStrictEqual(queries.map((query) => query.table), ["eventos"]);
+
+    reset();
+    rows.eventos.set("new-event", {
+        id: "new-event",
+        datos: { mustNotLeak: "draft" },
+        published_version_id: null,
+        current_working_version_id: "draft-v1",
+        event_status: "active"
+    });
+    const unpublished = await request("new-event");
+    assert.strictEqual(unpublished.statusCode, 404);
+    assert.match(unpublished.body.error, /no encontrada$/);
     assert.deepStrictEqual(queries.map((query) => query.table), ["eventos"]);
 
     reset();

@@ -9,6 +9,8 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
     const STATUS_BY_CODE = Object.freeze({
         INVALID_REQUEST: 400,
+        INVALID_EVENT_ID: 400,
+        EVENT_ALREADY_EXISTS: 409,
         EVENT_NOT_FOUND: 404,
         VERSION_NOT_FOUND: 404,
         VERSION_EVENT_MISMATCH: 404,
@@ -20,6 +22,8 @@
 
     const MESSAGE_BY_CODE = Object.freeze({
         INVALID_REQUEST: "Invalid request.",
+        INVALID_EVENT_ID: "Event id is invalid.",
+        EVENT_ALREADY_EXISTS: "Event already exists.",
         EVENT_NOT_FOUND: "Event not found.",
         VERSION_NOT_FOUND: "Version not found.",
         VERSION_EVENT_MISMATCH: "Version not found.",
@@ -69,6 +73,15 @@
         const getEditorialState = protect(async (req, res) => {
             const result = await readRepository.getEditorialState(req.params.eventId);
             return res.status(200).json(result);
+        });
+
+        const createEvent = protect(async (req, res) => {
+            const body = req.body || {};
+            const result = await service.createEvent({
+                eventId: body.eventId,
+                content: body.content
+            });
+            return res.status(201).json(result);
         });
 
         const createVersion = protect(async (req, res) => {
@@ -122,6 +135,7 @@
         });
 
         return {
+            createEvent,
             getEditorialState,
             createVersion,
             getVersion,

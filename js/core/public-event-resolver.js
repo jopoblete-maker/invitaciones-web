@@ -54,6 +54,12 @@
             }
 
             if (!event.published_version_id) {
+                if (event.current_working_version_id) {
+                    throw resolverError(
+                        "PUBLIC_EVENT_NOT_FOUND",
+                        `Public event not found: ${eventId}`
+                    );
+                }
                 return legacyFallback(event, "missing-published-pointer");
             }
 

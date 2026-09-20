@@ -183,6 +183,7 @@ const eventVersionEditorialHttp = createEventVersionEditorialHttp({
 });
 
 app.get('/api/admin/eventos/:eventId', eventVersionEditorialHttp.getEditorialState);
+app.post('/api/admin/eventos', eventVersionEditorialHttp.createEvent);
 app.post('/api/admin/eventos/:eventId/versions', eventVersionEditorialHttp.createVersion);
 app.get('/api/admin/eventos/:eventId/versions/:versionId', eventVersionEditorialHttp.getVersion);
 app.post(
@@ -199,7 +200,7 @@ const publicEventResolver = createPublicEventResolver({
     async getEvent(id) {
         const { data, error } = await withSupabaseTimeout(supabase
             .from('eventos')
-            .select('id, datos, published_version_id, event_status')
+            .select('id, datos, published_version_id, current_working_version_id, event_status')
             .eq('id', id)
             .maybeSingle());
         if (error) throw error;

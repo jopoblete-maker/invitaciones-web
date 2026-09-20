@@ -61,6 +61,24 @@ async function expectCode(code, action) {
     assert.deepStrictEqual(withoutPointer.calls, [["event", "legacy-"]]);
     assert.strictEqual(withoutPointer.fallbacks[0].reason, "missing-published-pointer");
 
+    const unpublishedVersioned = createHarness({
+        events: {
+            "new-event": {
+                id: "new-event",
+                event_status: "active",
+                published_version_id: null,
+                current_working_version_id: "draft-v1",
+                datos: { mustNotLeak: "draft" }
+            }
+        }
+    });
+    await expectCode(
+        "PUBLIC_EVENT_NOT_FOUND",
+        () => unpublishedVersioned.resolver.resolvePublicEvent("new-event")
+    );
+    assert.deepStrictEqual(unpublishedVersioned.calls, [["event", "new-event"]]);
+    assert.deepStrictEqual(unpublishedVersioned.fallbacks, []);
+
     const missingVersion = createHarness({
         events: {
             event: {

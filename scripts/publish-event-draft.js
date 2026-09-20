@@ -3,28 +3,24 @@
 const fs = require("fs");
 const path = require("path");
 const { validateEventForPersistence } = require("../js/core/event-validator");
+const { createEventEditorialApiClient, normalizeBaseUrl } = require("./event-editorial-api-client");
 
 const ROOT = path.resolve(__dirname, "..");
 const DRAFTS_DIR = path.join(ROOT, ".dev", "drafts");
 const PUBLIC_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 function parseArgs(argv) {
-    const args = {
-        overwrite: false,
-        dryRun: false
-    };
+    const args = { overwrite: false, dryRun: false, legacy: false };
 
     for (let index = 0; index < argv.length; index += 1) {
         const arg = argv[index];
-        if (arg === "--overwrite") {
-            args.overwrite = true;
-        } else if (arg === "--dry-run") {
-            args.dryRun = true;
-        } else if (arg === "--draft" || arg === "--id" || arg === "--target") {
+        if (arg === "--overwrite") args.overwrite = true;
+        else if (arg === "--dry-run") args.dryRun = true;
+        else if (arg === "--legacy") args.legacy = true;
+        else if (arg === "--help") args.help = true;
+        else if (arg === "--draft" || arg === "--id" || arg === "--target") {
             const value = argv[index + 1];
-            if (!value || value.startsWith("--")) {
-                throw new Error(`Falta valor para ${arg}.`);
-            }
+            if (!value || value.startsWith("--")) throw new Error(`Falta valor para ${arg}.`);
             args[arg.slice(2)] = value;
             index += 1;
         } else {
@@ -32,10 +28,11 @@ function parseArgs(argv) {
         }
     }
 
-    ["draft", "id", "target"].forEach((name) => {
-        if (!args[name]) throw new Error(`--${name} es obligatorio.`);
-    });
-
+    if (!args.help) {
+        ["draft", "id"].forEach((name) => {
+            if (!args[name]) throw new Error(`--${name} es obligatorio.`);
+        });
+    }
     return args;
 }
 
@@ -44,16 +41,12 @@ function validatePublicId(id) {
 }
 
 function resolveDraftPath(draftName) {
-    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(draftName || ""))) {
+    if (!PUBLIC_ID_PATTERN.test(String(draftName || ""))) {
         throw new Error("El nombre del draft solo puede contener minusculas, numeros y guiones.");
     }
-
     const filePath = path.resolve(DRAFTS_DIR, `${draftName}.event.json`);
     const relative = path.relative(DRAFTS_DIR, filePath);
-    if (relative.startsWith("..") || path.isAbsolute(relative)) {
-        throw new Error("Ruta de draft invalida.");
-    }
-
+    if (relative.startsWith("..") || path.isAbsolute(relative)) throw new Error("Ruta de draft invalida.");
     return filePath;
 }
 
@@ -63,12 +56,9 @@ function loadDraft(draftName) {
     try {
         raw = fs.readFileSync(filePath, "utf8");
     } catch (error) {
-        if (error.code === "ENOENT") {
-            throw new Error(`Draft no encontrado: ${draftName}.`);
-        }
+        if (error.code === "ENOENT") throw new Error(`Draft no encontrado: ${draftName}.`);
         throw error;
     }
-
     try {
         return JSON.parse(raw);
     } catch {
@@ -77,126 +67,131 @@ function loadDraft(draftName) {
 }
 
 function normalizeTarget(target) {
-    let url;
-    try {
-        url = new URL(target);
-    } catch {
-        throw new Error("--target debe ser una URL valida.");
-    }
-
-    if (!["http:", "https:"].includes(url.protocol)) {
-        throw new Error("--target debe usar http o https.");
-    }
-
-    return url.toString().replace(/\/+$/, "");
+    return normalizeBaseUrl(target);
 }
 
 function buildPayload({ draft, id, password, overwrite = false }) {
-    const payload = {
-        ...draft,
-        password,
-        id
-    };
-
-    if (overwrite) {
-        payload.overwrite = true;
-    } else {
-        delete payload.overwrite;
-    }
+    const payload = { ...draft, password, id };
+    if (overwrite) payload.overwrite = true;
+    else delete payload.overwrite;
     return payload;
 }
 
-function safeSummary({ draftName, publicId, target, draft, validation, overwrite }) {
+function resolveSourceVersionId(state) {
+    return state.currentWorkingVersionId ?? state.publishedVersionId ?? null;
+}
+
+function safeSummary({ draftName, publicId, target, draft, validation, mode, overwrite }) {
     return [
         `draft: ${draftName}`,
-        `public id: ${publicId}`,
+        `event id: ${publicId}`,
         `template: ${draft.template?.slug || "(sin template)"}`,
         `sections: ${Array.isArray(draft.sections) ? draft.sections.length : 0}`,
-        `target: ${target}`,
-        `overwrite: ${overwrite ? "si" : "no"}`,
+        `mode: ${mode}`,
+        `target: ${target || "(sin configurar; no requerido para dry-run)"}`,
+        ...(mode === "legacy" ? [`overwrite: ${overwrite ? "si" : "no"}`] : []),
         `status: ${validation.valid ? "VALID" : "INVALID"}`
     ];
 }
 
-async function publishDraft(options, requestImpl = globalThis.fetch) {
+function environmentForMode(legacy, env) {
+    return {
+        target: env.YCOR_API_BASE_URL,
+        password: legacy
+            ? env.ADMIN_PASSWORD || env.YCOR_ADMIN_PASSWORD
+            : env.YCOR_ADMIN_PASSWORD || env.ADMIN_PASSWORD
+    };
+}
+
+async function publishDraft(options, dependencies = {}) {
     if (!validatePublicId(options.id)) {
         throw new Error("--id debe usar minusculas, numeros y guiones, sin guion inicial ni final.");
     }
+    if (options.overwrite && !options.legacy) {
+        throw new Error("--overwrite solo esta disponible con --legacy y nunca omite la concurrencia versionada.");
+    }
 
-    const target = normalizeTarget(options.target);
+    const deps = typeof dependencies === "function" ? { fetchImpl: dependencies } : dependencies;
+    const env = deps.env || process.env;
+    const configuration = environmentForMode(options.legacy, env);
+    const configuredTarget = options.target || configuration.target;
+    const target = configuredTarget ? normalizeTarget(configuredTarget) : null;
     const draft = loadDraft(options.draft);
     const validation = validateEventForPersistence(draft);
-
-    if (options.dryRun) {
-        return {
-            dryRun: true,
-            validation,
-            summary: safeSummary({
-                draftName: options.draft,
-                publicId: options.id,
-                target,
-                draft,
-                validation,
-                overwrite: options.overwrite
-            })
-        };
-    }
-
-    if (!validation.valid) {
-        return {
-            dryRun: false,
-            validation,
-            skipped: true,
-            summary: safeSummary({
-                draftName: options.draft,
-                publicId: options.id,
-                target,
-                draft,
-                validation,
-                overwrite: options.overwrite
-            })
-        };
-    }
-
-    const password = process.env.ADMIN_PASSWORD;
-    if (!password) {
-        throw new Error("ADMIN_PASSWORD no esta definido en el entorno.");
-    }
-
-    if (typeof requestImpl !== "function") {
-        throw new Error("fetch no esta disponible.");
-    }
-
-    const payload = buildPayload({
+    const mode = options.legacy ? "legacy" : "versioned-create-draft";
+    const summary = safeSummary({
+        draftName: options.draft,
+        publicId: options.id,
+        target,
         draft,
-        id: options.id,
-        password,
+        validation,
+        mode: options.legacy ? "legacy" : "versioned create draft",
         overwrite: options.overwrite
     });
 
-    const response = await requestImpl(`${target}/api/eventos`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    });
-    const data = await parseResponseJson(response);
-
-    if (!response.ok) {
-        throw new Error(messageForStatus(response.status, data?.error));
+    if (options.dryRun) return { dryRun: true, validation, mode, summary, draft };
+    if (!validation.valid) return { dryRun: false, validation, skipped: true, mode, summary };
+    if (!target) throw new Error("YCOR_API_BASE_URL no esta configurada y no se indico --target.");
+    if (!configuration.password) {
+        throw new Error(options.legacy
+            ? "ADMIN_PASSWORD no esta definido en el entorno."
+            : "YCOR_ADMIN_PASSWORD no esta definido en el entorno.");
     }
+
+    if (options.legacy) {
+        const payload = buildPayload({
+            draft,
+            id: options.id,
+            password: configuration.password,
+            overwrite: options.overwrite
+        });
+        const response = await (deps.fetchImpl || globalThis.fetch)(`${target}/api/eventos`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        const data = await parseResponseJson(response);
+        if (!response.ok) throw new Error(messageForLegacyStatus(response.status));
+        return { dryRun: false, validation, mode, response: data, summary };
+    }
+
+    const clientFactory = deps.clientFactory || createEventEditorialApiClient;
+    const client = clientFactory({
+        baseUrl: target,
+        adminPassword: configuration.password,
+        fetchImpl: deps.fetchImpl || globalThis.fetch
+    });
+    let editorialState;
+    try {
+        editorialState = await client.getEditorialState(options.id);
+    } catch (error) {
+        if (error?.code !== "EVENT_NOT_FOUND") throw error;
+        const response = await client.createEvent(options.id, draft);
+        return {
+            dryRun: false,
+            validation,
+            mode,
+            response,
+            editorialState: null,
+            createPayload: { eventId: options.id, content: draft },
+            createdEvent: true,
+            summary
+        };
+    }
+    const expectedWorkingVersionId = editorialState.currentWorkingVersionId ?? null;
+    const sourceVersionId = resolveSourceVersionId(editorialState);
+    const createPayload = { content: draft, expectedWorkingVersionId, sourceVersionId };
+    const response = await client.createVersion(options.id, createPayload);
 
     return {
         dryRun: false,
         validation,
-        response: data,
-        summary: safeSummary({
-            draftName: options.draft,
-            publicId: options.id,
-            target,
-            draft,
-            validation,
-            overwrite: options.overwrite
-        })
+        mode,
+        response,
+        editorialState,
+        createPayload,
+        createdEvent: false,
+        summary
     };
 }
 
@@ -208,55 +203,73 @@ async function parseResponseJson(response) {
     }
 }
 
-function messageForStatus(status, serverMessage) {
-    const message = serverMessage ? ` ${serverMessage}` : "";
+function messageForLegacyStatus(status) {
     const byStatus = {
-        400: `Request invalido.${message}`,
-        401: "Autenticacion fallida. Revisar ADMIN_PASSWORD.",
-        409: `El public id ya existe. Usar --overwrite solo si corresponde.${message}`,
-        413: `Payload demasiado grande.${message}`,
-        500: `Error interno del servidor.${message}`,
-        504: `Timeout del servidor.${message}`
+        400: "Request legacy invalido.",
+        401: "Autenticacion legacy fallida.",
+        409: "El public id ya existe en el flujo legacy.",
+        413: "Payload demasiado grande.",
+        500: "Error interno del servidor.",
+        504: "Timeout del servidor."
     };
-    return byStatus[status] || `Error HTTP ${status}.${message}`;
+    return byStatus[status] || `Error HTTP ${status}.`;
+}
+
+function usage() {
+    return [
+        "Uso versionado: npm run publish:event -- --draft <nombre> --id <eventId> [--dry-run] [--target <url>]",
+        "Modo legacy deprecado: agregar --legacy [--overwrite]",
+        "El modo versionado crea una version draft; no publica el evento."
+    ];
 }
 
 async function main() {
     try {
         const options = parseArgs(process.argv.slice(2));
+        if (options.help) {
+            usage().forEach((line) => console.log(line));
+            return;
+        }
         const result = await publishDraft(options);
         result.summary.forEach((line) => console.log(line));
-
         if (!result.validation.valid) {
             result.validation.errors.forEach((error) => console.error(`error: ${error}`));
             process.exitCode = 1;
             return;
         }
-
         if (result.dryRun) {
-            console.log("dry-run: no se hizo request");
+            console.log("dry-run: no se hizo GET ni POST");
             return;
         }
-
-        console.log(`publicado: ${result.response?.id || options.id}`);
+        if (result.mode === "legacy") {
+            console.log(`guardado legacy: ${result.response?.id || options.id}`);
+            return;
+        }
+        console.log(`Evento: ${options.id}`);
+        console.log(`Version creada: ${result.response?.versionId}`);
+        console.log(`Numero de version: ${result.response?.versionNumber}`);
+        console.log("Estado: draft");
+        console.log("Publicada: NO");
+        console.log(`Preview local: /invitacion.html?preview=1&eventId=${encodeURIComponent(options.id)}&versionId=${encodeURIComponent(result.response?.versionId || "")}`);
     } catch (error) {
         console.error(error.message);
         process.exitCode = 1;
     }
 }
 
-if (require.main === module) {
-    main();
-}
+if (require.main === module) main();
 
 module.exports = {
     PUBLIC_ID_PATTERN,
     buildPayload,
+    environmentForMode,
     loadDraft,
     normalizeTarget,
     parseArgs,
     publishDraft,
     resolveDraftPath,
+    resolveSourceVersionId,
     safeSummary,
+    usage,
     validatePublicId
 };

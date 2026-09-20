@@ -32,6 +32,16 @@ function createHarness() {
     const calls = [];
     const failures = {};
     const adapter = {
+        async createEvent(options) {
+            calls.push(["createEvent", options]);
+            if (failures.createEvent) throw failures.createEvent;
+            return {
+                eventId: options.eventId,
+                versionId: VERSION_ID,
+                versionNumber: 1,
+                workflowStatus: "draft"
+            };
+        },
         async createVersion(options) {
             calls.push(["createVersion", options]);
             if (failures.createVersion) throw failures.createVersion;
@@ -127,6 +137,36 @@ async function request(handler, { password, params = {}, body = {} } = {}) {
     assert.strictEqual(state.statusCode, 200);
     assert.strictEqual(state.body.currentWorkingVersionId, WORKING_ID);
     assert.strictEqual(Object.hasOwn(state.body.versions[0], "content"), false);
+
+    const newEvent = createHarness();
+    const newEventContent = validContent();
+    const unauthorizedCreate = await request(newEvent.http.createEvent, {
+        body: { eventId: EVENT_ID, content: newEventContent }
+    });
+    assert.strictEqual(unauthorizedCreate.statusCode, 401);
+    assert.strictEqual(newEvent.calls.length, 0);
+    const createdEvent = await request(newEvent.http.createEvent, {
+        password: ADMIN_PASSWORD,
+        body: { eventId: EVENT_ID, content: newEventContent }
+    });
+    assert.strictEqual(createdEvent.statusCode, 201);
+    assert.deepStrictEqual(createdEvent.body, {
+        eventId: EVENT_ID,
+        versionId: VERSION_ID,
+        versionNumber: 1,
+        workflowStatus: "draft"
+    });
+    assert.strictEqual(newEvent.calls[0][1].content, newEventContent);
+    newEvent.failures.createEvent = codedError("EVENT_ALREADY_EXISTS");
+    assert.strictEqual((await request(newEvent.http.createEvent, {
+        password: ADMIN_PASSWORD,
+        body: { eventId: EVENT_ID, content: newEventContent }
+    })).statusCode, 409);
+    const invalidNewEvent = await request(createHarness().http.createEvent, {
+        password: ADMIN_PASSWORD,
+        body: { eventId: EVENT_ID, content: { schema_version: 999 } }
+    });
+    assert.strictEqual(invalidNewEvent.statusCode, 422);
 
     const create = createHarness();
     const createdNull = await request(create.http.createVersion, {
