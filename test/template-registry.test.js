@@ -114,10 +114,17 @@ assert.deepStrictEqual(wedding.catalog, {
         src: "/assets/templates/boda-vertical/thumbnail.webp",
         alt: "Vista previa de la plantilla Boda vertical"
     },
-    preview: null
+    preview: {
+        eventId: "ycor-template-demo-boda-vertical"
+    }
 });
 assert.strictEqual(Object.isFrozen(wedding.catalog), true);
 assert.strictEqual(Object.isFrozen(wedding.catalog.thumbnail), true);
+assert.strictEqual(Object.isFrozen(wedding.catalog.preview), true);
+assert.throws(() => { wedding.catalog.preview.eventId = "mutado"; }, TypeError);
+assert.deepStrictEqual(getTemplate("boda-vertical").catalog.preview, {
+    eventId: "ycor-template-demo-boda-vertical"
+});
 assert.strictEqual(birthday.catalog, null);
 assert.strictEqual(civil.catalog, null);
 const catalogListed = listCatalogTemplates();

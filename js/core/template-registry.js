@@ -33,7 +33,9 @@
                     src: "/assets/templates/boda-vertical/thumbnail.webp",
                     alt: "Vista previa de la plantilla Boda vertical"
                 },
-                preview: null
+                preview: {
+                    eventId: "ycor-template-demo-boda-vertical"
+                }
             })
         },
         "cumple-clasico": {
