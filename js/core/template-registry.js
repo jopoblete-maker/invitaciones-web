@@ -17,7 +17,7 @@
             slug: "boda-vertical",
             name: "Boda vertical",
             category: "wedding",
-            layout: "paged",
+            layout: "vertical",
             className: "template-boda-vertical",
             stylesheet: "/css/templates/boda-vertical.css",
             defaultTheme: null,

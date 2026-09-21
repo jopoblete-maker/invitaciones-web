@@ -8,7 +8,11 @@
     root.InvitationDataSource = source;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
     const ALLOWED_FIXTURES = new Set(["boda-civil-esencial"]);
-    const ALLOWED_DRAFTS = new Set(["kaly-joha-boda-civil", "demo-event-v2"]);
+    const ALLOWED_DRAFTS = new Set([
+        "kaly-joha-boda-civil",
+        "demo-event-v2",
+        "ycor-template-demo-boda-vertical"
+    ]);
 
     function isLoopbackHost(hostname) {
         return ["localhost", "127.0.0.1", "::1"].includes(hostname);

@@ -35,13 +35,16 @@ assert.deepStrictEqual(civil.requiredSections, ["hero"]);
 assert.deepStrictEqual(civil.supportedModules, ["music", "rsvp", "branding"]);
 assert.deepStrictEqual(civil.supportedActions, ["maps", "calendar"]);
 
-const legacy = resolveTemplate("boda-vertical");
-assert.strictEqual(legacy.slug, "boda-vertical");
-assert.strictEqual(legacy.layout, "paged");
+const wedding = resolveTemplate("boda-vertical");
+assert.strictEqual(wedding.slug, "boda-vertical");
+assert.strictEqual(wedding.layout, "vertical");
+
+const birthday = resolveTemplate("cumple-clasico");
+assert.strictEqual(birthday.layout, "paged");
 
 const fallback = resolveTemplate("template-desconocido");
 assert.strictEqual(fallback.slug, DEFAULT_TEMPLATE_SLUG);
-assert.strictEqual(fallback.layout, "paged");
+assert.strictEqual(fallback.layout, "vertical");
 
 const expectedMetadata = {
     "boda-vertical": { name: "Boda vertical", category: "wedding", eventTypes: ["wedding", "wedding-civil", "other"] },

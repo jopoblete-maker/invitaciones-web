@@ -1,0 +1,176 @@
+{
+  "schema_version": 2,
+  "id": "ycor-template-demo-boda-vertical",
+  "event_type": "wedding",
+  "plan": "esencial",
+  "status": "ready_for_preview",
+  "template": {
+    "slug": "boda-vertical"
+  },
+  "identity": {
+    "title": "Sofia & Mateo",
+    "subtitle": "Una celebracion de demostracion",
+    "message": "Una invitacion ficticia creada para presentar la experiencia YCOR."
+  },
+  "schedule": {
+    "date": "2030-11-16",
+    "time": "19:30",
+    "date_text": "16 DE NOVIEMBRE",
+    "time_text": "19:30 hs.",
+    "timezone": "America/Argentina/Buenos_Aires"
+  },
+  "location": {
+    "name": "Espacio Demostracion YCOR",
+    "address": "Ubicacion ficticia para demostracion",
+    "city": "Buenos Aires",
+    "maps_url": "https://www.google.com/maps/search/?api=1&query=Buenos+Aires",
+    "message": "Este lugar forma parte de una experiencia de demostracion."
+  },
+  "theme": {
+    "slug": "elegante"
+  },
+  "sections": [
+    {
+      "id": "hero",
+      "type": "hero",
+      "enabled": true,
+      "order": 10,
+      "data": {
+        "title": "Sofia & Mateo",
+        "subtitle": "Una celebracion de demostracion",
+        "dateText": "16 DE NOVIEMBRE",
+        "media_id": "demo-hero",
+        "imageAlt": "Composicion abstracta para una boda de demostracion"
+      },
+      "config": {
+        "mediaLayout": "contained",
+        "showCopy": true
+      }
+    },
+    {
+      "id": "event-info",
+      "type": "event-info",
+      "enabled": true,
+      "order": 20,
+      "data": {
+        "dateText": "16 DE NOVIEMBRE",
+        "timeText": "19:30 hs.",
+        "place": "Espacio Demostracion YCOR",
+        "address": "Ubicacion ficticia para demostracion",
+        "city": "Buenos Aires",
+        "message": "Todos los nombres, fechas y lugares de esta invitacion son ficticios.",
+        "media_id": "demo-hero",
+        "imageAlt": "Detalle floral abstracto de demostracion"
+      },
+      "config": {
+        "mediaLayout": "contained",
+        "showMessage": true
+      }
+    },
+    {
+      "id": "location",
+      "type": "location",
+      "enabled": true,
+      "order": 30,
+      "data": {
+        "name": "Espacio Demostracion YCOR",
+        "address": "Ubicacion ficticia para demostracion",
+        "city": "Buenos Aires",
+        "message": "Consulta una ubicacion generica para probar la accion de mapa.",
+        "timeText": "19:30 hs."
+      },
+      "config": {
+        "show_maps": true,
+        "show_calendar": true
+      }
+    },
+    {
+      "id": "rsvp",
+      "type": "rsvp",
+      "enabled": false,
+      "order": 40,
+      "data": {},
+      "config": {}
+    },
+    {
+      "id": "countdown",
+      "type": "countdown",
+      "enabled": true,
+      "order": 50,
+      "data": {
+        "target_datetime": "2030-11-16T19:30:00-03:00",
+        "eyebrow": "FALTAN",
+        "footer": "PARA LA CELEBRACION DEMO",
+        "completedMessage": "La celebracion demo ha comenzado"
+      },
+      "config": {}
+    },
+    {
+      "id": "closing",
+      "type": "closing",
+      "enabled": true,
+      "order": 60,
+      "data": {
+        "title": "Gracias por visitar esta demo",
+        "message": "Una experiencia ficticia creada por YCOR Digital.",
+        "names": "Sofia & Mateo",
+        "media_id": "demo-closing",
+        "imageAlt": "Arcos y flores abstractas de cierre"
+      },
+      "config": {
+        "mediaLayout": "contained"
+      }
+    },
+    {
+      "id": "media-closing",
+      "type": "media-closing",
+      "enabled": true,
+      "order": 70,
+      "data": {
+        "media_id": "demo-closing",
+        "alt": "Cierre abstracto de la invitacion de demostracion"
+      },
+      "config": {}
+    }
+  ],
+  "modules": {
+    "music": {
+      "enabled": false,
+      "playMode": "selector",
+      "tracks": []
+    },
+    "rsvp": {
+      "enabled": true,
+      "deadline": "2030-11-01",
+      "contacts": []
+    },
+    "branding": {
+      "enabled": true,
+      "brandName": "YCOR Digital",
+      "badgeText": "YCOR Demo",
+      "cta": "Explora una invitacion digital de demostracion",
+      "serviceText": "Contenido ficticio para evaluacion visual",
+      "whatsapp": "",
+      "whatsappMessage": "",
+      "portfolioUrl": "",
+      "instagramUrl": ""
+    }
+  },
+  "media": {
+    "items": {
+      "demo-hero": {
+        "type": "image",
+        "src": "/assets/templates/boda-vertical/demo/hero.svg"
+      },
+      "demo-closing": {
+        "type": "image",
+        "src": "/assets/templates/boda-vertical/demo/closing.svg"
+      }
+    }
+  },
+  "metadata": {
+    "locale": "es-AR",
+    "purpose": "template-catalog-preview",
+    "demo": true
+  }
+}

@@ -153,10 +153,11 @@ body::before {
 .invitation-shell {
     position: relative;
     width: min(100%, 920px);
-    height: 100dvh;
+    height: auto;
     min-height: 100dvh;
     margin: 0 auto;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: visible;
     border: 1px solid var(--decorative-border-color);
     border-radius: 30px;
     background: var(--canvas-background, var(--secondary-color));
@@ -192,30 +193,15 @@ body::before {
     padding: clamp(28px, 6vw, 46px) clamp(22px, 6vw, 48px);
 }
 
-.invitation-dashboard {
-    display: flex;
-    overflow-x: auto;
-    overflow-y: hidden;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-}
-
-.invitation-dashboard::-webkit-scrollbar {
-    display: none;
-}
-
 .wedding-section {
     position: relative;
     display: grid;
-    flex: 0 0 100%;
     width: 100%;
-    height: 100%;
-    min-height: 100%;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100svh;
     padding: clamp(34px, 7vw, 80px) clamp(22px, 7vw, 86px);
     isolation: isolate;
-    scroll-snap-align: center;
-    scroll-snap-stop: always;
     overflow: hidden;
     background-image: linear-gradient(180deg, rgba(19, 13, 10, 0.22), rgba(19, 13, 10, 0.7)),
         var(--page-image, none);
@@ -483,7 +469,8 @@ body::before {
 }
 
 .hero-section {
-    min-height: 100%;
+    min-height: 100vh;
+    min-height: 100svh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -965,6 +952,167 @@ body::before {
     text-transform: uppercase;
 }
 
+.wedding-section--location .wedding-content,
+.wedding-section--confirmation .wedding-content {
+    width: min(100%, 680px);
+    padding: clamp(26px, 5vw, 44px);
+}
+
+.wedding-section[data-section-type="location"][class*="layout-scale-"] .wedding-content {
+    width: min(100%, 720px);
+    padding: clamp(34px, 6vw, 54px);
+    transform: none;
+}
+
+.wedding-section[data-section-type="location"] .actions,
+.wedding-section[data-section-type="location"] .calendar-actions {
+    max-width: 340px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.wedding-section--countdown {
+    align-items: center;
+    justify-items: center;
+}
+
+.wedding-section--countdown[class*="layout-scale-"] .wedding-content {
+    width: min(100%, 700px);
+    transform: none;
+}
+
+.countdown-panel {
+    display: grid;
+    width: 100%;
+    gap: clamp(18px, 3.5vw, 30px);
+    padding: clamp(28px, 6vw, 56px) clamp(18px, 5vw, 44px);
+    border: 1px solid var(--line-color);
+    border-radius: 24px;
+    color: var(--text-color);
+    background: color-mix(in srgb, var(--surface-strong) 90%, transparent);
+    box-shadow: 0 24px 60px var(--shadow-color);
+    backdrop-filter: blur(10px) saturate(1.05);
+    -webkit-backdrop-filter: blur(10px) saturate(1.05);
+}
+
+.countdown-eyebrow,
+.countdown-footer,
+.countdown-completed {
+    margin: 0;
+    text-align: center;
+}
+
+.countdown-eyebrow {
+    color: var(--primary-color);
+    font-size: clamp(0.78rem, 2vw, 0.95rem);
+    font-weight: 900;
+    letter-spacing: 0.16em;
+    line-height: 1.3;
+    text-transform: uppercase;
+}
+
+.countdown-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(6px, 1.8vw, 14px);
+    min-width: 0;
+}
+
+.countdown-item {
+    min-width: 0;
+    padding: clamp(14px, 3vw, 24px) clamp(4px, 1.5vw, 12px);
+    border: 1px solid var(--line-color);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--surface-soft) 82%, transparent);
+    text-align: center;
+}
+
+.countdown-item span {
+    display: block;
+    color: var(--accent-color);
+    font-family: var(--font-heading);
+    font-size: clamp(2.15rem, 8vw, 4.5rem);
+    font-weight: 800;
+    line-height: 0.92;
+    font-variant-numeric: tabular-nums;
+}
+
+.countdown-item label {
+    display: block;
+    margin-top: clamp(8px, 1.6vw, 12px);
+    color: var(--muted-color);
+    font-size: clamp(0.58rem, 1.5vw, 0.72rem);
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.countdown-footer,
+.countdown-completed {
+    color: var(--muted-color);
+    font-family: var(--font-body);
+    font-size: clamp(0.78rem, 2vw, 0.95rem);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    line-height: 1.4;
+    text-transform: uppercase;
+}
+
+.countdown-completed:not([hidden]) {
+    display: block;
+    color: var(--accent-color);
+    font-family: var(--font-heading);
+    font-size: clamp(1.8rem, 6vw, 3rem);
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.countdown-panel.is-complete .countdown-grid {
+    display: none;
+}
+
+.section-media {
+    width: min(100%, 600px);
+    max-height: min(54dvh, 580px);
+    margin: 0 auto clamp(20px, 4vw, 34px);
+    overflow: hidden;
+    border-radius: 20px;
+    box-shadow: 0 20px 46px var(--shadow-color);
+}
+
+.section-media img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: min(54dvh, 580px);
+    object-fit: contain;
+}
+
+.wedding-section--media-closing {
+    align-items: center;
+    justify-items: center;
+}
+
+.media-closing-media {
+    display: grid;
+    width: min(100%, 640px);
+    max-height: 100%;
+    margin: 0;
+    place-items: center;
+}
+
+.media-closing-media img {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: calc(100dvh - clamp(100px, 16vh, 150px));
+    object-fit: contain;
+    border-radius: 20px;
+    box-shadow: 0 24px 60px var(--shadow-color);
+}
+
 .separator-media {
     display: block;
     max-width: 100%;
@@ -1319,7 +1467,8 @@ body[data-theme="corporativo"] {
         width: 100%;
         max-width: 100vw;
         min-height: 100dvh;
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
 
     body {
@@ -1329,13 +1478,17 @@ body[data-theme="corporativo"] {
 
     .invitation-shell {
         width: 100%;
-        height: 100dvh;
+        height: auto;
+        min-height: 100dvh;
+        overflow-x: hidden;
+        overflow-y: visible;
         border: 0;
         border-radius: 0;
     }
 
     .hero-section {
-        min-height: 100%;
+        min-height: 100vh;
+        min-height: 100svh;
         padding: 28px 20px 118px;
     }
 
@@ -1352,9 +1505,10 @@ body[data-theme="corporativo"] {
     }
 
     .wedding-section {
-        width: 100vw;
-        min-width: 100vw;
-        min-height: 100%;
+        width: 100%;
+        min-width: 0;
+        min-height: 100vh;
+        min-height: 100svh;
         padding: 28px 18px 74px;
         background-position: center 20%;
     }
@@ -1365,6 +1519,62 @@ body[data-theme="corporativo"] {
         max-height: calc(100% - 12px);
         overflow-y: auto;
         padding: 24px 20px;
+    }
+
+    .wedding-section[data-section-type="location"] .wedding-content {
+        width: 100%;
+        padding: 28px 22px;
+    }
+
+    .wedding-section--countdown {
+        padding-inline: 14px;
+    }
+
+    .wedding-section--countdown .wedding-content {
+        width: 100%;
+    }
+
+    .countdown-panel {
+        gap: 18px;
+        padding: 26px 14px;
+        border-radius: 20px;
+    }
+
+    .countdown-grid {
+        gap: 6px;
+    }
+
+    .countdown-item {
+        padding: 14px 3px;
+        border-radius: 12px;
+    }
+
+    .countdown-item span {
+        font-size: clamp(1.85rem, 11vw, 2.75rem);
+    }
+
+    .countdown-item label {
+        font-size: 0.55rem;
+        letter-spacing: 0.06em;
+    }
+
+    .section-media {
+        max-height: 48dvh;
+        margin-bottom: 20px;
+        border-radius: 16px;
+    }
+
+    .section-media img {
+        max-height: 48dvh;
+    }
+
+    .media-closing-media {
+        width: min(100%, 540px);
+    }
+
+    .media-closing-media img {
+        max-height: calc(100dvh - 112px);
+        border-radius: 16px;
     }
 
     .cover-names {

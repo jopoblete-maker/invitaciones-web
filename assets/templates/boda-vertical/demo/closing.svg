@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" role="img" aria-labelledby="title description">
+  <title id="title">Cierre floral abstracto</title>
+  <desc id="description">Una composicion de hojas y lineas doradas para una invitacion demo.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7efe2"/>
+      <stop offset="1" stop-color="#fffdf9"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="1200" fill="url(#background)"/>
+  <circle cx="450" cy="560" r="270" fill="#ffffff" opacity=".66"/>
+  <circle cx="450" cy="560" r="230" fill="none" stroke="#b88746" stroke-width="4"/>
+  <circle cx="450" cy="560" r="205" fill="none" stroke="#d8b36f" stroke-width="2"/>
+  <g fill="#7f9877">
+    <ellipse cx="280" cy="380" rx="30" ry="92" transform="rotate(-48 280 380)"/>
+    <ellipse cx="340" cy="300" rx="27" ry="84" transform="rotate(-25 340 300)"/>
+    <ellipse cx="620" cy="735" rx="30" ry="92" transform="rotate(-48 620 735)"/>
+    <ellipse cx="560" cy="820" rx="27" ry="84" transform="rotate(-25 560 820)"/>
+  </g>
+  <g fill="#d8a5a6">
+    <circle cx="245" cy="455" r="44"/>
+    <circle cx="655" cy="665" r="44"/>
+  </g>
+  <path d="M185 965h530M245 1000h410" stroke="#b88746" stroke-width="3" opacity=".72"/>
+  <path d="M370 560c25-42 135-42 160 0-25 42-135 42-160 0Z" fill="none" stroke="#b88746" stroke-width="10"/>
+</svg>

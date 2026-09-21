@@ -4,6 +4,7 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
+const TemplateRegistry = require("../js/core/template-registry");
 const ThemeRegistry = require("../js/core/theme-registry");
 
 const invitationScript = fs.readFileSync(
@@ -72,7 +73,7 @@ function createRuntime(options = {}) {
     const app = { classList: new FakeClassList(), dataset: {}, innerHTML: "" };
     const loader = { classList: new FakeClassList(), addEventListener() {}, remove() {} };
     const calls = [];
-    const template = {
+    const template = options.template || {
         slug: "cumple-clasico",
         layout: "paged",
         className: "template-cumple-clasico",
@@ -154,6 +155,20 @@ async function flushBootstrap() {
 }
 
 (async () => {
+    const verticalRuntime = createRuntime({
+        template: TemplateRegistry.getTemplate("boda-vertical")
+    });
+    verticalRuntime.context.applyTemplateConfig(verticalRuntime.template);
+    assert.strictEqual(verticalRuntime.app.classList.contains("invitation-dashboard"), false);
+    assert.strictEqual(verticalRuntime.app.classList.contains("invitation-vertical"), true);
+    assert.strictEqual(verticalRuntime.app.dataset.templateLayout, "vertical");
+
+    const pagedRuntime = createRuntime();
+    pagedRuntime.context.applyTemplateConfig(pagedRuntime.template);
+    assert.strictEqual(pagedRuntime.app.classList.contains("invitation-dashboard"), true);
+    assert.strictEqual(pagedRuntime.app.classList.contains("invitation-vertical"), false);
+    assert.strictEqual(pagedRuntime.app.dataset.templateLayout, "paged");
+
     const alreadyLoadedLink = new FakeLink("/css/templates/cumple-clasico.css");
     alreadyLoadedLink.sheet = {};
     const alreadyLoaded = createRuntime({ link: alreadyLoadedLink });

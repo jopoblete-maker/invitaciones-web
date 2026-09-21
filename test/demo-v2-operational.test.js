@@ -69,7 +69,7 @@ const snapshot = JSON.stringify(demo);
 
     const template = TemplateRegistry.resolveTemplate(normalized.template.slug);
     assert.strictEqual(template.slug, "boda-vertical");
-    assert.strictEqual(template.layout, "paged");
+    assert.strictEqual(template.layout, "vertical");
     assert(template.supportedActions.includes("maps"));
     assert(template.supportedActions.includes("calendar"));
     ["music", "rsvp", "branding"].forEach((module) => {

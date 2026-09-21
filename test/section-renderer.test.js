@@ -96,12 +96,15 @@ assert.deepStrictEqual(
 assert.deepStrictEqual(Object.keys(SECTION_RENDERER_REGISTRY), ["hero", "event-info", "location", "rsvp", "closing", "countdown", "media-closing"]);
 
 const civilTemplate = resolveTemplate("boda-civil-esencial");
-const legacyTemplate = resolveTemplate("boda-vertical");
+const weddingTemplate = resolveTemplate("boda-vertical");
+const birthdayTemplate = resolveTemplate("cumple-clasico");
 assert.strictEqual(civilTemplate.layout, "vertical");
-assert.strictEqual(legacyTemplate.layout, "paged");
+assert.strictEqual(weddingTemplate.layout, "vertical");
+assert.strictEqual(birthdayTemplate.layout, "paged");
 
 const navForTemplate = (template, pageCount) => template.layout === "vertical" ? "" : `dots:${pageCount}`;
 assert.strictEqual(navForTemplate(civilTemplate, 5), "");
-assert.strictEqual(navForTemplate(legacyTemplate, 3), "dots:3");
+assert.strictEqual(navForTemplate(weddingTemplate, 6), "");
+assert.strictEqual(navForTemplate(birthdayTemplate, 3), "dots:3");
 
 console.log("section-renderer test passed");
