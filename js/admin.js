@@ -11,9 +11,6 @@ const layoutState = {
     audioButton: { verticalEdge: "top", horizontalEdge: "left", verticalOffset: 22, horizontalOffset: 22 }
 };
 
-const ADMIN_PASSWORD_HASH = "702e0afc3ebf1b22464cb509747357e3f0fa371ed7bf0df3b25c3d9114abb662";
-const ADMIN_SESSION_KEY = "invitacionesAdminSession";
-const SESSION_DURATION_MS = 30 * 60 * 1000;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_AUDIO_SIZE = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/svg+xml"];
@@ -42,21 +39,12 @@ const editorState = {
     source: ""
 };
 
+let administrativePassword = "";
+let adminEditorialClient;
+
 document.addEventListener("DOMContentLoaded", () => {
     bindAuthentication();
-    bindImageInput("fileCapa1", "capa1", "previewCapa1");
-    bindImageInput("fileCapa2", "capa2", "previewCapa2");
-    bindImageInput("fileCapa3", "capa3", "previewCapa3");
-    document.getElementById("btnLoadEvent").addEventListener("click", loadExistingEvent);
-    bindMediaSourceMode("Capa1");
-    bindMediaSourceMode("Capa2");
-    bindMediaSourceMode("Capa3");
-    bindEditorControls();
-    bindFontPreview();
-    document.getElementById("adminForm").addEventListener("submit", handleSubmit);
-    bindLayoutControls();
-    bindPreviewNavigation();
-    updateLivePreview();
+    bindEditorialReader();
 });
 
 function showLivePreview() {
@@ -216,60 +204,143 @@ function bindMediaSourceMode(target) {
 function bindAuthentication() {
     const authForm = document.getElementById("authForm");
     const logoutButton = document.getElementById("btnLogout");
-    const passwordInput = document.getElementById("adminPassword");
 
-    if (isAuthenticated()) showAdmin(passwordInput, "");
-
-    authForm.addEventListener("submit", async (event) => {
+    authForm.addEventListener("submit", (event) => {
         event.preventDefault();
-        const password = document.getElementById("loginPassword").value;
-        const hash = await hashValue(password);
+        const passwordInput = document.getElementById("loginPassword");
         const error = document.getElementById("authError");
-
-        if (hash !== ADMIN_PASSWORD_HASH) {
-            error.textContent = "La clave de acceso no es vÃ¡lida.";
+        if (!passwordInput.value) {
+            error.textContent = "Ingresa la credencial administrativa.";
             return;
         }
-
-        sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
-            token: hash,
-            expiresAt: Date.now() + SESSION_DURATION_MS
-        }));
-        error.textContent = "";
-        showAdmin(passwordInput, password);
-    });
-
-    logoutButton.addEventListener("click", () => {
-        sessionStorage.removeItem(ADMIN_SESSION_KEY);
-        document.getElementById("adminForm").hidden = true;
-        logoutButton.hidden = true;
-        document.getElementById("authPanel").hidden = false;
-        document.getElementById("livePreviewPanel").hidden = true;
-        document.getElementById("loginPassword").value = "";
+        administrativePassword = passwordInput.value;
         passwordInput.value = "";
+        error.textContent = "";
+        showAdmin();
     });
+
+    logoutButton.addEventListener("click", () => resetForAuthentication(""));
 }
 
-function showAdmin(passwordInput, password) {
+function showAdmin() {
     document.getElementById("authPanel").hidden = true;
     document.getElementById("adminForm").hidden = false;
     document.getElementById("btnLogout").hidden = false;
-    document.getElementById("livePreviewPanel").hidden = false;
-    if (password) passwordInput.value = password;
+    document.getElementById("editorialEventId").focus();
 }
 
-function isAuthenticated() {
+function bindEditorialReader() {
+    const readerForm = document.getElementById("editorialReaderForm");
+    adminEditorialClient = AdminEditorialClient.createAdminEditorialClient();
+    readerForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        await loadEditorialState();
+    });
+}
+
+async function loadEditorialState() {
+    const eventId = document.getElementById("editorialEventId").value.trim();
+    const status = document.getElementById("editorialReaderStatus");
+    if (!administrativePassword) {
+        resetForAuthentication("Credencial administrativa invalida.");
+        return;
+    }
+
+    clearEditorialState();
+    status.textContent = "Verificando credencial y cargando evento...";
     try {
-        const session = JSON.parse(sessionStorage.getItem(ADMIN_SESSION_KEY) || "null");
-        return session?.token === ADMIN_PASSWORD_HASH && session.expiresAt > Date.now();
-    } catch {
-        return false;
+        const state = await adminEditorialClient.getEditorialState({
+            eventId,
+            password: administrativePassword
+        });
+        renderEditorialState(state);
+        status.textContent = "Acceso administrativo confirmado.";
+    } catch (error) {
+        if (error.code === "UNAUTHORIZED") {
+            resetForAuthentication("Credencial administrativa invalida.");
+            return;
+        }
+        if (error.code === "FORBIDDEN") {
+            resetForAuthentication("Acceso administrativo rechazado.");
+            return;
+        }
+        status.classList.add("error");
+        status.textContent = error.code === "SERVER_ERROR"
+            ? "Error del servidor administrativo."
+            : error.message;
     }
 }
 
-async function hashValue(value) {
-    const buffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-    return Array.from(new Uint8Array(buffer), (byte) => byte.toString(16).padStart(2, "0")).join("");
+function resetForAuthentication(message) {
+    administrativePassword = "";
+    document.getElementById("adminForm").hidden = true;
+    document.getElementById("btnLogout").hidden = true;
+    document.getElementById("authPanel").hidden = false;
+    document.getElementById("authError").textContent = message;
+    document.getElementById("loginPassword").value = "";
+    clearEditorialState();
+}
+
+function clearEditorialState() {
+    const state = document.getElementById("editorialState");
+    state.replaceChildren();
+    state.hidden = true;
+    const status = document.getElementById("editorialReaderStatus");
+    status.classList.remove("error");
+    status.textContent = "";
+}
+
+function renderEditorialState(editorialState) {
+    const state = document.getElementById("editorialState");
+    const summary = document.createElement("dl");
+    [
+        ["Evento", editorialState.eventId],
+        ["Estado", editorialState.eventStatus],
+        ["Working version", editorialState.currentWorkingVersionId || "Sin asignar"],
+        ["Published version", editorialState.publishedVersionId || "Sin asignar"]
+    ].forEach(([label, value]) => appendDefinition(summary, label, value));
+
+    const title = document.createElement("h3");
+    title.textContent = "Versiones";
+    const versions = document.createElement("ul");
+    versions.className = "editorial-version-list";
+    editorialState.versions.forEach((version) => {
+        const item = document.createElement("li");
+        item.className = "editorial-version";
+        const details = document.createElement("dl");
+        [
+            ["Numero", version.versionNumber],
+            ["UUID", version.versionId],
+            ["Workflow", version.workflowStatus],
+            ["Creada", formatDate(version.createdAt)],
+            ["Publicada", formatDate(version.publishedAt)]
+        ].forEach(([label, value]) => appendDefinition(details, label, value || "Sin asignar"));
+        item.append(details);
+        versions.append(item);
+    });
+    if (editorialState.versions.length === 0) {
+        const item = document.createElement("li");
+        item.className = "editorial-version";
+        item.textContent = "El evento no tiene versiones.";
+        versions.append(item);
+    }
+
+    state.replaceChildren(summary, title, versions);
+    state.hidden = false;
+}
+
+function appendDefinition(list, label, value) {
+    const term = document.createElement("dt");
+    term.textContent = label;
+    const description = document.createElement("dd");
+    description.textContent = String(value);
+    list.append(term, description);
+}
+
+function formatDate(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString("es-AR");
 }
 
 function bindImageInput(inputId, target, previewId) {
@@ -301,6 +372,7 @@ function bindImageInput(inputId, target, previewId) {
     });
 }
 
+/* Legacy media editor disabled during the read-only editorial reconnection.
 async function loadExistingEvent() {
     const id = valueOf("idEvento");
     if (!id) {
@@ -356,6 +428,8 @@ async function loadExistingEvent() {
         window.alert(error.message);
     }
 }
+
+*/
 
 function renderPreviews(target, previewId) {
     const preview = document.getElementById(previewId);
@@ -478,6 +552,7 @@ function previewIdForTarget(target) {
     }[target];
 }
 
+/* Legacy writer disabled during the read-only editorial reconnection.
 async function handleSubmit(event) {
     event.preventDefault();
 
@@ -564,6 +639,8 @@ async function handleSubmit(event) {
         resultBox.style.display = "block";
     }
 }
+
+*/
 
 async function collectAudioTracks() {
     const fileInput = document.getElementById("fileMusica");

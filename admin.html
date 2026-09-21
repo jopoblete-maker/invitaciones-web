@@ -340,6 +340,63 @@
             background-color: #0f766e;
         }
 
+        .editorial-reader {
+            display: grid;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .editorial-reader-status {
+            min-height: 20px;
+            color: #475569;
+            font-size: .9rem;
+        }
+
+        .editorial-reader-status.error {
+            color: #b91c1c;
+        }
+
+        .editorial-state {
+            display: grid;
+            gap: 14px;
+            padding: 16px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .editorial-state dl {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+            gap: 8px 12px;
+            margin: 0;
+        }
+
+        .editorial-state dt {
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        .editorial-state dd {
+            margin: 0;
+            overflow-wrap: anywhere;
+        }
+
+        .editorial-version-list {
+            display: grid;
+            gap: 10px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .editorial-version {
+            padding: 12px;
+            border: 1px solid #dbe4ef;
+            border-radius: 8px;
+            background: #fff;
+        }
+
         #resultBox {
             margin-top: 20px;
             padding: 15px;
@@ -493,7 +550,23 @@
         </section>
 
         <button type="button" id="btnLogout" class="btn-logout" hidden>Cerrar Sesión</button>
-        <form id="adminForm" hidden>
+        <section id="adminForm" hidden>
+            <section class="editorial-reader" aria-labelledby="editorialReaderTitle">
+                <div>
+                    <h2 id="editorialReaderTitle" class="section-title">Lectura editorial</h2>
+                    <p class="help-text">Consulta eventos y versiones sin realizar cambios.</p>
+                </div>
+                <form id="editorialReaderForm">
+                    <div class="form-group">
+                        <label for="editorialEventId">ID del evento:</label>
+                        <input type="text" id="editorialEventId" autocomplete="off" required>
+                    </div>
+                    <button type="submit" class="btn-submit">Consultar evento</button>
+                </form>
+                <p id="editorialReaderStatus" class="editorial-reader-status" role="status"></p>
+                <section id="editorialState" class="editorial-state" hidden aria-live="polite"></section>
+            </section>
+            <section id="legacyAdminControls" hidden>
             <!-- 1. Seguridad y Acceso -->
             <div class="section-title">1. Autorización y Registro</div>
             <div class="form-row">
@@ -807,9 +880,10 @@
             </div>
 
             <button type="submit" class="btn-submit">Guardar y Generar Invitación</button>
-        </form>
+            </section>
+        </section>
 
-        <aside id="livePreviewPanel" class="live-preview-panel" hidden aria-label="Previsualización en tiempo real">
+            <aside id="livePreviewPanel" class="live-preview-panel" hidden aria-label="Previsualización en tiempo real">
             <h2>Live Preview · Folleto móvil</h2>
             <div class="phone-frame">
                 <div id="previewTrack" class="preview-track">
@@ -839,7 +913,7 @@
         <div id="resultBox"></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+    <script src="js/core/admin-editorial-client.js"></script>
     <script src="js/admin.js"></script>
 </body>
 
