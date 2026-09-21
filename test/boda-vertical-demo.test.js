@@ -120,11 +120,21 @@ function previewRequest(url) {
     assert.match(templateCss, /\.invitation-shell\s*\{[^}]*height:\s*auto;[^}]*overflow-x:\s*hidden;[^}]*overflow-y:\s*visible;/s);
     assert.match(templateCss, /\.wedding-section\s*\{[^}]*width:\s*100%;[^}]*min-height:\s*100svh;/s);
 
-    assert.strictEqual(template.catalog, null);
-    assert.deepStrictEqual(TemplateRegistry.listCatalogTemplates(), []);
+    assert.deepStrictEqual(template.catalog, {
+        description: "Invitación de boda elegante en formato vertical, con ubicación, cuenta regresiva y una experiencia visual adaptable a dispositivos móviles.",
+        thumbnail: {
+            src: "/assets/templates/boda-vertical/thumbnail.webp",
+            alt: "Vista previa de la plantilla Boda vertical"
+        },
+        preview: null
+    });
+    assert.deepStrictEqual(
+        TemplateRegistry.listCatalogTemplates().map((catalogTemplate) => catalogTemplate.slug),
+        ["boda-vertical"]
+    );
     assert.strictEqual(
         fs.existsSync(path.join(ROOT, "assets", "templates", "boda-vertical", "thumbnail.webp")),
-        false
+        true
     );
 
     assert.deepStrictEqual(

@@ -73,7 +73,6 @@ Object.values(TEMPLATES).forEach((template) => {
         assert(Object.prototype.hasOwnProperty.call(template, field), `${template.slug} no contiene ${field}`);
     });
     assert(Object.prototype.hasOwnProperty.call(template, "catalog"));
-    assert.strictEqual(template.catalog, null);
     assert.strictEqual(template.name, expectedMetadata[template.slug].name);
     assert.strictEqual(template.category, expectedMetadata[template.slug].category);
     assert.strictEqual(template.status, "active");
@@ -108,10 +107,22 @@ listed.pop();
 assert.strictEqual(listTemplates().length, 3);
 
 assert.strictEqual(typeof listCatalogTemplates, "function");
-assert.deepStrictEqual(listCatalogTemplates(), []);
+assert.deepStrictEqual(listCatalogTemplates().map((template) => template.slug), ["boda-vertical"]);
+assert.deepStrictEqual(wedding.catalog, {
+    description: "Invitación de boda elegante en formato vertical, con ubicación, cuenta regresiva y una experiencia visual adaptable a dispositivos móviles.",
+    thumbnail: {
+        src: "/assets/templates/boda-vertical/thumbnail.webp",
+        alt: "Vista previa de la plantilla Boda vertical"
+    },
+    preview: null
+});
+assert.strictEqual(Object.isFrozen(wedding.catalog), true);
+assert.strictEqual(Object.isFrozen(wedding.catalog.thumbnail), true);
+assert.strictEqual(birthday.catalog, null);
+assert.strictEqual(civil.catalog, null);
 const catalogListed = listCatalogTemplates();
 catalogListed.push({ slug: "template-ajeno" });
-assert.deepStrictEqual(listCatalogTemplates(), []);
+assert.deepStrictEqual(listCatalogTemplates().map((template) => template.slug), ["boda-vertical"]);
 assert.strictEqual(listTemplates().length, 3);
 
 const catalogWithoutPreview = defineCatalogMetadata({

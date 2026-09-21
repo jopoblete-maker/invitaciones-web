@@ -27,7 +27,14 @@
             supportedModules: [...SUPPORTED_MODULES],
             supportedActions: [...TEMPLATE_ACTIONS],
             status: "active",
-            catalog: defineCatalogMetadata(null)
+            catalog: defineCatalogMetadata({
+                description: "Invitación de boda elegante en formato vertical, con ubicación, cuenta regresiva y una experiencia visual adaptable a dispositivos móviles.",
+                thumbnail: {
+                    src: "/assets/templates/boda-vertical/thumbnail.webp",
+                    alt: "Vista previa de la plantilla Boda vertical"
+                },
+                preview: null
+            })
         },
         "cumple-clasico": {
             slug: "cumple-clasico",
