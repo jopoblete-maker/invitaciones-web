@@ -5,6 +5,7 @@ const {
 const {
     createEventVersionEditorialHttp
 } = require("../js/core/event-version-editorial-http");
+const { createAdminOriginPolicy } = require("../js/core/admin-origin-policy");
 
 const ADMIN_PASSWORD = "editor-secret";
 const EVENT_ID = "event-one";
@@ -89,7 +90,8 @@ function createHarness() {
     const http = createEventVersionEditorialHttp({
         service,
         readRepository,
-        adminPassword: ADMIN_PASSWORD
+        adminPassword: ADMIN_PASSWORD,
+        originPolicy: createAdminOriginPolicy("http://localhost:3000")
     });
     return { calls, failures, http };
 }
@@ -109,10 +111,11 @@ function responseDouble() {
     };
 }
 
-async function request(handler, { password, params = {}, body = {} } = {}) {
+async function request(handler, { password, params = {}, body = {}, origin = "http://localhost:3000" } = {}) {
     const response = responseDouble();
     const headers = {};
     if (password !== undefined) headers["x-admin-password"] = password;
+    if (origin !== undefined) headers.origin = origin;
     await handler({ headers, params, body }, response);
     return response;
 }
@@ -169,6 +172,21 @@ async function request(handler, { password, params = {}, body = {} } = {}) {
     assert.strictEqual(invalidNewEvent.statusCode, 422);
 
     const create = createHarness();
+    const forbiddenOrigin = await request(create.http.createVersion, {
+        password: ADMIN_PASSWORD,
+        origin: "https://evil.example",
+        params: { eventId: EVENT_ID },
+        body: { content: validContent(), expectedWorkingVersionId: null }
+    });
+    assert.strictEqual(forbiddenOrigin.statusCode, 403);
+    assert.strictEqual(create.calls.length, 0);
+    const wrongMutationPassword = await request(create.http.createVersion, {
+        password: "wrong",
+        params: { eventId: EVENT_ID },
+        body: { content: validContent(), expectedWorkingVersionId: null }
+    });
+    assert.strictEqual(wrongMutationPassword.statusCode, 401);
+    assert.strictEqual(create.calls.length, 0);
     const createdNull = await request(create.http.createVersion, {
         password: ADMIN_PASSWORD,
         params: { eventId: EVENT_ID },
@@ -177,6 +195,8 @@ async function request(handler, { password, params = {}, body = {} } = {}) {
     assert.strictEqual(createdNull.statusCode, 201);
     assert.deepStrictEqual(createdNull.body, { versionId: VERSION_ID, versionNumber: 2 });
     assert.strictEqual(create.calls[0][1].expectedWorkingVersionId, null);
+    assert.strictEqual(create.calls[0][1].adminIdentity, "shared-admin-credential");
+    assert.strictEqual(create.calls[0][1].origin, "http://localhost:3000");
     const createdUuid = await request(create.http.createVersion, {
         password: ADMIN_PASSWORD,
         params: { eventId: EVENT_ID },
@@ -217,6 +237,8 @@ async function request(handler, { password, params = {}, body = {} } = {}) {
         });
         assert.strictEqual(response.statusCode, 200);
         assert.strictEqual(response.body.workflowStatus, targetStatus);
+        assert.strictEqual(workflow.calls[workflow.calls.length - 1][1].adminIdentity, "shared-admin-credential");
+        assert.strictEqual(workflow.calls[workflow.calls.length - 1][1].origin, "http://localhost:3000");
     }
     workflow.failures.transitionWorkflow = codedError("INVALID_WORKFLOW");
     assert.strictEqual((await request(workflow.http.transitionWorkflow, {
@@ -239,6 +261,8 @@ async function request(handler, { password, params = {}, body = {} } = {}) {
         password: ADMIN_PASSWORD,
         params: { eventId: EVENT_ID, versionId: VERSION_ID }
     })).statusCode, 200);
+    assert.strictEqual(publish.calls[0][1].adminIdentity, "shared-admin-credential");
+    assert.strictEqual(publish.calls[0][1].origin, "http://localhost:3000");
 
     for (const code of ["INVALID_WORKFLOW", "VERSION_NOT_FOUND"]) {
         const rollback = createHarness();

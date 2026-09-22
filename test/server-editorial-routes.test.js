@@ -60,11 +60,13 @@ const supabase = {
 const originalLoad = Module._load;
 const previousEnvironment = {
     ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
+    ADMIN_ALLOWED_ORIGINS: process.env.ADMIN_ALLOWED_ORIGINS,
     SUPABASE_URL: process.env.SUPABASE_URL,
     SUPABASE_KEY: process.env.SUPABASE_KEY
 };
 
 process.env.ADMIN_PASSWORD = "test-secret";
+process.env.ADMIN_ALLOWED_ORIGINS = "http://localhost:3000";
 process.env.SUPABASE_URL = "https://example.supabase.co";
 process.env.SUPABASE_KEY = "test-key";
 
@@ -109,7 +111,7 @@ function responseDouble() {
 (async () => {
     for (const route of expectedRoutes) {
         const response = responseDouble();
-        await routes[route]({ headers: {}, params: {}, body: {} }, response);
+        await routes[route]({ headers: { origin: "http://localhost:3000" }, params: {}, body: {} }, response);
         assert.strictEqual(response.statusCode, 401, `${route} must require authentication`);
     }
     assert.strictEqual(typeof routes["GET /api/eventos/:id"], "function");
@@ -126,7 +128,7 @@ function responseDouble() {
         ]
     };
     await routes["POST /api/admin/eventos"]({
-        headers: { "x-admin-password": "test-secret" },
+        headers: { "x-admin-password": "test-secret", origin: "http://localhost:3000" },
         params: {},
         body: { eventId: "new-event", content: newEventContent }
     }, createEventResponse);
@@ -148,7 +150,7 @@ function responseDouble() {
         ]
     };
     await routes["POST /api/admin/eventos/:eventId/versions"]({
-        headers: { "x-admin-password": "test-secret" },
+        headers: { "x-admin-password": "test-secret", origin: "http://localhost:3000" },
         params: { eventId: "event-one" },
         body: { content, expectedWorkingVersionId: null }
     }, createResponse);
@@ -172,7 +174,7 @@ function responseDouble() {
                 p_initial_workflow: "draft",
                 p_admin_identity: "shared-admin-credential",
                 p_ip: null,
-                p_origin: null,
+                p_origin: "http://localhost:3000",
                 p_action: "CREATE_VERSION"
             }
         }

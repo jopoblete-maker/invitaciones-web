@@ -99,7 +99,9 @@
                 content: options.content,
                 expectedWorkingVersionId: options.expectedWorkingVersionId,
                 sourceVersionId: options.sourceVersionId ?? null,
-                initialWorkflow
+                initialWorkflow,
+                ...(options.adminIdentity ? { adminIdentity: options.adminIdentity } : {}),
+                ...(options.origin ? { origin: options.origin } : {})
             });
         }
 
@@ -112,7 +114,9 @@
                 eventId: options.eventId,
                 versionId: options.versionId,
                 expectedStatus: options.expectedStatus,
-                targetStatus: options.targetStatus
+                targetStatus: options.targetStatus,
+                ...(options.adminIdentity ? { adminIdentity: options.adminIdentity } : {}),
+                ...(options.origin ? { origin: options.origin } : {})
             });
         }
 
@@ -121,7 +125,9 @@
             requireString(options.versionId, "versionId");
             return adapter.publishVersion({
                 eventId: options.eventId,
-                versionId: options.versionId
+                versionId: options.versionId,
+                ...(options.adminIdentity ? { adminIdentity: options.adminIdentity } : {}),
+                ...(options.origin ? { origin: options.origin } : {})
             });
         }
 

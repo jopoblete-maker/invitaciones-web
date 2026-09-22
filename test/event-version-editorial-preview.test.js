@@ -1,5 +1,6 @@
 const assert = require("assert");
 const { createEventVersionEditorialHttp } = require("../js/core/event-version-editorial-http");
+const { createAdminOriginPolicy } = require("../js/core/admin-origin-policy");
 
 const password = "secret";
 const eventId = "event-one";
@@ -23,6 +24,7 @@ const http = createEventVersionEditorialHttp({
     service: {},
     readRepository,
     adminPassword: password,
+    originPolicy: createAdminOriginPolicy("http://localhost:3000"),
     issuePreviewToken: () => ({ token: "signed-token", expiresAt: "2030-01-01T00:00:00.000Z" })
 });
 function response() { return { statusCode: 200, body: null, status(code) { this.statusCode = code; return this; }, json(body) { this.body = body; return this; } }; }
@@ -31,6 +33,7 @@ async function invoke(handler, options = {}) {
     const headers = {};
     if (Object.prototype.hasOwnProperty.call(options, "password")) headers["x-admin-password"] = options.password;
     else headers["x-admin-password"] = password;
+    headers.origin = "http://localhost:3000";
     await handler({ headers, params: options.params || {}, query: options.query || {} }, res);
     return res;
 }
