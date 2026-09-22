@@ -8,6 +8,7 @@ const { createEventVersionRpcAdapter } = require('./js/core/event-version-rpc-ad
 const { createEventVersionEditorialService } = require('./js/core/event-version-editorial-service');
 const { createEventVersionReadRepository } = require('./js/core/event-version-read-repository-supabase');
 const { createEventVersionEditorialHttp } = require('./js/core/event-version-editorial-http');
+const { signPreviewToken, verifyPreviewToken, DEFAULT_TTL_SECONDS } = require('./js/core/private-preview-token');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,6 +21,8 @@ if (missingEnvVars.length) {
 }
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const PREVIEW_SIGNING_KEY = process.env.PREVIEW_SIGNING_KEY || '';
+const PREVIEW_TTL_SECONDS = Number(process.env.PREVIEW_TTL_SECONDS) || DEFAULT_TTL_SECONDS;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
@@ -171,14 +174,27 @@ const eventVersionRpcAdapter = createEventVersionRpcAdapter({
 });
 const eventVersionEditorialService = createEventVersionEditorialService(eventVersionRpcAdapter);
 const eventVersionReadRepository = createEventVersionReadRepository(supabase, {
-    execute: withSupabaseTimeout
+    execute: withSupabaseTimeout,
+    cursorSecret: PREVIEW_SIGNING_KEY
 });
 const eventVersionEditorialHttp = createEventVersionEditorialHttp({
     service: eventVersionEditorialService,
     readRepository: eventVersionReadRepository,
-    adminPassword: ADMIN_PASSWORD
+    adminPassword: ADMIN_PASSWORD,
+    previewTtlSeconds: PREVIEW_TTL_SECONDS,
+    issuePreviewToken(options) {
+        if (!PREVIEW_SIGNING_KEY) {
+            const error = new Error('Preview signing key is not configured.');
+            error.code = 'PREVIEW_NOT_CONFIGURED';
+            throw error;
+        }
+        const token = signPreviewToken({ ...options, secret: PREVIEW_SIGNING_KEY });
+        const payload = verifyPreviewToken(token, { secret: PREVIEW_SIGNING_KEY }).payload;
+        return { token, expiresAt: new Date(payload.expiresAt * 1000).toISOString() };
+    }
 });
 
+app.get('/api/admin/eventos', eventVersionEditorialHttp.listEvents);
 app.get('/api/admin/eventos/:eventId', eventVersionEditorialHttp.getEditorialState);
 app.post('/api/admin/eventos', eventVersionEditorialHttp.createEvent);
 app.post('/api/admin/eventos/:eventId/versions', eventVersionEditorialHttp.createVersion);
@@ -192,6 +208,39 @@ app.post(
     eventVersionEditorialHttp.publishVersion
 );
 app.post('/api/admin/eventos/:eventId/rollback', eventVersionEditorialHttp.rollbackVersion);
+app.post(
+    '/api/admin/eventos/:eventId/versions/:versionId/preview',
+    eventVersionEditorialHttp.requestPreview
+);
+
+app.get('/api/preview', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    const verification = verifyPreviewToken(req.query?.token, { secret: PREVIEW_SIGNING_KEY });
+    if (!verification.ok) {
+        return res.status(verification.code === 'TOKEN_EXPIRED' ? 410 : 401).json({
+            error: { code: verification.code, message: 'Private preview is not available.' }
+        });
+    }
+    try {
+        const { eventId, versionId } = verification.payload;
+        const state = await eventVersionReadRepository.getEditorialState(eventId);
+        if (state.eventStatus === 'archived') {
+            return res.status(403).json({ error: { code: 'EVENT_ARCHIVED', message: 'Private preview is not available.' } });
+        }
+        const version = await eventVersionReadRepository.getVersion(eventId, versionId);
+        if (!state.versions.some((item) => item.versionId === versionId)) {
+            return res.status(403).json({ error: { code: 'VERSION_NOT_AUTHORIZED', message: 'Private preview is not available.' } });
+        }
+        return res.status(200).json(version.content);
+    } catch (error) {
+        if (error.code === 'EVENT_NOT_FOUND' || error.code === 'VERSION_NOT_FOUND' || error.code === 'VERSION_EVENT_MISMATCH') {
+            return res.status(404).json({ error: { code: 'PREVIEW_NOT_FOUND', message: 'Private preview is not available.' } });
+        }
+        console.error('Private preview read failed:', { code: error.code || 'PREVIEW_READ_FAILED' });
+        return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Private preview is not available.' } });
+    }
+});
 
 const publicEventResolver = createPublicEventResolver({
     async getEvent(id) {

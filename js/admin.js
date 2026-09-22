@@ -41,6 +41,7 @@ const editorState = {
 
 let administrativePassword = "";
 let adminEditorialClient;
+let currentEditorialState = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     bindAuthentication();
@@ -232,10 +233,32 @@ function showAdmin() {
 function bindEditorialReader() {
     const readerForm = document.getElementById("editorialReaderForm");
     adminEditorialClient = AdminEditorialClient.createAdminEditorialClient();
+    document.getElementById("loadEditorialEvents")?.addEventListener("click", loadEditorialEvents);
+    document.getElementById("editorialEventSelect")?.addEventListener("change", (event) => {
+        document.getElementById("editorialEventId").value = event.target.value;
+        if (event.target.value) loadEditorialState();
+    });
+    document.getElementById("editorialPreviewButton")?.addEventListener("click", requestPrivatePreview);
     readerForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         await loadEditorialState();
     });
+}
+
+async function loadEditorialEvents() {
+    const status = document.getElementById("editorialReaderStatus");
+    if (!administrativePassword) return resetForAuthentication("Credencial administrativa invalida.");
+    status.textContent = "Cargando eventos...";
+    try {
+        const result = await adminEditorialClient.listEvents({ password: administrativePassword });
+        const select = document.getElementById("editorialEventSelect");
+        select.replaceChildren(new Option("Selecciona un evento", ""));
+        result.events.forEach((event) => select.append(new Option(`${event.eventId} (${event.eventStatus})`, event.eventId)));
+        status.textContent = result.events.length ? "Eventos cargados." : "No hay eventos disponibles.";
+    } catch (error) {
+        status.classList.add("error");
+        status.textContent = error.code === "SERVER_ERROR" ? "Error del servidor administrativo." : error.message;
+    }
 }
 
 async function loadEditorialState() {
@@ -254,6 +277,7 @@ async function loadEditorialState() {
             password: administrativePassword
         });
         renderEditorialState(state);
+        currentEditorialState = state;
         status.textContent = "Acceso administrativo confirmado.";
     } catch (error) {
         if (error.code === "UNAUTHORIZED") {
@@ -288,6 +312,7 @@ function clearEditorialState() {
     const status = document.getElementById("editorialReaderStatus");
     status.classList.remove("error");
     status.textContent = "";
+    document.getElementById("editorialPreviewButton")?.setAttribute("hidden", "");
 }
 
 function renderEditorialState(editorialState) {
@@ -327,6 +352,26 @@ function renderEditorialState(editorialState) {
 
     state.replaceChildren(summary, title, versions);
     state.hidden = false;
+    const previewButton = document.getElementById("editorialPreviewButton");
+    if (previewButton && (editorialState.currentWorkingVersionId || editorialState.publishedVersionId)) previewButton.hidden = false;
+}
+
+async function requestPrivatePreview() {
+    const eventId = document.getElementById("editorialEventId").value.trim();
+    const versionId = currentEditorialState?.currentWorkingVersionId || currentEditorialState?.publishedVersionId;
+    const status = document.getElementById("editorialReaderStatus");
+    if (!versionId) return;
+    status.textContent = "Solicitando vista previa...";
+    try {
+        const result = await adminEditorialClient.requestPreview({ eventId, versionId, password: administrativePassword });
+        const previewUrl = new URL(result.previewUrl, window.location.origin);
+        const invitationUrl = `/invitacion.html?previewToken=${encodeURIComponent(previewUrl.searchParams.get("token"))}`;
+        window.open(invitationUrl, "_blank", "noopener,noreferrer");
+        status.textContent = `Vista previa válida hasta ${formatDate(result.expiresAt)}.`;
+    } catch (error) {
+        status.classList.add("error");
+        status.textContent = error.code === "TOKEN_EXPIRED" ? "La vista previa expiró. Solicita una nueva." : error.message;
+    }
 }
 
 function appendDefinition(list, label, value) {

@@ -50,11 +50,26 @@
         };
     }
 
+    function normalizeEventSummary(event) {
+        if (!event || typeof event !== "object" || typeof event.eventId !== "string") {
+            throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
+        }
+        return {
+            eventId: event.eventId,
+            eventStatus: event.eventStatus,
+            currentWorkingVersionId: event.currentWorkingVersionId ?? null,
+            publishedVersionId: event.publishedVersionId ?? null,
+            workingVersion: event.workingVersion || null,
+            publishedVersion: event.publishedVersion || null
+        };
+    }
+
     function errorForStatus(status) {
         const messages = {
             401: ["UNAUTHORIZED", "Credencial administrativa invalida."],
             403: ["FORBIDDEN", "Acceso administrativo rechazado."],
             404: ["EVENT_NOT_FOUND", "Evento no encontrado."],
+            410: ["TOKEN_EXPIRED", "La vista previa ha expirado."],
             500: ["SERVER_ERROR", "Error del servidor administrativo."]
         };
         const [code, message] = messages[status]
@@ -100,7 +115,40 @@
             return normalizeEditorialState(await parseJson(response));
         }
 
-        return { getEditorialState };
+        async function listEvents({ password, limit = 50, cursor } = {}) {
+            if (typeof password !== "string" || password === "") throw new AdminEditorialApiError("UNAUTHORIZED", "Credencial administrativa invalida.");
+            const params = new URLSearchParams({ limit: String(limit) });
+            if (cursor) params.set("cursor", cursor);
+            let response;
+            try {
+                response = await fetchImpl(`/api/admin/eventos?${params}`, {
+                    method: "GET", headers: { Accept: "application/json", "X-Admin-Password": password }
+                });
+            } catch { throw new AdminEditorialApiError("NETWORK_ERROR", "No se pudo consultar los eventos administrativos."); }
+            if (!response || typeof response.ok !== "boolean") throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
+            if (!response.ok) { await parseJson(response); throw errorForStatus(response.status); }
+            const payload = await parseJson(response);
+            if (!payload || !Array.isArray(payload.events)) throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
+            return { events: payload.events.map(normalizeEventSummary), nextCursor: payload.nextCursor ?? null };
+        }
+
+        async function requestPreview({ eventId, versionId, password } = {}) {
+            if (!eventId || !versionId) throw new AdminEditorialApiError("INVALID_REQUEST", "Debe indicar evento y version.");
+            if (typeof password !== "string" || password === "") throw new AdminEditorialApiError("UNAUTHORIZED", "Credencial administrativa invalida.");
+            let response;
+            try {
+                response = await fetchImpl(`/api/admin/eventos/${encodeURIComponent(eventId)}/versions/${encodeURIComponent(versionId)}/preview`, {
+                    method: "POST", headers: { Accept: "application/json", "Content-Type": "application/json", "X-Admin-Password": password }, body: "{}"
+                });
+            } catch { throw new AdminEditorialApiError("NETWORK_ERROR", "No se pudo solicitar la vista previa."); }
+            if (!response || typeof response.ok !== "boolean") throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
+            if (!response.ok) { await parseJson(response); throw errorForStatus(response.status); }
+            const payload = await parseJson(response);
+            if (!payload || typeof payload.previewUrl !== "string" || typeof payload.expiresAt !== "string") throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta de preview invalida.");
+            return payload;
+        }
+
+        return { getEditorialState, listEvents, requestPreview };
     }
 
     return {

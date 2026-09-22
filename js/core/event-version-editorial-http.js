@@ -17,7 +17,10 @@
         VERSION_CONFLICT: 409,
         INVALID_WORKFLOW: 409,
         EVENT_ARCHIVED: 409,
-        INVALID_EVENT: 422
+        INVALID_EVENT: 422,
+        PREVIEW_NOT_CONFIGURED: 503,
+        INVALID_CURSOR: 400,
+        CURSOR_NOT_CONFIGURED: 503
     });
 
     const MESSAGE_BY_CODE = Object.freeze({
@@ -33,7 +36,7 @@
         INVALID_EVENT: "Event content is invalid."
     });
 
-    function createEventVersionEditorialHttp({ service, readRepository, adminPassword }) {
+    function createEventVersionEditorialHttp({ service, readRepository, adminPassword, issuePreviewToken, previewTtlSeconds = 300 }) {
         if (!service || !readRepository) {
             throw new TypeError("service and readRepository are required.");
         }
@@ -73,6 +76,37 @@
         const getEditorialState = protect(async (req, res) => {
             const result = await readRepository.getEditorialState(req.params.eventId);
             return res.status(200).json(result);
+        });
+
+        const listEvents = protect(async (req, res) => {
+            const result = await readRepository.listEvents({
+                limit: req.query?.limit,
+                cursor: req.query?.cursor
+            });
+            return res.status(200).json(result);
+        });
+
+        const requestPreview = protect(async (req, res) => {
+            if (typeof issuePreviewToken !== "function") {
+                const error = new Error("Preview is not configured.");
+                error.code = "PREVIEW_NOT_CONFIGURED";
+                throw error;
+            }
+            const { eventId, versionId } = req.params;
+            const state = await readRepository.getEditorialState(eventId);
+            if (state.eventStatus === "archived") {
+                const error = new Error("Event is archived.");
+                error.code = "EVENT_ARCHIVED";
+                throw error;
+            }
+            await readRepository.getVersion(eventId, versionId);
+            const token = issuePreviewToken({ eventId, versionId, ttlSeconds: previewTtlSeconds });
+            return res.status(200).json({
+                previewUrl: `/api/preview?token=${encodeURIComponent(token.token)}`,
+                expiresAt: token.expiresAt,
+                eventId,
+                versionId
+            });
         });
 
         const createEvent = protect(async (req, res) => {
@@ -137,6 +171,8 @@
         return {
             createEvent,
             getEditorialState,
+            listEvents,
+            requestPreview,
             createVersion,
             getVersion,
             transitionWorkflow,

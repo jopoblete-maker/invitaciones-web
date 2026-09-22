@@ -557,6 +557,7 @@
                     <p class="help-text">Consulta eventos y versiones sin realizar cambios.</p>
                 </div>
                 <form id="editorialReaderForm">
+                    <button type="button" id="loadEditorialEvents" class="btn-submit">Cargar eventos</button>
                     <div class="form-group">
                         <label for="editorialEventId">ID del evento:</label>
                         <input type="text" id="editorialEventId" autocomplete="off" required>
@@ -564,6 +565,9 @@
                     <button type="submit" class="btn-submit">Consultar evento</button>
                 </form>
                 <p id="editorialReaderStatus" class="editorial-reader-status" role="status"></p>
+                <label for="editorialEventSelect">Eventos disponibles:</label>
+                <select id="editorialEventSelect"><option value="">Selecciona un evento</option></select>
+                <button type="button" id="editorialPreviewButton" class="btn-submit" hidden>Vista previa privada</button>
                 <section id="editorialState" class="editorial-state" hidden aria-live="polite"></section>
             </section>
             <section id="legacyAdminControls" hidden>

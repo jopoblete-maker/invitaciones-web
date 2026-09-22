@@ -29,6 +29,14 @@
 
     function selectInvitationSource(search, hostname) {
         const params = new URLSearchParams(search || "");
+        const previewToken = params.get("previewToken");
+        if (previewToken) {
+            return {
+                mode: "private-preview",
+                privatePreview: true,
+                url: `/api/preview?token=${encodeURIComponent(previewToken)}`
+            };
+        }
         const isPrivatePreview = params.get("preview") === "1";
 
         if (isPrivatePreview) {
