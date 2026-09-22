@@ -36,6 +36,9 @@ const supabase = {
     },
     rpc(name, parameters) {
         rpcCalls.push({ name, parameters });
+        if (name === "consume_admin_rate_limit") {
+            return Promise.resolve({ data: [{ allowed: true, retry_after_seconds: 0, current_count: 1 }], error: null });
+        }
         if (name === "create_versioned_event") {
             return Promise.resolve({
                 data: [{
@@ -61,12 +64,16 @@ const originalLoad = Module._load;
 const previousEnvironment = {
     ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
     ADMIN_ALLOWED_ORIGINS: process.env.ADMIN_ALLOWED_ORIGINS,
+    ADMIN_RATE_LIMIT_WINDOW_SECONDS: process.env.ADMIN_RATE_LIMIT_WINDOW_SECONDS,
+    ADMIN_RATE_LIMIT_MAX_REQUESTS: process.env.ADMIN_RATE_LIMIT_MAX_REQUESTS,
     SUPABASE_URL: process.env.SUPABASE_URL,
     SUPABASE_KEY: process.env.SUPABASE_KEY
 };
 
 process.env.ADMIN_PASSWORD = "test-secret";
 process.env.ADMIN_ALLOWED_ORIGINS = "http://localhost:3000";
+process.env.ADMIN_RATE_LIMIT_WINDOW_SECONDS = "60";
+process.env.ADMIN_RATE_LIMIT_MAX_REQUESTS = "5";
 process.env.SUPABASE_URL = "https://example.supabase.co";
 process.env.SUPABASE_KEY = "test-key";
 
@@ -159,7 +166,7 @@ function responseDouble() {
         versionId: "11111111-1111-4111-8111-111111111111",
         versionNumber: 2
     });
-    assert.deepStrictEqual(rpcCalls, [
+    assert.deepStrictEqual(rpcCalls.filter((call) => call.name !== "consume_admin_rate_limit"), [
         {
             name: "create_versioned_event",
             parameters: { p_event_id: "new-event", p_content: newEventContent }

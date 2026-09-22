@@ -29,8 +29,9 @@ function validContent() {
     };
 }
 
-function createHarness() {
+function createHarness(rateLimiterOverride) {
     const calls = [];
+    const rateCalls = [];
     const failures = {};
     const adapter = {
         async createEvent(options) {
@@ -87,25 +88,37 @@ function createHarness() {
         }
     };
     const service = createEventVersionEditorialService(adapter);
+    const rateLimiter = rateLimiterOverride || {
+        async consume(options) {
+            rateCalls.push(options);
+            return { allowed: true, retryAfterSeconds: 0, currentCount: 1 };
+        }
+    };
     const http = createEventVersionEditorialHttp({
         service,
         readRepository,
         adminPassword: ADMIN_PASSWORD,
-        originPolicy: createAdminOriginPolicy("http://localhost:3000")
+        originPolicy: createAdminOriginPolicy("http://localhost:3000"),
+        rateLimiter
     });
-    return { calls, failures, http };
+    return { calls, failures, rateCalls, http };
 }
 
 function responseDouble() {
     return {
         statusCode: 200,
         body: undefined,
+        headers: {},
         status(code) {
             this.statusCode = code;
             return this;
         },
         json(body) {
             this.body = body;
+            return this;
+        },
+        setHeader(name, value) {
+            this.headers[name] = value;
             return this;
         }
     };
@@ -180,6 +193,26 @@ async function request(handler, { password, params = {}, body = {}, origin = "ht
     });
     assert.strictEqual(forbiddenOrigin.statusCode, 403);
     assert.strictEqual(create.calls.length, 0);
+
+    const limited = createHarness({ consume: async () => ({ allowed: false, retryAfterSeconds: 7, currentCount: 3 }) });
+    const limitedResponse = await request(limited.http.createVersion, {
+        password: ADMIN_PASSWORD,
+        params: { eventId: EVENT_ID },
+        body: { content: validContent(), expectedWorkingVersionId: null }
+    });
+    assert.strictEqual(limitedResponse.statusCode, 429);
+    assert.strictEqual(limitedResponse.headers?.["Retry-After"], "7");
+    assert.strictEqual(limited.calls.length, 0);
+
+    const unavailable = createHarness({ consume: async () => { const error = new Error("offline"); error.code = "RATE_LIMIT_UNAVAILABLE"; throw error; } });
+    const unavailableResponse = await request(unavailable.http.createVersion, {
+        password: ADMIN_PASSWORD,
+        params: { eventId: EVENT_ID },
+        body: { content: validContent(), expectedWorkingVersionId: null }
+    });
+    assert.strictEqual(unavailableResponse.statusCode, 503);
+    assert.strictEqual(unavailable.calls.length, 0);
+
     const wrongMutationPassword = await request(create.http.createVersion, {
         password: "wrong",
         params: { eventId: EVENT_ID },
@@ -197,6 +230,11 @@ async function request(handler, { password, params = {}, body = {}, origin = "ht
     assert.strictEqual(create.calls[0][1].expectedWorkingVersionId, null);
     assert.strictEqual(create.calls[0][1].adminIdentity, "shared-admin-credential");
     assert.strictEqual(create.calls[0][1].origin, "http://localhost:3000");
+    assert.deepStrictEqual(create.rateCalls[0], {
+        origin: "http://localhost:3000",
+        endpoint: "POST /api/admin/eventos/:eventId/versions",
+        action: "CREATE_VERSION"
+    });
     const createdUuid = await request(create.http.createVersion, {
         password: ADMIN_PASSWORD,
         params: { eventId: EVENT_ID },
@@ -240,6 +278,7 @@ async function request(handler, { password, params = {}, body = {}, origin = "ht
         assert.strictEqual(workflow.calls[workflow.calls.length - 1][1].adminIdentity, "shared-admin-credential");
         assert.strictEqual(workflow.calls[workflow.calls.length - 1][1].origin, "http://localhost:3000");
     }
+    assert.deepStrictEqual(workflow.rateCalls.map((call) => call.action), ["CHANGE_WORKFLOW", "APPROVE_VERSION"]);
     workflow.failures.transitionWorkflow = codedError("INVALID_WORKFLOW");
     assert.strictEqual((await request(workflow.http.transitionWorkflow, {
         password: ADMIN_PASSWORD,
@@ -263,6 +302,7 @@ async function request(handler, { password, params = {}, body = {}, origin = "ht
     })).statusCode, 200);
     assert.strictEqual(publish.calls[0][1].adminIdentity, "shared-admin-credential");
     assert.strictEqual(publish.calls[0][1].origin, "http://localhost:3000");
+    assert.strictEqual(publish.rateCalls[0].action, "PUBLISH_VERSION");
 
     for (const code of ["INVALID_WORKFLOW", "VERSION_NOT_FOUND"]) {
         const rollback = createHarness();

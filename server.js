@@ -9,6 +9,7 @@ const { createEventVersionEditorialService } = require('./js/core/event-version-
 const { createEventVersionReadRepository } = require('./js/core/event-version-read-repository-supabase');
 const { createEventVersionEditorialHttp } = require('./js/core/event-version-editorial-http');
 const { createAdminOriginPolicy } = require('./js/core/admin-origin-policy');
+const { createAdminRateLimiter } = require('./js/core/admin-rate-limiter');
 const { signPreviewToken, verifyPreviewToken, DEFAULT_TTL_SECONDS } = require('./js/core/private-preview-token');
 
 const app = express();
@@ -23,6 +24,11 @@ if (missingEnvVars.length) {
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const adminOriginPolicy = createAdminOriginPolicy(process.env.ADMIN_ALLOWED_ORIGINS);
+const adminRateLimiter = createAdminRateLimiter({
+    rpc: (name, parameters) => withSupabaseTimeout(supabase.rpc(name, parameters)),
+    windowSeconds: process.env.ADMIN_RATE_LIMIT_WINDOW_SECONDS,
+    maxRequests: process.env.ADMIN_RATE_LIMIT_MAX_REQUESTS
+});
 const PREVIEW_SIGNING_KEY = process.env.PREVIEW_SIGNING_KEY || '';
 const PREVIEW_TTL_SECONDS = Number(process.env.PREVIEW_TTL_SECONDS) || DEFAULT_TTL_SECONDS;
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -184,6 +190,7 @@ const eventVersionEditorialHttp = createEventVersionEditorialHttp({
     readRepository: eventVersionReadRepository,
     adminPassword: ADMIN_PASSWORD,
     originPolicy: adminOriginPolicy,
+    rateLimiter: adminRateLimiter,
     previewTtlSeconds: PREVIEW_TTL_SECONDS,
     issuePreviewToken(options) {
         if (!PREVIEW_SIGNING_KEY) {

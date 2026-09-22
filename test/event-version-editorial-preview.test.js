@@ -1,6 +1,7 @@
 const assert = require("assert");
 const { createEventVersionEditorialHttp } = require("../js/core/event-version-editorial-http");
 const { createAdminOriginPolicy } = require("../js/core/admin-origin-policy");
+const rateLimiter = { consume: async () => ({ allowed: true, retryAfterSeconds: 0, currentCount: 1 }) };
 
 const password = "secret";
 const eventId = "event-one";
@@ -25,6 +26,7 @@ const http = createEventVersionEditorialHttp({
     readRepository,
     adminPassword: password,
     originPolicy: createAdminOriginPolicy("http://localhost:3000"),
+    rateLimiter,
     issuePreviewToken: () => ({ token: "signed-token", expiresAt: "2030-01-01T00:00:00.000Z" })
 });
 function response() { return { statusCode: 200, body: null, status(code) { this.statusCode = code; return this; }, json(body) { this.body = body; return this; } }; }
