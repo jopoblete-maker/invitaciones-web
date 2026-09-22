@@ -63,10 +63,10 @@ AS $function$
 DECLARE
     v_id uuid;
 BEGIN
-    IF p_action IS NULL OR length(p_action) = 0 OR length(p_action) > 100
+    IF p_admin_identity IS DISTINCT FROM 'shared-admin-credential'
+       OR p_action IS NULL OR length(p_action) = 0 OR length(p_action) > 100
        OR p_result IS NULL OR length(p_result) = 0 OR length(p_result) > 50
-       OR p_admin_identity IS NULL OR length(p_admin_identity) = 0
-       OR length(p_admin_identity) > 100 THEN
+       THEN
         RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'INVALID_AUDIT_PARAMETERS';
     END IF;
 

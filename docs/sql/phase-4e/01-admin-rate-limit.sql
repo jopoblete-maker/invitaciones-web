@@ -43,6 +43,14 @@ BEGIN
         floor(extract(epoch FROM v_now) / p_window_seconds) * p_window_seconds
     );
 
+    -- All accepted windows are at most one day long. Opportunistically remove
+    -- globally expired rows without requiring a scheduler or blocking requests.
+    -- A try-lock keeps cleanup safe while avoiding a global serialization point.
+    IF pg_try_advisory_xact_lock(2147483647, 0) THEN
+        DELETE FROM public.admin_rate_limit_windows
+        WHERE window_started_at < (v_now - interval '1 day');
+    END IF;
+
     -- Serialize requests for the same logical key across all application instances.
     PERFORM pg_advisory_xact_lock(hashtextextended(p_window_key, 0));
 
