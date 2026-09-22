@@ -107,29 +107,43 @@
             }));
         }
 
+        function auditContext(context = {}, action) {
+            return {
+                p_admin_identity: context.adminIdentity || "shared-admin-credential",
+                p_ip: context.ip ?? null,
+                p_origin: context.origin ?? null,
+                p_action: action
+            };
+        }
+
         function createVersion({
             eventId,
             content,
             expectedWorkingVersionId = null,
             sourceVersionId = null,
-            initialWorkflow = "draft"
+            initialWorkflow = "draft",
+            adminIdentity,
+            ip,
+            origin
         }) {
-            return execute("create_event_version", {
+            return execute("create_event_version_audited", {
                 p_event_id: eventId,
                 p_content: content,
                 p_expected_working_version_id: expectedWorkingVersionId,
                 p_source_version_id: sourceVersionId,
-                p_initial_workflow: initialWorkflow
+                p_initial_workflow: initialWorkflow,
+                ...auditContext({ adminIdentity, ip, origin }, "CREATE_VERSION")
             }, (row) => ({
                 versionId: row.version_id,
                 versionNumber: normalizeVersionNumber(row.version_number)
             }));
         }
 
-        function publishVersion({ eventId, versionId }) {
-            return execute("publish_event_version", {
+        function publishVersion({ eventId, versionId, adminIdentity, ip, origin }) {
+            return execute("publish_event_version_audited", {
                 p_event_id: eventId,
-                p_version_id: versionId
+                p_version_id: versionId,
+                ...auditContext({ adminIdentity, ip, origin }, "PUBLISH_VERSION")
             }, (row) => ({
                 eventId: row.event_id,
                 publishedVersionId: row.published_version_id
@@ -146,12 +160,22 @@
             }));
         }
 
-        function transitionWorkflow({ eventId, versionId, expectedStatus, targetStatus }) {
-            return execute("transition_event_version_workflow", {
+        function transitionWorkflow({
+            eventId,
+            versionId,
+            expectedStatus,
+            targetStatus,
+            adminIdentity,
+            ip,
+            origin
+        }) {
+            const action = targetStatus === "approved" ? "APPROVE_VERSION" : "CHANGE_WORKFLOW";
+            return execute("transition_event_version_workflow_audited", {
                 p_event_id: eventId,
                 p_version_id: versionId,
                 p_expected_status: expectedStatus,
-                p_target_status: targetStatus
+                p_target_status: targetStatus,
+                ...auditContext({ adminIdentity, ip, origin }, action)
             }, (row) => ({
                 eventId: row.event_id,
                 versionId: row.version_id,

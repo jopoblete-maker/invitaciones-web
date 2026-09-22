@@ -163,13 +163,17 @@ function responseDouble() {
             parameters: { p_event_id: "new-event", p_content: newEventContent }
         },
         {
-            name: "create_event_version",
+            name: "create_event_version_audited",
             parameters: {
                 p_event_id: "event-one",
                 p_content: content,
                 p_expected_working_version_id: null,
                 p_source_version_id: null,
-                p_initial_workflow: "draft"
+                p_initial_workflow: "draft",
+                p_admin_identity: "shared-admin-credential",
+                p_ip: null,
+                p_origin: null,
+                p_action: "CREATE_VERSION"
             }
         }
     ]);

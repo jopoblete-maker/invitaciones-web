@@ -5,6 +5,7 @@ const path = require("path");
 const sqlRoot = path.resolve(__dirname, "..", "docs", "sql", "phase-4e");
 const rateLimitSql = fs.readFileSync(path.join(sqlRoot, "01-admin-rate-limit.sql"), "utf8");
 const auditSql = fs.readFileSync(path.join(sqlRoot, "02-admin-audit.sql"), "utf8");
+const mutationAuditSql = fs.readFileSync(path.join(sqlRoot, "03-admin-mutation-audit.sql"), "utf8");
 const compact = (sql) => sql.replace(/--.*$/gm, "").replace(/\s+/g, " ").trim();
 const rateLimit = compact(rateLimitSql);
 const audit = compact(auditSql);
@@ -73,5 +74,32 @@ assert(!rateLimit.includes("create_event_version"));
 assert(!rateLimit.includes("publish_event_version"));
 assert(!audit.includes("create_event_version"));
 assert(!audit.includes("publish_event_version"));
+
+const mutationAudit = compact(mutationAuditSql);
+for (const wrapper of [
+    "create_event_version_audited",
+    "transition_event_version_workflow_audited",
+    "publish_event_version_audited"
+]) {
+    assert(mutationAudit.includes(`CREATE OR REPLACE FUNCTION public.${wrapper}`));
+    assert(mutationAudit.includes("SECURITY DEFINER"));
+    assert(mutationAudit.includes("SET search_path = pg_catalog, public"));
+    assert(mutationAudit.includes("p_admin_identity text"));
+    assert(mutationAudit.includes("p_ip inet"));
+    assert(mutationAudit.includes("p_origin text"));
+    assert(mutationAudit.includes("p_action text"));
+    assert(mutationAudit.includes("append_admin_audit"));
+}
+assert(mutationAudit.includes("CREATE_VERSION"));
+assert(mutationAudit.includes("CHANGE_WORKFLOW"));
+assert(mutationAudit.includes("APPROVE_VERSION"));
+assert(mutationAudit.includes("PUBLISH_VERSION"));
+assert(mutationAudit.includes("public.create_event_version("));
+assert(mutationAudit.includes("public.transition_event_version_workflow("));
+assert(mutationAudit.includes("public.publish_event_version("));
+assert(mutationAudit.includes("p_admin_identity IS DISTINCT FROM 'shared-admin-credential'"));
+assert(mutationAudit.includes("REVOKE ALL ON FUNCTION public.create_event_version_audited"));
+assert(mutationAudit.includes("GRANT EXECUTE ON FUNCTION public.publish_event_version_audited"));
+assert(!/password|token|signing.key|snapshot|payload completo|headers completos/i.test(mutationAudit));
 
 console.log("phase-4e infrastructure SQL tests passed");

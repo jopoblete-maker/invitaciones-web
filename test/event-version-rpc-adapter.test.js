@@ -91,13 +91,17 @@ async function expectCode(expectedCode, action) {
         content
     });
     assert.deepStrictEqual(createWithNulls.calls, [{
-        name: "create_event_version",
+         name: "create_event_version_audited",
         parameters: {
             p_event_id: EVENT_ID,
             p_content: content,
             p_expected_working_version_id: null,
             p_source_version_id: null,
-            p_initial_workflow: "draft"
+             p_initial_workflow: "draft",
+             p_admin_identity: "shared-admin-credential",
+             p_ip: null,
+             p_origin: null,
+             p_action: "CREATE_VERSION"
         }
     }]);
     assert.strictEqual(createWithNulls.calls[0].parameters.p_content, content);
@@ -122,13 +126,17 @@ async function expectCode(expectedCode, action) {
         versionNumber: 2
     });
     assert.deepStrictEqual(createWithUuids.calls[0], {
-        name: "create_event_version",
+         name: "create_event_version_audited",
         parameters: {
             p_event_id: EVENT_ID,
             p_content: content,
             p_expected_working_version_id: WORKING_ID,
             p_source_version_id: SOURCE_ID,
-            p_initial_workflow: "approved"
+             p_initial_workflow: "approved",
+             p_admin_identity: "shared-admin-credential",
+             p_ip: null,
+             p_origin: null,
+             p_action: "CREATE_VERSION"
         }
     });
 
@@ -144,8 +152,15 @@ async function expectCode(expectedCode, action) {
         publishedVersionId: VERSION_ID
     });
     assert.deepStrictEqual(publish.calls, [{
-        name: "publish_event_version",
-        parameters: { p_event_id: EVENT_ID, p_version_id: VERSION_ID }
+         name: "publish_event_version_audited",
+         parameters: {
+             p_event_id: EVENT_ID,
+             p_version_id: VERSION_ID,
+             p_admin_identity: "shared-admin-credential",
+             p_ip: null,
+             p_origin: null,
+             p_action: "PUBLISH_VERSION"
+         }
     }]);
 
     const rollback = createHarness(success({
@@ -198,21 +213,29 @@ async function expectCode(expectedCode, action) {
     });
     assert.deepStrictEqual(transitions.calls, [
         {
-            name: "transition_event_version_workflow",
+             name: "transition_event_version_workflow_audited",
             parameters: {
                 p_event_id: EVENT_ID,
                 p_version_id: VERSION_ID,
                 p_expected_status: "draft",
-                p_target_status: "in_review"
+                 p_target_status: "in_review",
+                 p_admin_identity: "shared-admin-credential",
+                 p_ip: null,
+                 p_origin: null,
+                 p_action: "CHANGE_WORKFLOW"
             }
         },
         {
-            name: "transition_event_version_workflow",
+             name: "transition_event_version_workflow_audited",
             parameters: {
                 p_event_id: EVENT_ID,
                 p_version_id: VERSION_ID,
                 p_expected_status: "in_review",
-                p_target_status: "approved"
+                 p_target_status: "approved",
+                 p_admin_identity: "shared-admin-credential",
+                 p_ip: null,
+                 p_origin: null,
+                 p_action: "APPROVE_VERSION"
             }
         }
     ]);
