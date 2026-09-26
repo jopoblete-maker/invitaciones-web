@@ -382,6 +382,56 @@
             overflow-wrap: anywhere;
         }
 
+        .editorial-text-editor {
+            display: grid;
+            gap: 16px;
+            padding-top: 8px;
+            border-top: 1px solid #cbd5e1;
+        }
+
+        .editorial-text-editor[hidden] {
+            display: none;
+        }
+
+        .editorial-text-fields {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .editorial-text-fields .form-group {
+            min-width: 0;
+            margin: 0;
+        }
+
+        .editorial-text-fields .form-group--wide {
+            grid-column: 1 / -1;
+        }
+
+        .editorial-field-status {
+            display: block;
+            min-height: 18px;
+            margin-top: 4px;
+            color: #b91c1c;
+            font-size: .76rem;
+        }
+
+        .editorial-editor-status {
+            min-height: 20px;
+            color: #475569;
+            font-size: .86rem;
+        }
+
+        .editorial-editor-status.error {
+            color: #b91c1c;
+        }
+
+        @media (max-width: 620px) {
+            .editorial-text-fields {
+                grid-template-columns: 1fr;
+            }
+        }
+
         .editorial-version-list {
             display: grid;
             gap: 10px;
@@ -580,6 +630,48 @@
                 <button type="button" id="editorialCreateVersionButton" class="btn-submit" hidden>Crear versión de trabajo</button>
                 <button type="button" id="editorialPreviewButton" class="btn-submit" hidden>Vista previa privada</button>
                 <section id="editorialState" class="editorial-state" hidden aria-live="polite"></section>
+                <form id="editorialTextEditor" class="editorial-text-editor" hidden>
+                    <h3>Textos de la versión de trabajo</h3>
+                    <div class="editorial-text-fields">
+                        <div class="form-group">
+                            <label for="editorialHeroTitle">Título principal:</label>
+                            <input type="text" id="editorialHeroTitle" maxlength="120" required>
+                            <span id="editorialHeroTitleStatus" class="editorial-field-status"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="editorialHeroSubtitle">Subtítulo:</label>
+                            <input type="text" id="editorialHeroSubtitle" maxlength="180">
+                            <span id="editorialHeroSubtitleStatus" class="editorial-field-status"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="editorialAddress">Dirección:</label>
+                            <input type="text" id="editorialAddress" maxlength="240">
+                            <span id="editorialAddressStatus" class="editorial-field-status"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="editorialCity">Ciudad:</label>
+                            <input type="text" id="editorialCity" maxlength="120">
+                            <span id="editorialCityStatus" class="editorial-field-status"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="editorialClosingTitle">Título de cierre:</label>
+                            <input type="text" id="editorialClosingTitle" maxlength="160">
+                            <span id="editorialClosingTitleStatus" class="editorial-field-status"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="editorialClosingNames">Nombres de cierre:</label>
+                            <input type="text" id="editorialClosingNames" maxlength="180">
+                            <span id="editorialClosingNamesStatus" class="editorial-field-status"></span>
+                        </div>
+                        <div class="form-group form-group--wide">
+                            <label for="editorialClosingMessage">Mensaje de cierre:</label>
+                            <textarea id="editorialClosingMessage" rows="4" maxlength="600"></textarea>
+                            <span id="editorialClosingMessageStatus" class="editorial-field-status"></span>
+                        </div>
+                    </div>
+                    <button type="submit" id="editorialSaveTextButton" class="btn-submit">Guardar como nueva versión</button>
+                    <p id="editorialEditorStatus" class="editorial-editor-status" role="status"></p>
+                </form>
             </section>
             <section id="legacyAdminControls" hidden>
             <!-- 1. Seguridad y Acceso -->
@@ -929,6 +1021,7 @@
     </div>
 
     <script src="js/core/admin-editorial-client.js"></script>
+    <script src="js/core/admin-event-editor.js"></script>
     <script src="js/core/admin-editorial-workflow.js"></script>
     <script src="js/admin.js"></script>
 </body>

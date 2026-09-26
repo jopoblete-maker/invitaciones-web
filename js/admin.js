@@ -43,9 +43,23 @@ let administrativePassword = "";
 let adminEditorialClient;
 let adminEditorialWorkflowRunner;
 let adminWorkingVersionRunner;
+let adminDraftSaveRunner;
 let adminEditorialViewGuard;
 let currentEditorialState = null;
+let currentEditorialVersion = null;
+let currentEditorialEditorModel = null;
+let currentEditorialDraftValues = null;
 let blockedEditorialActionKey = "";
+
+const EDITORIAL_TEXT_INPUTS = Object.freeze({
+    heroTitle: "editorialHeroTitle",
+    heroSubtitle: "editorialHeroSubtitle",
+    address: "editorialAddress",
+    city: "editorialCity",
+    closingTitle: "editorialClosingTitle",
+    closingMessage: "editorialClosingMessage",
+    closingNames: "editorialClosingNames"
+});
 
 document.addEventListener("DOMContentLoaded", () => {
     bindAuthentication();
@@ -245,6 +259,10 @@ function bindEditorialReader() {
         client: adminEditorialClient,
         confirmCreation: requestWorkingVersionConfirmation
     });
+    adminDraftSaveRunner = AdminEventEditor.createDraftSaveRunner({
+        client: adminEditorialClient,
+        confirmSave: requestDraftSaveConfirmation
+    });
     adminEditorialViewGuard = AdminEditorialWorkflow.createViewGuard();
     document.getElementById("loadEditorialEvents")?.addEventListener("click", loadEditorialEvents);
     document.getElementById("editorialReloadStateButton")?.addEventListener("click", loadEditorialState);
@@ -257,19 +275,29 @@ function bindEditorialReader() {
             clearEditorialState();
         }
     });
-    document.getElementById("editorialEventId")?.addEventListener("input", (event) => {
-        const eventId = event.target.value.trim();
-        adminEditorialViewGuard.begin(eventId);
-        if (!currentEditorialState || eventId !== currentEditorialState.eventId) {
-            clearEditorialState();
-        }
-    });
+    document.getElementById("editorialEventId")?.addEventListener("input", handleEditorialEventInput);
     document.getElementById("editorialCreateVersionButton")?.addEventListener("click", createWorkingVersion);
     document.getElementById("editorialPreviewButton")?.addEventListener("click", requestPrivatePreview);
+    document.getElementById("editorialTextEditor")?.addEventListener("submit", saveEditorialTexts);
+    Object.entries(EDITORIAL_TEXT_INPUTS).forEach(([name, inputId]) => {
+        document.getElementById(inputId)?.addEventListener("input", (event) => {
+            if (currentEditorialEditorModel?.fields[name]?.blocked === false && currentEditorialDraftValues) {
+                currentEditorialDraftValues[name] = event.target.value;
+            }
+        });
+    });
     readerForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         await loadEditorialState();
     });
+}
+
+function handleEditorialEventInput(event) {
+    const eventId = event.target.value.trim();
+    adminEditorialViewGuard.begin(eventId);
+    if (!currentEditorialState || eventId !== currentEditorialState.eventId) {
+        clearEditorialState();
+    }
 }
 
 async function loadEditorialEvents() {
@@ -297,12 +325,15 @@ async function loadEditorialState() {
     }
 
     const operation = adminEditorialViewGuard.begin(eventId);
-    const recovering = adminWorkingVersionRunner.requiresRefresh(eventId);
+    const recoveringDraftSave = adminDraftSaveRunner.requiresRefresh(eventId);
+    const recoveringWorkingVersion = adminWorkingVersionRunner.requiresRefresh(eventId);
+    const recovering = recoveringDraftSave || recoveringWorkingVersion;
     clearEditorialState({ preserveRecovery: recovering });
     status.textContent = "Verificando credencial y cargando evento...";
     try {
+        const recoveryRunner = recoveringDraftSave ? adminDraftSaveRunner : adminWorkingVersionRunner;
         const state = recovering
-            ? await adminWorkingVersionRunner.refresh({
+            ? await recoveryRunner.refresh({
                 eventId,
                 password: administrativePassword,
                 isCurrent: () => adminEditorialViewGuard.isCurrent(operation)
@@ -313,7 +344,13 @@ async function loadEditorialState() {
         currentEditorialState = state;
         blockedEditorialActionKey = "";
         renderEditorialState(state);
-        status.textContent = "Acceso administrativo confirmado.";
+        const editorLoaded = await loadEditorialTextEditor(state, operation);
+        if (!adminEditorialViewGuard.isCurrent(operation)) return;
+        if (editorLoaded !== null) {
+            status.textContent = editorLoaded
+                ? "Acceso administrativo confirmado. Draft V2 listo para editar."
+                : "Acceso administrativo confirmado.";
+        }
     } catch (error) {
         if (!adminEditorialViewGuard.isCurrent(operation)) return;
         if (error.code === "UNAUTHORIZED") {
@@ -328,7 +365,7 @@ async function loadEditorialState() {
         status.textContent = error.code === "SERVER_ERROR"
             ? "Error del servidor administrativo."
             : error.message;
-        if (adminWorkingVersionRunner.requiresRefresh(eventId)) {
+        if (adminWorkingVersionRunner.requiresRefresh(eventId) || adminDraftSaveRunner.requiresRefresh(eventId)) {
             document.getElementById("editorialReloadStateButton").hidden = false;
         }
     }
@@ -355,6 +392,7 @@ function clearEditorialState({ preserveRecovery = false } = {}) {
     document.getElementById("editorialReloadStateButton").hidden = !preserveRecovery;
     document.getElementById("editorialCreateVersionButton")?.setAttribute("hidden", "");
     document.getElementById("editorialPreviewButton")?.setAttribute("hidden", "");
+    clearEditorialTextEditor();
     currentEditorialState = null;
 }
 
@@ -392,6 +430,8 @@ function renderEditorialState(editorialState) {
             button.textContent = action.label;
             button.disabled = adminEditorialViewGuard.requiresRefresh()
                 || adminEditorialWorkflowRunner.isPending()
+                || adminWorkingVersionRunner.isPending()
+                || adminDraftSaveRunner.isPending()
                 || editorialActionKey(action) === blockedEditorialActionKey;
             button.addEventListener("click", () => executeEditorialAction(action, button));
             item.append(button);
@@ -413,11 +453,85 @@ function renderEditorialState(editorialState) {
         createButton.hidden = !sourceVersionId;
         createButton.disabled = !sourceVersionId
             || adminEditorialViewGuard.requiresRefresh()
-            || adminWorkingVersionRunner.isPending();
+            || adminWorkingVersionRunner.isPending()
+            || adminEditorialWorkflowRunner.isPending()
+            || adminDraftSaveRunner.isPending();
     }
     document.getElementById("editorialReloadStateButton").hidden = !adminEditorialViewGuard.requiresRefresh();
     const previewButton = document.getElementById("editorialPreviewButton");
     if (previewButton && (editorialState.currentWorkingVersionId || editorialState.publishedVersionId)) previewButton.hidden = false;
+}
+
+function clearEditorialTextEditor() {
+    const form = document.getElementById("editorialTextEditor");
+    if (form) {
+        form.hidden = true;
+        form.reset();
+    }
+    Object.values(EDITORIAL_TEXT_INPUTS).forEach((inputId) => {
+        const input = document.getElementById(inputId);
+        if (input) input.disabled = false;
+    });
+    document.querySelectorAll(".editorial-field-status").forEach((status) => { status.textContent = ""; });
+    const editorStatus = document.getElementById("editorialEditorStatus");
+    if (editorStatus) {
+        editorStatus.classList.remove("error");
+        editorStatus.textContent = "";
+    }
+    currentEditorialVersion = null;
+    currentEditorialEditorModel = null;
+    currentEditorialDraftValues = null;
+}
+
+async function loadEditorialTextEditor(editorialState, operation) {
+    clearEditorialTextEditor();
+    const versionId = editorialState?.currentWorkingVersionId;
+    if (!versionId) return false;
+    try {
+        const version = await adminEditorialClient.getVersion({
+            eventId: editorialState.eventId,
+            versionId,
+            password: administrativePassword
+        });
+        if (!adminEditorialViewGuard.isCurrent(operation)
+            || document.getElementById("editorialEventId").value.trim() !== editorialState.eventId
+            || currentEditorialState?.currentWorkingVersionId !== versionId) return false;
+        const model = AdminEventEditor.createEditorModel({ editorialState, version });
+        if (!model.eligible) return false;
+        currentEditorialVersion = version;
+        currentEditorialEditorModel = model;
+        currentEditorialDraftValues = editorValuesFromModel(model);
+        renderEditorialTextEditor(model, currentEditorialDraftValues);
+        return true;
+    } catch (error) {
+        if (!adminEditorialViewGuard.isCurrent(operation)) return false;
+        const status = document.getElementById("editorialReaderStatus");
+        status.classList.add("error");
+        status.textContent = `El estado editorial se cargó, pero no se pudo verificar el draft: ${editorialErrorMessage(error)}`;
+        return null;
+    }
+}
+
+function editorValuesFromModel(model) {
+    return Object.fromEntries(Object.entries(EDITORIAL_TEXT_INPUTS)
+        .filter(([name]) => model.fields[name] && !model.fields[name].blocked)
+        .map(([name]) => [name, model.fields[name].value]));
+}
+
+function renderEditorialTextEditor(model, values = currentEditorialDraftValues || editorValuesFromModel(model)) {
+    let editableFields = 0;
+    Object.entries(EDITORIAL_TEXT_INPUTS).forEach(([name, inputId]) => {
+        const input = document.getElementById(inputId);
+        const status = document.getElementById(`${inputId}Status`);
+        const field = model.fields[name];
+        input.value = field && !field.blocked ? values[name] ?? field.value : "";
+        input.disabled = !field || field.blocked;
+        if (status) status.textContent = field?.blocked ? field.reason : "";
+        if (field && !field.blocked) editableFields += 1;
+    });
+    const button = document.getElementById("editorialSaveTextButton");
+    button.disabled = editableFields === 0 || adminDraftSaveRunner.isPending();
+    document.getElementById("editorialTextEditor").hidden = false;
 }
 
 function editorialActionKey(action) {
@@ -465,6 +579,163 @@ function requestWorkingVersionConfirmation(details) {
     return window.confirm(lines.join("\n"));
 }
 
+function requestDraftSaveConfirmation(details) {
+    return window.confirm([
+        "Cada guardado crea una nueva versión draft.",
+        "El puntero de trabajo se moverá a la nueva versión y la anterior dejará de poder avanzar o publicarse.",
+        "",
+        `Evento: ${details.eventId}`,
+        `Draft actual: versión ${details.sourceVersionNumber} (${details.sourceVersionId})`,
+        "",
+        "Confirma que deseas guardar estos textos como otra versión."
+    ].join("\n"));
+}
+
+function readEditorialTextValues(model) {
+    const values = Object.fromEntries(Object.entries(EDITORIAL_TEXT_INPUTS)
+        .filter(([name]) => model.fields[name] && !model.fields[name].blocked)
+        .map(([name, inputId]) => [name, document.getElementById(inputId).value]));
+    currentEditorialDraftValues = { ...values };
+    return values;
+}
+
+async function saveEditorialTexts(event) {
+    event.preventDefault();
+    const observedState = currentEditorialState;
+    const sourceVersion = currentEditorialVersion;
+    const model = currentEditorialEditorModel;
+    const selectedEventId = document.getElementById("editorialEventId").value.trim();
+    const editorStatus = document.getElementById("editorialEditorStatus");
+    if (!observedState || !sourceVersion || !model
+        || selectedEventId !== observedState.eventId
+        || sourceVersion.versionId !== observedState.currentWorkingVersionId
+        || adminEditorialViewGuard.requiresRefresh()
+        || adminWorkingVersionRunner.isPending()
+        || adminEditorialWorkflowRunner.isPending()
+        || adminDraftSaveRunner.isPending()) return;
+
+    let projection;
+    try {
+        projection = AdminEventEditor.applyEdits(model, readEditorialTextValues(model));
+    } catch (error) {
+        editorStatus.classList.add("error");
+        editorStatus.textContent = error.message;
+        return;
+    }
+
+    const operation = adminEditorialViewGuard.begin(observedState.eventId);
+    const saveButton = document.getElementById("editorialSaveTextButton");
+    saveButton.disabled = true;
+    document.getElementById("editorialCreateVersionButton").disabled = true;
+    document.querySelectorAll(".editorial-workflow-action").forEach((button) => { button.disabled = true; });
+    editorStatus.classList.remove("error");
+    editorStatus.textContent = "Verificando el draft vigente...";
+
+    try {
+        const result = await adminDraftSaveRunner.run({
+            observedState,
+            sourceVersion,
+            content: projection.content,
+            password: administrativePassword,
+            isCurrent: () => adminEditorialViewGuard.isCurrent(operation)
+                && document.getElementById("editorialEventId").value.trim() === observedState.eventId
+        });
+        if (result.outcome === "stale-view" || result.outcome === "busy") return;
+
+        if (result.state) {
+            if (!adminEditorialViewGuard.acceptState(operation, result.state)) return;
+            currentEditorialState = result.state;
+        } else if (!adminEditorialViewGuard.isCurrent(operation)) {
+            return;
+        }
+
+        if (result.outcome === "success") {
+            clearEditorialTextEditor();
+            renderEditorialState(result.state);
+            const loaded = await loadEditorialTextEditor(result.state, operation);
+            if (!adminEditorialViewGuard.isCurrent(operation)) return;
+            const status = document.getElementById("editorialReaderStatus");
+            status.classList.remove("error");
+            status.textContent = loaded
+                ? `Versión ${result.created.versionNumber} guardada. La vista previa privada usa esta versión persistida.`
+                : `Versión ${result.created.versionNumber} guardada. El estado se actualizó y la vista previa privada usa la versión persistida, pero el editor no pudo recargar su snapshot.`;
+            return;
+        }
+        if (result.outcome === "cancelled") {
+            renderEditorialState(result.state);
+            renderEditorialTextEditor(model, currentEditorialDraftValues);
+            editorStatus.textContent = "Guardado cancelado. No se realizaron cambios.";
+            return;
+        }
+        if (result.outcome === "stale" || result.outcome === "conflict") {
+            clearEditorialTextEditor();
+            renderEditorialState(result.state);
+            await loadEditorialTextEditor(result.state, operation);
+            const status = document.getElementById("editorialReaderStatus");
+            status.classList.add("error");
+            status.textContent = "El draft cambió en el servidor. Se recargó el evento; revisá los textos e iniciá nuevamente el guardado.";
+            return;
+        }
+        if (result.outcome === "accepted-refresh-failed") {
+            adminEditorialViewGuard.requireRefresh(operation);
+            clearEditorialTextEditor();
+            renderEditorialState(currentEditorialState);
+            const status = document.getElementById("editorialReaderStatus");
+            status.classList.add("error");
+            status.textContent = "El guardado pudo haberse completado, pero no se pudo actualizar el estado. Recargá el estado editorial; no repitas el guardado.";
+            return;
+        }
+        if (result.outcome === "mutation-unknown" || result.outcome === "refresh-required") {
+            adminEditorialViewGuard.requireRefresh(operation);
+            clearEditorialTextEditor();
+            renderEditorialState(currentEditorialState);
+            const status = document.getElementById("editorialReaderStatus");
+            status.classList.add("error");
+            status.textContent = "No se pudo confirmar si la versión fue creada. Recargá el estado editorial antes de intentar nuevamente.";
+            return;
+        }
+        if (result.outcome === "conflict-refresh-failed") {
+            adminEditorialViewGuard.requireRefresh(operation);
+            clearEditorialTextEditor();
+            renderEditorialState(currentEditorialState);
+            const status = document.getElementById("editorialReaderStatus");
+            status.classList.add("error");
+            status.textContent = "El guardado encontró un conflicto y no se pudo actualizar la vista. Recargá el estado editorial; no hubo reintento automático.";
+            return;
+        }
+        if (result.outcome === "unavailable") {
+            clearEditorialTextEditor();
+            renderEditorialState(currentEditorialState);
+            const status = document.getElementById("editorialReaderStatus");
+            status.classList.add("error");
+            status.textContent = "El draft dejó de ser editable. Recargá el estado editorial antes de continuar.";
+        }
+    } catch (error) {
+        if (!adminEditorialViewGuard.isCurrent(operation)) return;
+        if (error.code === "UNAUTHORIZED") {
+            resetForAuthentication("Credencial administrativa invalida.");
+            return;
+        }
+        if (error?.status === undefined) {
+            adminEditorialViewGuard.requireRefresh(operation);
+            clearEditorialTextEditor();
+            renderEditorialState(currentEditorialState);
+            const status = document.getElementById("editorialReaderStatus");
+            status.classList.add("error");
+            status.textContent = "No se pudo confirmar el estado de la operación. Recargá el estado editorial antes de intentar nuevamente.";
+            return;
+        }
+        editorStatus.classList.add("error");
+        editorStatus.textContent = error?.status === 422
+            ? "El snapshot editado es incompatible con el validador actual. No se creó una versión."
+            : editorialErrorMessage(error);
+        renderEditorialState(currentEditorialState);
+        document.getElementById("editorialSaveTextButton").disabled = false;
+    } finally {
+        if (adminEditorialViewGuard.isCurrent(operation) && currentEditorialState) renderEditorialState(currentEditorialState);
+    }
+}
+
 async function createWorkingVersion() {
     const observedState = currentEditorialState;
     const selectedEventId = document.getElementById("editorialEventId").value.trim();
@@ -472,7 +743,9 @@ async function createWorkingVersion() {
         || selectedEventId !== observedState.eventId
         || !AdminEditorialClient.workingVersionSource(observedState)
         || adminEditorialViewGuard.requiresRefresh()
-        || adminWorkingVersionRunner.isPending()) return;
+        || adminWorkingVersionRunner.isPending()
+        || adminEditorialWorkflowRunner.isPending()
+        || adminDraftSaveRunner.isPending()) return;
 
     const operation = adminEditorialViewGuard.begin(observedState.eventId);
     const status = document.getElementById("editorialReaderStatus");
@@ -493,7 +766,9 @@ async function createWorkingVersion() {
         if (result.state) {
             if (!adminEditorialViewGuard.acceptState(operation, result.state)) return;
             currentEditorialState = result.state;
+            clearEditorialTextEditor();
             renderEditorialState(result.state);
+            await loadEditorialTextEditor(result.state, operation);
         } else if (!adminEditorialViewGuard.isCurrent(operation)) {
             return;
         }
@@ -514,6 +789,7 @@ async function createWorkingVersion() {
         }
         if (result.outcome === "accepted-refresh-failed") {
             adminEditorialViewGuard.requireRefresh(operation);
+            clearEditorialTextEditor();
             renderEditorialState(currentEditorialState);
             status.classList.add("error");
             status.textContent = "La creación pudo haberse completado, pero no se pudo actualizar la vista. Consulta nuevamente el evento antes de realizar otra acción; no repitas la creación.";
@@ -521,6 +797,7 @@ async function createWorkingVersion() {
         }
         if (result.outcome === "mutation-unknown" || result.outcome === "refresh-required") {
             adminEditorialViewGuard.requireRefresh(operation);
+            clearEditorialTextEditor();
             renderEditorialState(currentEditorialState);
             status.classList.add("error");
             status.textContent = "No se pudo confirmar si la versión fue creada. Recargá el estado editorial antes de intentar nuevamente.";
@@ -528,6 +805,7 @@ async function createWorkingVersion() {
         }
         if (result.outcome === "conflict-refresh-failed") {
             adminEditorialViewGuard.requireRefresh(operation);
+            clearEditorialTextEditor();
             renderEditorialState(currentEditorialState);
             status.classList.add("error");
             status.textContent = "La creación encontró un conflicto y no se pudo actualizar la vista. Consulta nuevamente el evento; no hubo reintento automático.";
@@ -554,6 +832,8 @@ async function executeEditorialAction(action, button) {
     if (!action
         || adminEditorialViewGuard.requiresRefresh()
         || adminEditorialWorkflowRunner.isPending()
+        || adminWorkingVersionRunner.isPending()
+        || adminDraftSaveRunner.isPending()
         || currentEditorialState?.eventId !== action.eventId
         || selectedEventId !== action.eventId) return;
     const operation = adminEditorialViewGuard.begin(action.eventId);
@@ -574,7 +854,9 @@ async function executeEditorialAction(action, button) {
         if (result.state) {
             if (!adminEditorialViewGuard.acceptState(operation, result.state)) return;
             currentEditorialState = result.state;
+            clearEditorialTextEditor();
             renderEditorialState(result.state);
+            await loadEditorialTextEditor(result.state, operation);
         } else if (!adminEditorialViewGuard.isCurrent(operation)) {
             return;
         }
@@ -596,6 +878,7 @@ async function executeEditorialAction(action, button) {
         }
         if (result.outcome === "accepted-refresh-failed") {
             adminEditorialViewGuard.requireRefresh(operation);
+            clearEditorialTextEditor();
             renderEditorialState(currentEditorialState);
             status.classList.add("error");
             status.textContent = "La operacion fue aceptada, pero no se pudo actualizar la vista. Consulta nuevamente el evento antes de realizar otra accion.";
@@ -603,6 +886,7 @@ async function executeEditorialAction(action, button) {
         }
         if (result.outcome === "conflict-refresh-failed") {
             adminEditorialViewGuard.requireRefresh(operation);
+            clearEditorialTextEditor();
             renderEditorialState(currentEditorialState);
             status.classList.add("error");
             status.textContent = "La operacion encontro un conflicto y no se pudo actualizar la vista. Consulta nuevamente el evento.";
