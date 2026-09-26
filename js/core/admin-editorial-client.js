@@ -8,11 +8,12 @@
     root.AdminEditorialClient = client;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
     class AdminEditorialApiError extends Error {
-        constructor(code, message, status) {
+        constructor(code, message, status, options = {}) {
             super(message);
             this.name = "AdminEditorialApiError";
             this.code = code;
             if (status !== undefined) this.status = status;
+            if (options.retryAfter !== undefined) this.retryAfter = options.retryAfter;
         }
     }
 
@@ -64,19 +65,28 @@
         };
     }
 
-    function errorForStatus(status) {
+    function errorForStatus(status, payload, response) {
         const messages = {
             401: ["UNAUTHORIZED", "Credencial administrativa invalida."],
             403: ["FORBIDDEN", "Acceso administrativo rechazado."],
             404: ["EVENT_NOT_FOUND", "Evento no encontrado."],
+            409: ["VERSION_CONFLICT", "El estado de la version cambio. Actualiza e intenta nuevamente."],
             410: ["TOKEN_EXPIRED", "La vista previa ha expirado."],
+            422: ["INVALID_EVENT", "El contenido del evento no es valido."],
+            429: ["RATE_LIMITED", "Se alcanzo el limite de solicitudes."],
+            503: ["RATE_LIMIT_UNAVAILABLE", "El servicio editorial no esta disponible."],
             500: ["SERVER_ERROR", "Error del servidor administrativo."]
         };
-        const [code, message] = messages[status]
+        const [fallbackCode, message] = messages[status]
             || (status >= 500
                 ? ["SERVER_ERROR", "Error del servidor administrativo."]
                 : ["REQUEST_ERROR", "No se pudo consultar el evento administrativo."]);
-        return new AdminEditorialApiError(code, message, status);
+        const remoteCode = payload?.error?.code;
+        const code = typeof remoteCode === "string" && remoteCode ? remoteCode : fallbackCode;
+        const retryAfter = status === 429 && response?.headers?.get
+            ? response.headers.get("Retry-After") || undefined
+            : undefined;
+        return new AdminEditorialApiError(code, message, status, { retryAfter });
     }
 
     function createAdminEditorialClient({ fetchImpl = globalThis.fetch } = {}) {
@@ -109,8 +119,8 @@
                 throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
             }
             if (!response.ok) {
-                await parseJson(response);
-                throw errorForStatus(response.status);
+                const payload = await parseJson(response);
+                throw errorForStatus(response.status, payload, response);
             }
             return normalizeEditorialState(await parseJson(response));
         }
@@ -126,7 +136,7 @@
                 });
             } catch { throw new AdminEditorialApiError("NETWORK_ERROR", "No se pudo consultar los eventos administrativos."); }
             if (!response || typeof response.ok !== "boolean") throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
-            if (!response.ok) { await parseJson(response); throw errorForStatus(response.status); }
+            if (!response.ok) { const payload = await parseJson(response); throw errorForStatus(response.status, payload, response); }
             const payload = await parseJson(response);
             if (!payload || !Array.isArray(payload.events)) throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
             return { events: payload.events.map(normalizeEventSummary), nextCursor: payload.nextCursor ?? null };
@@ -142,13 +152,55 @@
                 });
             } catch { throw new AdminEditorialApiError("NETWORK_ERROR", "No se pudo solicitar la vista previa."); }
             if (!response || typeof response.ok !== "boolean") throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
-            if (!response.ok) { await parseJson(response); throw errorForStatus(response.status); }
+            if (!response.ok) { const payload = await parseJson(response); throw errorForStatus(response.status, payload, response); }
             const payload = await parseJson(response);
             if (!payload || typeof payload.previewUrl !== "string" || typeof payload.expiresAt !== "string") throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta de preview invalida.");
             return payload;
         }
 
-        return { getEditorialState, listEvents, requestPreview };
+        async function sendWorkflowRequest({ eventId, versionId, password, pathSuffix, body } = {}) {
+            if (!eventId || !versionId) throw new AdminEditorialApiError("INVALID_REQUEST", "Debe indicar evento y version.");
+            if (typeof password !== "string" || password === "") throw new AdminEditorialApiError("UNAUTHORIZED", "Credencial administrativa invalida.");
+            let response;
+            try {
+                response = await fetchImpl(
+                    `/api/admin/eventos/${encodeURIComponent(eventId)}/versions/${encodeURIComponent(versionId)}/${pathSuffix}`,
+                    {
+                        method: "POST",
+                        headers: {
+                            Accept: "application/json",
+                            "X-Admin-Password": password,
+                            ...(body ? { "Content-Type": "application/json" } : {})
+                        },
+                        ...(body ? { body: JSON.stringify(body) } : {})
+                    }
+                );
+            } catch {
+                throw new AdminEditorialApiError("NETWORK_ERROR", "No se pudo completar la operacion editorial.");
+            }
+            if (!response || typeof response.ok !== "boolean") throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
+            const payload = await parseJson(response);
+            if (!response.ok) throw errorForStatus(response.status, payload, response);
+            if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
+            return payload;
+        }
+
+        function transitionWorkflow({ eventId, versionId, expectedStatus, targetStatus, password } = {}) {
+            if (!expectedStatus || !targetStatus) throw new AdminEditorialApiError("INVALID_REQUEST", "Debe indicar la transicion editorial.");
+            return sendWorkflowRequest({
+                eventId,
+                versionId,
+                password,
+                pathSuffix: "workflow",
+                body: { expectedStatus, targetStatus }
+            });
+        }
+
+        function publishVersion({ eventId, versionId, password } = {}) {
+            return sendWorkflowRequest({ eventId, versionId, password, pathSuffix: "publish" });
+        }
+
+        return { getEditorialState, listEvents, requestPreview, transitionWorkflow, publishVersion };
     }
 
     return {

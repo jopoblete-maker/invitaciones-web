@@ -41,7 +41,10 @@ const editorState = {
 
 let administrativePassword = "";
 let adminEditorialClient;
+let adminEditorialWorkflowRunner;
+let adminEditorialViewGuard;
 let currentEditorialState = null;
+let blockedEditorialActionKey = "";
 
 document.addEventListener("DOMContentLoaded", () => {
     bindAuthentication();
@@ -233,10 +236,27 @@ function showAdmin() {
 function bindEditorialReader() {
     const readerForm = document.getElementById("editorialReaderForm");
     adminEditorialClient = AdminEditorialClient.createAdminEditorialClient();
+    adminEditorialWorkflowRunner = AdminEditorialWorkflow.createActionRunner({
+        client: adminEditorialClient,
+        confirmPublication: requestPublicationConfirmation
+    });
+    adminEditorialViewGuard = AdminEditorialWorkflow.createViewGuard();
     document.getElementById("loadEditorialEvents")?.addEventListener("click", loadEditorialEvents);
     document.getElementById("editorialEventSelect")?.addEventListener("change", (event) => {
         document.getElementById("editorialEventId").value = event.target.value;
-        if (event.target.value) loadEditorialState();
+        if (event.target.value) {
+            loadEditorialState();
+        } else {
+            adminEditorialViewGuard.begin("");
+            clearEditorialState();
+        }
+    });
+    document.getElementById("editorialEventId")?.addEventListener("input", (event) => {
+        const eventId = event.target.value.trim();
+        adminEditorialViewGuard.begin(eventId);
+        if (!currentEditorialState || eventId !== currentEditorialState.eventId) {
+            clearEditorialState();
+        }
     });
     document.getElementById("editorialPreviewButton")?.addEventListener("click", requestPrivatePreview);
     readerForm.addEventListener("submit", async (event) => {
@@ -269,6 +289,7 @@ async function loadEditorialState() {
         return;
     }
 
+    const operation = adminEditorialViewGuard.begin(eventId);
     clearEditorialState();
     status.textContent = "Verificando credencial y cargando evento...";
     try {
@@ -276,10 +297,13 @@ async function loadEditorialState() {
             eventId,
             password: administrativePassword
         });
-        renderEditorialState(state);
+        if (!adminEditorialViewGuard.acceptState(operation, state)) return;
         currentEditorialState = state;
+        blockedEditorialActionKey = "";
+        renderEditorialState(state);
         status.textContent = "Acceso administrativo confirmado.";
     } catch (error) {
+        if (!adminEditorialViewGuard.isCurrent(operation)) return;
         if (error.code === "UNAUTHORIZED") {
             resetForAuthentication("Credencial administrativa invalida.");
             return;
@@ -297,6 +321,7 @@ async function loadEditorialState() {
 
 function resetForAuthentication(message) {
     administrativePassword = "";
+    adminEditorialViewGuard?.reset();
     document.getElementById("adminForm").hidden = true;
     document.getElementById("btnLogout").hidden = true;
     document.getElementById("authPanel").hidden = false;
@@ -313,6 +338,7 @@ function clearEditorialState() {
     status.classList.remove("error");
     status.textContent = "";
     document.getElementById("editorialPreviewButton")?.setAttribute("hidden", "");
+    currentEditorialState = null;
 }
 
 function renderEditorialState(editorialState) {
@@ -341,6 +367,18 @@ function renderEditorialState(editorialState) {
             ["Publicada", formatDate(version.publishedAt)]
         ].forEach(([label, value]) => appendDefinition(details, label, value || "Sin asignar"));
         item.append(details);
+        const action = AdminEditorialWorkflow.getAvailableAction(editorialState);
+        if (action?.versionId === version.versionId) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "btn-submit editorial-workflow-action";
+            button.textContent = action.label;
+            button.disabled = adminEditorialViewGuard.requiresRefresh()
+                || adminEditorialWorkflowRunner.isPending()
+                || editorialActionKey(action) === blockedEditorialActionKey;
+            button.addEventListener("click", () => executeEditorialAction(action, button));
+            item.append(button);
+        }
         versions.append(item);
     });
     if (editorialState.versions.length === 0) {
@@ -354,6 +392,112 @@ function renderEditorialState(editorialState) {
     state.hidden = false;
     const previewButton = document.getElementById("editorialPreviewButton");
     if (previewButton && (editorialState.currentWorkingVersionId || editorialState.publishedVersionId)) previewButton.hidden = false;
+}
+
+function editorialActionKey(action) {
+    return action ? `${action.eventId}|${action.versionId}|${action.kind}` : "";
+}
+
+function requestPublicationConfirmation(action) {
+    const phrase = AdminEditorialWorkflow.publicationPhrase(action.eventId);
+    return window.prompt(
+        [
+            "Esta accion cambiara la invitacion publica.",
+            "",
+            `Evento: ${action.eventId}`,
+            `Version UUID: ${action.versionId}`,
+            `Numero de version: ${action.versionNumber}`,
+            "",
+            `Escribi exactamente: ${phrase}`
+        ].join("\n"),
+        ""
+    );
+}
+
+async function executeEditorialAction(action, button) {
+    const selectedEventId = document.getElementById("editorialEventId").value.trim();
+    if (!action
+        || adminEditorialViewGuard.requiresRefresh()
+        || adminEditorialWorkflowRunner.isPending()
+        || currentEditorialState?.eventId !== action.eventId
+        || selectedEventId !== action.eventId) return;
+    const operation = adminEditorialViewGuard.begin(action.eventId);
+    const status = document.getElementById("editorialReaderStatus");
+    button.disabled = true;
+    status.classList.remove("error");
+    status.textContent = "Verificando el estado vigente...";
+
+    try {
+        const result = await adminEditorialWorkflowRunner.run({
+            eventId: action.eventId,
+            versionId: action.versionId,
+            password: administrativePassword,
+            requestedKind: action.kind,
+            expectedStatus: action.expectedStatus
+        });
+
+        if (result.state) {
+            if (!adminEditorialViewGuard.acceptState(operation, result.state)) return;
+            currentEditorialState = result.state;
+            renderEditorialState(result.state);
+        } else if (!adminEditorialViewGuard.isCurrent(operation)) {
+            return;
+        }
+
+        if (result.outcome === "success") {
+            blockedEditorialActionKey = "";
+            renderEditorialState(result.state);
+            status.textContent = action.kind === "publish"
+                ? "Version publicada y estado actualizado."
+                : "Workflow actualizado.";
+            return;
+        }
+        if (result.outcome === "conflict" || result.outcome === "stale") {
+            blockedEditorialActionKey = editorialActionKey(action);
+            renderEditorialState(result.state);
+            status.classList.add("error");
+            status.textContent = "El estado cambio en el servidor. Se recargo el evento y la accion anterior quedo bloqueada.";
+            return;
+        }
+        if (result.outcome === "accepted-refresh-failed") {
+            adminEditorialViewGuard.requireRefresh(operation);
+            renderEditorialState(currentEditorialState);
+            status.classList.add("error");
+            status.textContent = "La operacion fue aceptada, pero no se pudo actualizar la vista. Consulta nuevamente el evento antes de realizar otra accion.";
+            return;
+        }
+        if (result.outcome === "conflict-refresh-failed") {
+            adminEditorialViewGuard.requireRefresh(operation);
+            renderEditorialState(currentEditorialState);
+            status.classList.add("error");
+            status.textContent = "La operacion encontro un conflicto y no se pudo actualizar la vista. Consulta nuevamente el evento.";
+            return;
+        }
+        if (result.outcome === "cancelled") {
+            status.textContent = "Publicacion cancelada. No se realizaron cambios.";
+        }
+    } catch (error) {
+        if (error.code === "UNAUTHORIZED") {
+            resetForAuthentication("Credencial administrativa invalida.");
+            return;
+        }
+        status.classList.add("error");
+        status.textContent = editorialErrorMessage(error);
+    } finally {
+        if (adminEditorialViewGuard.isCurrent(operation) && currentEditorialState) {
+            renderEditorialState(currentEditorialState);
+        } else if (currentEditorialState
+            && adminEditorialViewGuard.isSelected(currentEditorialState.eventId)) {
+            renderEditorialState(currentEditorialState);
+        }
+    }
+}
+
+function editorialErrorMessage(error) {
+    if (error?.status === 429 && error.retryAfter) {
+        return `${error.message} Reintenta en ${error.retryAfter} segundos.`;
+    }
+    return error?.message || "No se pudo completar la operacion editorial.";
 }
 
 async function requestPrivatePreview() {

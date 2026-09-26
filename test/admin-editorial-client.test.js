@@ -11,10 +11,11 @@ const SECRET = "admin-secret-for-test";
 const EVENT_ID = "ycor-template-demo-boda-vertical";
 const VERSION_ID = "ba9e2d4a-ad0a-4df7-a144-27bd98dc2800";
 
-function response(status, payload) {
+function response(status, payload, headers = {}) {
     return {
         ok: status >= 200 && status < 300,
         status,
+        headers: { get: (name) => headers[name] ?? null },
         json: async () => payload
     };
 }
@@ -62,6 +63,43 @@ assert.throws(
     }]);
     assert.strictEqual(calls[0].options.body, undefined);
 
+    const mutationCalls = [];
+    const mutationClient = createAdminEditorialClient({
+        fetchImpl: async (url, options) => {
+            mutationCalls.push({ url, options });
+            return response(200, url.endsWith("/publish")
+                ? { eventId: EVENT_ID, publishedVersionId: VERSION_ID }
+                : { eventId: EVENT_ID, versionId: VERSION_ID, workflowStatus: "in_review" });
+        }
+    });
+    await mutationClient.transitionWorkflow({
+        eventId: EVENT_ID,
+        versionId: VERSION_ID,
+        expectedStatus: "draft",
+        targetStatus: "in_review",
+        password: SECRET
+    });
+    await mutationClient.publishVersion({ eventId: EVENT_ID, versionId: VERSION_ID, password: SECRET });
+    assert.deepStrictEqual(mutationCalls, [{
+        url: `/api/admin/eventos/${EVENT_ID}/versions/${VERSION_ID}/workflow`,
+        options: {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "X-Admin-Password": SECRET,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ expectedStatus: "draft", targetStatus: "in_review" })
+        }
+    }, {
+        url: `/api/admin/eventos/${EVENT_ID}/versions/${VERSION_ID}/publish`,
+        options: {
+            method: "POST",
+            headers: { Accept: "application/json", "X-Admin-Password": SECRET }
+        }
+    }]);
+    assert(mutationCalls.every((call) => !call.url.startsWith("/api/eventos")));
+
     for (const [status, code, message] of [
         [401, "UNAUTHORIZED", "Credencial administrativa invalida."],
         [403, "FORBIDDEN", "Acceso administrativo rechazado."],
@@ -76,6 +114,23 @@ assert.throws(
                 && error.status === status
                 && error.message === message
                 && !error.message.includes(SECRET)
+        );
+    }
+
+    for (const [status, remoteCode, retryAfter] of [
+        [409, "VERSION_CONFLICT"],
+        [422, "INVALID_EVENT"],
+        [429, "RATE_LIMITED", "17"],
+        [503, "RATE_LIMIT_UNAVAILABLE"]
+    ]) {
+        const failingClient = createAdminEditorialClient({
+            fetchImpl: async () => response(status, { error: { code: remoteCode } }, { "Retry-After": retryAfter })
+        });
+        await assert.rejects(
+            failingClient.publishVersion({ eventId: EVENT_ID, versionId: VERSION_ID, password: SECRET }),
+            (error) => error.code === remoteCode
+                && error.status === status
+                && (status !== 429 || error.retryAfter === "17")
         );
     }
 

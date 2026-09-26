@@ -397,6 +397,15 @@
             background: #fff;
         }
 
+        .editorial-workflow-action {
+            margin-top: 12px;
+        }
+
+        .editorial-workflow-action:disabled {
+            cursor: not-allowed;
+            opacity: .6;
+        }
+
         #resultBox {
             margin-top: 20px;
             padding: 15px;
@@ -554,7 +563,7 @@
             <section class="editorial-reader" aria-labelledby="editorialReaderTitle">
                 <div>
                     <h2 id="editorialReaderTitle" class="section-title">Lectura editorial</h2>
-                    <p class="help-text">Consulta eventos y versiones sin realizar cambios.</p>
+                    <p class="help-text">Consulta eventos y gestiona el workflow de sus versiones de trabajo.</p>
                 </div>
                 <form id="editorialReaderForm">
                     <button type="button" id="loadEditorialEvents" class="btn-submit">Cargar eventos</button>
@@ -918,6 +927,7 @@
     </div>
 
     <script src="js/core/admin-editorial-client.js"></script>
+    <script src="js/core/admin-editorial-workflow.js"></script>
     <script src="js/admin.js"></script>
 </body>
 
