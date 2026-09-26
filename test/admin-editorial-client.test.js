@@ -8,8 +8,9 @@ const {
 } = require("../js/core/admin-editorial-client");
 
 const SECRET = "admin-secret-for-test";
-const EVENT_ID = "ycor-template-demo-boda-vertical";
+const EVENT_ID = "a7-b2-test-event";
 const VERSION_ID = "ba9e2d4a-ad0a-4df7-a144-27bd98dc2800";
+const CREATED_VERSION_ID = "ca9e2d4a-ad0a-4df7-a144-27bd98dc2801";
 
 function response(status, payload, headers = {}) {
     return {
@@ -99,6 +100,49 @@ assert.throws(
         }
     }]);
     assert(mutationCalls.every((call) => !call.url.startsWith("/api/eventos")));
+
+    const snapshot = { schema_version: 1, event: {}, template: { slug: "test" }, sections: [] };
+    const versionCalls = [];
+    const versionClient = createAdminEditorialClient({
+        fetchImpl: async (url, options) => {
+            versionCalls.push({ url, options });
+            return options.method === "GET"
+                ? response(200, { eventId: EVENT_ID, versionId: VERSION_ID, versionNumber: 1, content: snapshot })
+                : response(201, { versionId: CREATED_VERSION_ID, versionNumber: 2 });
+        }
+    });
+    const version = await versionClient.getVersion({ eventId: EVENT_ID, versionId: VERSION_ID, password: SECRET });
+    assert.strictEqual(version.content, snapshot);
+    assert.deepStrictEqual(await versionClient.createVersion({
+        eventId: EVENT_ID,
+        content: version.content,
+        expectedWorkingVersionId: null,
+        sourceVersionId: VERSION_ID,
+        password: SECRET
+    }), { versionId: CREATED_VERSION_ID, versionNumber: 2 });
+    assert.deepStrictEqual(versionCalls, [{
+        url: `/api/admin/eventos/${EVENT_ID}/versions/${VERSION_ID}`,
+        options: {
+            method: "GET",
+            headers: { Accept: "application/json", "X-Admin-Password": SECRET }
+        }
+    }, {
+        url: `/api/admin/eventos/${EVENT_ID}/versions`,
+        options: {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                "X-Admin-Password": SECRET
+            },
+            body: JSON.stringify({
+                content: snapshot,
+                sourceVersionId: VERSION_ID,
+                expectedWorkingVersionId: null,
+                initialWorkflow: "draft"
+            })
+        }
+    }]);
 
     for (const [status, code, message] of [
         [401, "UNAUTHORIZED", "Credencial administrativa invalida."],

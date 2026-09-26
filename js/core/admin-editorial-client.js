@@ -21,6 +21,12 @@
         return response.json().catch(() => null);
     }
 
+    function isPlainObject(value) {
+        if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+        const prototype = Object.getPrototypeOf(value);
+        return prototype === Object.prototype || prototype === null;
+    }
+
     function normalizeVersion(version) {
         if (!version || typeof version !== "object") {
             throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
@@ -142,6 +148,66 @@
             return { events: payload.events.map(normalizeEventSummary), nextCursor: payload.nextCursor ?? null };
         }
 
+        async function getVersion({ eventId, versionId, password } = {}) {
+            if (!eventId || !versionId) throw new AdminEditorialApiError("INVALID_REQUEST", "Debe indicar evento y version.");
+            if (typeof password !== "string" || password === "") throw new AdminEditorialApiError("UNAUTHORIZED", "Credencial administrativa invalida.");
+            let response;
+            try {
+                response = await fetchImpl(
+                    `/api/admin/eventos/${encodeURIComponent(eventId)}/versions/${encodeURIComponent(versionId)}`,
+                    {
+                        method: "GET",
+                        headers: { Accept: "application/json", "X-Admin-Password": password }
+                    }
+                );
+            } catch {
+                throw new AdminEditorialApiError("NETWORK_ERROR", "No se pudo obtener el snapshot de la version.");
+            }
+            if (!response || typeof response.ok !== "boolean") throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
+            const payload = await parseJson(response);
+            if (!response.ok) throw errorForStatus(response.status, payload, response);
+            if (!payload || payload.eventId !== eventId || payload.versionId !== versionId || !isPlainObject(payload.content)) {
+                throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta de version invalida.");
+            }
+            return payload;
+        }
+
+        async function createVersion({ eventId, content, expectedWorkingVersionId, sourceVersionId, password } = {}) {
+            if (!eventId || !sourceVersionId || !isPlainObject(content)) {
+                throw new AdminEditorialApiError("INVALID_REQUEST", "Debe indicar evento, fuente y contenido.");
+            }
+            if (expectedWorkingVersionId !== null && typeof expectedWorkingVersionId !== "string") {
+                throw new AdminEditorialApiError("INVALID_REQUEST", "La version de trabajo observada es invalida.");
+            }
+            if (typeof password !== "string" || password === "") throw new AdminEditorialApiError("UNAUTHORIZED", "Credencial administrativa invalida.");
+            let response;
+            try {
+                response = await fetchImpl(`/api/admin/eventos/${encodeURIComponent(eventId)}/versions`, {
+                    method: "POST",
+                    headers: {
+                        Accept: "application/json",
+                        "Content-Type": "application/json",
+                        "X-Admin-Password": password
+                    },
+                    body: JSON.stringify({
+                        content,
+                        sourceVersionId,
+                        expectedWorkingVersionId,
+                        initialWorkflow: "draft"
+                    })
+                });
+            } catch {
+                throw new AdminEditorialApiError("NETWORK_ERROR", "No se pudo crear la version de trabajo.");
+            }
+            if (!response || typeof response.ok !== "boolean") throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
+            const payload = await parseJson(response);
+            if (!response.ok) throw errorForStatus(response.status, payload, response);
+            if (!payload || typeof payload.versionId !== "string" || typeof payload.versionNumber !== "number") {
+                throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta de creacion invalida.");
+            }
+            return { versionId: payload.versionId, versionNumber: payload.versionNumber };
+        }
+
         async function requestPreview({ eventId, versionId, password } = {}) {
             if (!eventId || !versionId) throw new AdminEditorialApiError("INVALID_REQUEST", "Debe indicar evento y version.");
             if (typeof password !== "string" || password === "") throw new AdminEditorialApiError("UNAUTHORIZED", "Credencial administrativa invalida.");
@@ -200,12 +266,125 @@
             return sendWorkflowRequest({ eventId, versionId, password, pathSuffix: "publish" });
         }
 
-        return { getEditorialState, listEvents, requestPreview, transitionWorkflow, publishVersion };
+        return { getEditorialState, listEvents, getVersion, createVersion, requestPreview, transitionWorkflow, publishVersion };
+    }
+
+    function workingVersionSource(state) {
+        if (!state || state.eventStatus !== "active") return null;
+        return state.currentWorkingVersionId || state.publishedVersionId || null;
+    }
+
+    function sameCreationState(left, right) {
+        return Boolean(left && right
+            && left.eventId === right.eventId
+            && left.eventStatus === right.eventStatus
+            && left.currentWorkingVersionId === right.currentWorkingVersionId
+            && left.publishedVersionId === right.publishedVersionId);
+    }
+
+    function createWorkingVersionRunner({ client, confirmCreation } = {}) {
+        if (!client || typeof client.getVersion !== "function"
+            || typeof client.getEditorialState !== "function"
+            || typeof client.createVersion !== "function") {
+            throw new TypeError("client must implement the working-version contract.");
+        }
+        if (typeof confirmCreation !== "function") throw new TypeError("confirmCreation must be a function.");
+
+        let pending = false;
+        const recoveryEventIds = new Set();
+
+        async function refreshAfterConflict(error, eventId, password) {
+            try {
+                const state = await client.getEditorialState({ eventId, password });
+                return { outcome: "conflict", state, error };
+            } catch (refreshError) {
+                return { outcome: "conflict-refresh-failed", error, refreshError };
+            }
+        }
+
+        async function run({ observedState, password, isCurrent = () => true } = {}) {
+            if (pending) return { outcome: "busy" };
+            const sourceVersionId = workingVersionSource(observedState);
+            if (!sourceVersionId) return { outcome: "unavailable" };
+            const eventId = observedState.eventId;
+            if (recoveryEventIds.has(eventId)) return { outcome: "refresh-required" };
+            const expectedWorkingVersionId = observedState.currentWorkingVersionId;
+            pending = true;
+            try {
+                const source = await client.getVersion({ eventId, versionId: sourceVersionId, password });
+                if (!isCurrent()) return { outcome: "stale-view" };
+
+                const stateBeforeConfirmation = await client.getEditorialState({ eventId, password });
+                if (!isCurrent()) return { outcome: "stale-view" };
+                if (!sameCreationState(observedState, stateBeforeConfirmation)) {
+                    return { outcome: "stale", state: stateBeforeConfirmation };
+                }
+
+                const confirmed = await confirmCreation({
+                    eventId,
+                    sourceVersionId,
+                    sourceVersionNumber: source.versionNumber,
+                    expectedWorkingVersionId,
+                    replacesWorkingVersion: expectedWorkingVersionId !== null
+                });
+                if (!confirmed) return { outcome: "cancelled", state: stateBeforeConfirmation };
+                if (!isCurrent()) return { outcome: "stale-view" };
+
+                const stateBeforePost = await client.getEditorialState({ eventId, password });
+                if (!isCurrent()) return { outcome: "stale-view" };
+                if (!sameCreationState(observedState, stateBeforePost)) {
+                    return { outcome: "stale", state: stateBeforePost };
+                }
+
+                let created;
+                try {
+                    created = await client.createVersion({
+                        eventId,
+                        content: source.content,
+                        sourceVersionId,
+                        expectedWorkingVersionId,
+                        password
+                    });
+                } catch (error) {
+                    if (error?.status === 409) return await refreshAfterConflict(error, eventId, password);
+                    if (error?.code === "NETWORK_ERROR" && error?.status === undefined) {
+                        recoveryEventIds.add(eventId);
+                        return { outcome: "mutation-unknown", error, sourceVersionId };
+                    }
+                    throw error;
+                }
+
+                try {
+                    const state = await client.getEditorialState({ eventId, password });
+                    return { outcome: "success", state, created, sourceVersionId };
+                } catch (refreshError) {
+                    recoveryEventIds.add(eventId);
+                    return { outcome: "accepted-refresh-failed", created, sourceVersionId, refreshError };
+                }
+            } finally {
+                pending = false;
+            }
+        }
+
+        async function refresh({ eventId, password, isCurrent = () => true } = {}) {
+            const state = await client.getEditorialState({ eventId, password });
+            if (isCurrent()) recoveryEventIds.delete(eventId);
+            return state;
+        }
+
+        return {
+            run,
+            refresh,
+            isPending: () => pending,
+            requiresRefresh: (eventId) => recoveryEventIds.has(eventId)
+        };
     }
 
     return {
         AdminEditorialApiError,
         createAdminEditorialClient,
+        createWorkingVersionRunner,
+        workingVersionSource,
         normalizeEditorialState
     };
 });
