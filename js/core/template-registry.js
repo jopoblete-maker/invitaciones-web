@@ -171,6 +171,19 @@
         return listTemplates().filter((template) => template.status === "active" && template.catalog !== null);
     }
 
+    function getCatalogPreview(value) {
+        if (!isValidEventId(value)) return undefined;
+        const template = listCatalogTemplates().find((candidate) => (
+            candidate.catalog.preview?.eventId === value
+        ));
+        if (!template) return undefined;
+        return deepFreeze({
+            eventId: value,
+            templateSlug: template.slug,
+            themeSlug: template.catalog.variant.themeSlug
+        });
+    }
+
     function resolveTemplate(value) {
         return getTemplate(value) || TEMPLATES[DEFAULT_TEMPLATE_SLUG];
     }
@@ -187,6 +200,7 @@
         getTemplate,
         listTemplates,
         listCatalogTemplates,
+        getCatalogPreview,
         resolveTemplate
     };
 });

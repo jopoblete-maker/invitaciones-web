@@ -109,6 +109,20 @@ h1 {
     overflow-wrap: anywhere;
 }
 
+.catalog-card__action {
+    display: inline-block;
+    margin-top: 18px;
+    color: var(--catalog-action);
+    font-weight: 700;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+}
+
+.catalog-card__action:focus-visible {
+    outline: 3px solid var(--catalog-accent);
+    outline-offset: 4px;
+}
+
 .catalog-status {
     margin: 0;
     padding-block: 48px;

@@ -8,7 +8,7 @@
         return node;
     }
 
-    function renderEntry(entry) {
+    function renderEntry(entry, previewAvailable) {
         const article = element("article", "catalog-card");
         const image = element("img", "catalog-card__image");
         image.src = entry.thumbnail.src;
@@ -21,6 +21,14 @@
         const title = element("h2", "catalog-card__title", `${entry.name} / ${entry.variantName}`);
         const description = element("p", "catalog-card__description", entry.description);
         body.append(category, title, description);
+        if (previewAvailable) {
+            const href = TemplateCatalog.catalogPreviewHref(entry, TemplateRegistry);
+            if (href) {
+                const link = element("a", "catalog-card__action", "Ver invitación");
+                link.href = href;
+                body.append(link);
+            }
+        }
         article.append(image, body);
         return article;
     }
@@ -41,7 +49,12 @@
                 entries,
                 (src) => TemplateCatalog.probeImage(src)
             );
-            root.replaceChildren(...visibleEntries.map(renderEntry));
+            const previewChecks = await Promise.all(visibleEntries.map((entry) => (
+                TemplateCatalog.verifyCatalogPreview(entry)
+            )));
+            root.replaceChildren(...visibleEntries.map((entry, index) => (
+                renderEntry(entry, previewChecks[index])
+            )));
             status.hidden = visibleEntries.length > 0;
             if (visibleEntries.length === 0) status.textContent = "No se pudo cargar la imagen del diseño.";
         } catch (error) {

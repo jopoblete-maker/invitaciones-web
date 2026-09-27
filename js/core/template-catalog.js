@@ -60,8 +60,53 @@
                 description: template.catalog.description,
                 variantName: template.catalog.variant.name,
                 themeSlug: template.catalog.variant.themeSlug,
-                thumbnail: { ...template.catalog.thumbnail }
+                thumbnail: { ...template.catalog.thumbnail },
+                previewEventId: template.catalog.preview?.eventId || null
             }));
+    }
+
+    function validatePreviewPayload(entry, payload) {
+        return isObject(payload)
+            && payload.eventId === entry.previewEventId
+            && isNonEmptyString(payload.versionId)
+            && isObject(payload.content)
+            && payload.content.schema_version === 2
+            && payload.content.template?.slug === entry.slug
+            && payload.content.theme?.slug === entry.themeSlug
+            && payload.content.metadata?.demo === true
+            && payload.content.metadata?.purpose === "template-catalog-preview";
+    }
+
+    async function verifyCatalogPreview(entry, fetchImpl = globalThis.fetch, options = {}) {
+        if (!isNonEmptyString(entry?.previewEventId) || typeof fetchImpl !== "function") return false;
+        const timeoutMs = options.timeoutMs ?? 5000;
+        const AbortControllerCtor = options.AbortControllerCtor || globalThis.AbortController;
+        const setTimer = options.setTimeoutImpl || globalThis.setTimeout;
+        const clearTimer = options.clearTimeoutImpl || globalThis.clearTimeout;
+        if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || typeof AbortControllerCtor !== "function") {
+            return false;
+        }
+
+        const controller = new AbortControllerCtor();
+        const timeoutId = setTimer(() => controller.abort(), timeoutMs);
+        try {
+            const response = await fetchImpl(
+                `/api/catalogo/previews/${encodeURIComponent(entry.previewEventId)}`,
+                { cache: "no-store", signal: controller.signal }
+            );
+            if (!response.ok) return false;
+            return validatePreviewPayload(entry, await response.json());
+        } catch (_error) {
+            return false;
+        } finally {
+            clearTimer(timeoutId);
+        }
+    }
+
+    function catalogPreviewHref(entry, templateRegistry) {
+        const preview = templateRegistry?.getCatalogPreview?.(entry?.previewEventId);
+        if (!preview || preview.templateSlug !== entry.slug || preview.themeSlug !== entry.themeSlug) return null;
+        return `/invitacion.html?catalogPreview=${encodeURIComponent(preview.eventId)}`;
     }
 
     function probeImage(src, options = {}) {
@@ -110,6 +155,9 @@
         buildCatalogEntries,
         filterLoadableThumbnails,
         hasValidCatalogMetadata,
-        probeImage
+        probeImage,
+        validatePreviewPayload,
+        verifyCatalogPreview,
+        catalogPreviewHref
     };
 });

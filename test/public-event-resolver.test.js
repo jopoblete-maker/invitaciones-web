@@ -1,7 +1,7 @@
 const assert = require("assert");
 const { createPublicEventResolver } = require("../js/core/public-event-resolver");
 
-function createHarness({ events = {}, versions = {} } = {}) {
+function createHarness({ events = {}, versions = {}, validatePublishedContent } = {}) {
     const calls = [];
     const fallbacks = [];
     const resolver = createPublicEventResolver({
@@ -16,7 +16,8 @@ function createHarness({ events = {}, versions = {} } = {}) {
     }, {
         onFallback(details) {
             fallbacks.push(details);
-        }
+        },
+        validatePublishedContent
     });
     return { calls, fallbacks, resolver };
 }
@@ -150,6 +151,122 @@ async function expectCode(code, action) {
         { fallback: true }
     );
     assert.strictEqual(invalidVersionContent.fallbacks[0].reason, "published-version-content-invalid");
+
+    const catalogContent = {
+        schema_version: 2,
+        template: { slug: "boda-vertical" },
+        theme: { slug: "elegante" },
+        metadata: { demo: true, purpose: "template-catalog-preview" }
+    };
+    const catalog = createHarness({
+        events: {
+            demo: {
+                id: "demo",
+                event_status: "active",
+                published_version_id: "published",
+                datos: { mustNotLeak: true }
+            }
+        },
+        versions: {
+            published: {
+                id: "published",
+                event_id: "demo",
+                workflow_status: "approved",
+                content: catalogContent
+            }
+        },
+        validatePublishedContent: (content) => ({ valid: content === catalogContent })
+    });
+    assert.deepStrictEqual(
+        await catalog.resolver.resolveCatalogPreview("demo", {
+            templateSlug: "boda-vertical",
+            themeSlug: "elegante"
+        }),
+        { eventId: "demo", versionId: "published", content: catalogContent }
+    );
+    assert.deepStrictEqual(catalog.fallbacks, []);
+
+    for (const event of [
+        null,
+        { id: "demo", event_status: "archived", published_version_id: "published", datos: { fallback: true } },
+        { id: "demo", event_status: "active", published_version_id: null, datos: { fallback: true } }
+    ]) {
+        const unavailable = createHarness({ events: event ? { demo: event } : {} });
+        await expectCode(
+            "CATALOG_PREVIEW_NOT_FOUND",
+            () => unavailable.resolver.resolveCatalogPreview("demo", {
+                templateSlug: "boda-vertical", themeSlug: "elegante"
+            })
+        );
+        assert.deepStrictEqual(unavailable.fallbacks, []);
+    }
+
+    const approvedButNotPublished = createHarness({
+        events: {
+            demo: { id: "demo", event_status: "active", published_version_id: "published", datos: { fallback: true } }
+        },
+        versions: {
+            published: {
+                id: "other-approved",
+                event_id: "demo",
+                workflow_status: "approved",
+                content: catalogContent
+            }
+        }
+    });
+    await expectCode(
+        "CATALOG_PREVIEW_NOT_FOUND",
+        () => approvedButNotPublished.resolver.resolveCatalogPreview("demo", {
+            templateSlug: "boda-vertical", themeSlug: "elegante"
+        })
+    );
+    assert.deepStrictEqual(approvedButNotPublished.fallbacks, []);
+
+    const invalidCatalogCases = [
+        { ...catalogContent, schema_version: 1 },
+        { ...catalogContent, template: { slug: "another-template" } },
+        { ...catalogContent, theme: { slug: "another-theme" } },
+        { ...catalogContent, metadata: { demo: false, purpose: "template-catalog-preview" } },
+        { ...catalogContent, metadata: { demo: true, purpose: "another-purpose" } }
+    ];
+    for (const content of invalidCatalogCases) {
+        const invalidCatalog = createHarness({
+            events: {
+                demo: { id: "demo", event_status: "active", published_version_id: "published", datos: { fallback: true } }
+            },
+            versions: {
+                published: { id: "published", event_id: "demo", workflow_status: "approved", content }
+            }
+        });
+        await expectCode(
+            "CATALOG_PREVIEW_INVALID_CONTENT",
+            () => invalidCatalog.resolver.resolveCatalogPreview("demo", {
+                templateSlug: "boda-vertical", themeSlug: "elegante"
+            })
+        );
+        assert.deepStrictEqual(invalidCatalog.fallbacks, []);
+    }
+
+    const rejectedByValidator = createHarness({
+        events: {
+            demo: { id: "demo", event_status: "active", published_version_id: "published", datos: { fallback: true } }
+        },
+        versions: {
+            published: {
+                id: "published",
+                event_id: "demo",
+                workflow_status: "approved",
+                content: catalogContent
+            }
+        },
+        validatePublishedContent: () => ({ valid: false, errors: ["synthetic"] })
+    });
+    await expectCode(
+        "CATALOG_PREVIEW_INVALID_CONTENT",
+        () => rejectedByValidator.resolver.resolveCatalogPreview("demo", {
+            templateSlug: "boda-vertical", themeSlug: "elegante"
+        })
+    );
 
     console.log("public-event-resolver tests passed");
 })().catch((error) => {

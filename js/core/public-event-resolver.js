@@ -30,6 +30,9 @@
         const onFallback = typeof options.onFallback === "function"
             ? options.onFallback
             : () => {};
+        const validatePublishedContent = typeof options.validatePublishedContent === "function"
+            ? options.validatePublishedContent
+            : () => ({ valid: true });
 
         function legacyFallback(event, reason) {
             if (!isPlainObject(event.datos)) {
@@ -77,7 +80,36 @@
             return cloneJson(version.content);
         }
 
-        return { resolvePublicEvent };
+        async function resolveCatalogPreview(eventId, expected) {
+            const event = await repository.getEvent(eventId);
+            if (!event || event.event_status !== "active" || !event.published_version_id) {
+                throw resolverError("CATALOG_PREVIEW_NOT_FOUND", `Catalog preview not found: ${eventId}`);
+            }
+
+            const version = await repository.getVersion(event.published_version_id);
+            if (!version
+                || version.id !== event.published_version_id
+                || version.event_id !== event.id) {
+                throw resolverError("CATALOG_PREVIEW_NOT_FOUND", `Catalog preview not found: ${eventId}`);
+            }
+
+            const content = version.content;
+            const validation = isPlainObject(content) ? validatePublishedContent(content) : { valid: false };
+            if (!isPlainObject(expected)
+                || !isPlainObject(content)
+                || content.schema_version !== 2
+                || validation?.valid !== true
+                || content.template?.slug !== expected.templateSlug
+                || content.theme?.slug !== expected.themeSlug
+                || content.metadata?.demo !== true
+                || content.metadata?.purpose !== "template-catalog-preview") {
+                throw resolverError("CATALOG_PREVIEW_INVALID_CONTENT", `Catalog preview is invalid: ${eventId}`);
+            }
+
+            return { eventId: event.id, versionId: version.id, content: cloneJson(content) };
+        }
+
+        return { resolvePublicEvent, resolveCatalogPreview };
     }
 
     return {

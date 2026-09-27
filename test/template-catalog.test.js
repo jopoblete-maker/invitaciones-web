@@ -49,6 +49,22 @@ function registryWith(templates) {
         assert.strictEqual(Object.prototype.hasOwnProperty.call(entry, "demoEventId"), false);
         assert.strictEqual(fs.existsSync(path.join(ROOT, entry.thumbnail.src.slice(1))), true);
     });
+    assert.strictEqual(entries[0].previewEventId, "ycor-template-demo-boda-vertical");
+    assert.strictEqual(entries[1].previewEventId, null);
+    assert.deepStrictEqual(
+        TemplateRegistry.getCatalogPreview("ycor-template-demo-boda-vertical"),
+        {
+            eventId: "ycor-template-demo-boda-vertical",
+            templateSlug: "boda-vertical",
+            themeSlug: "elegante"
+        }
+    );
+    assert.strictEqual(TemplateRegistry.getCatalogPreview("unknown-preview"), undefined);
+    assert.strictEqual(
+        TemplateCatalog.catalogPreviewHref(entries[0], TemplateRegistry),
+        "/invitacion.html?catalogPreview=ycor-template-demo-boda-vertical"
+    );
+    assert.strictEqual(TemplateCatalog.catalogPreviewHref(entries[1], TemplateRegistry), null);
 
     const incomplete = [
         template({ catalog: null }),
@@ -124,8 +140,78 @@ function registryWith(templates) {
     ["kaly", "joha", "moira", "assets/events/"].forEach((clientReference) => {
         assert.strictEqual(serializedCatalog.includes(clientReference), false);
     });
-    assert.strictEqual(typeof TemplateCatalog.verifyPublicPreview, "undefined");
-    assert.strictEqual(typeof TemplateCatalog.previewHref, "undefined");
+    const validPayload = {
+        eventId: entries[0].previewEventId,
+        versionId: "published-version",
+        content: {
+            schema_version: 2,
+            template: { slug: entries[0].slug },
+            theme: { slug: entries[0].themeSlug },
+            metadata: { demo: true, purpose: "template-catalog-preview" }
+        }
+    };
+    const calls = [];
+    assert.strictEqual(await TemplateCatalog.verifyCatalogPreview(entries[0], async (url, options) => {
+        calls.push({ url, options });
+        return { ok: true, json: async () => validPayload };
+    }), true);
+    assert.strictEqual(calls[0].url, "/api/catalogo/previews/ycor-template-demo-boda-vertical");
+    assert.strictEqual(calls[0].options.cache, "no-store");
+
+    for (const payload of [
+        { ...validPayload, eventId: "another-event" },
+        { ...validPayload, versionId: "" },
+        { ...validPayload, content: { ...validPayload.content, schema_version: 1 } },
+        { ...validPayload, content: { ...validPayload.content, template: { slug: "other" } } },
+        { ...validPayload, content: { ...validPayload.content, theme: { slug: "other" } } },
+        { ...validPayload, content: { ...validPayload.content, metadata: { demo: false, purpose: "template-catalog-preview" } } },
+        { ...validPayload, content: { ...validPayload.content, metadata: { demo: true, purpose: "other" } } }
+    ]) {
+        assert.strictEqual(await TemplateCatalog.verifyCatalogPreview(
+            entries[0],
+            async () => ({ ok: true, json: async () => payload })
+        ), false);
+    }
+    assert.strictEqual(await TemplateCatalog.verifyCatalogPreview(
+        entries[0],
+        async () => ({ ok: false })
+    ), false);
+    let absentPreviewCalls = 0;
+    assert.strictEqual(await TemplateCatalog.verifyCatalogPreview(entries[1], async () => {
+        absentPreviewCalls += 1;
+        return { ok: true };
+    }), false);
+    assert.strictEqual(absentPreviewCalls, 0);
+    assert.strictEqual(await TemplateCatalog.verifyCatalogPreview(
+        entries[0],
+        async () => { throw new Error("network"); }
+    ), false);
+    let aborted = false;
+    let previewTimeoutCallback;
+    class AbortControllerDouble {
+        constructor() {
+            this.signal = {};
+        }
+        abort() {
+            aborted = true;
+            this.signal.reject(new Error("aborted"));
+        }
+    }
+    const pending = TemplateCatalog.verifyCatalogPreview(
+        entries[0],
+        (_url, { signal }) => new Promise((_resolve, reject) => {
+            signal.reject = reject;
+        }),
+        {
+            timeoutMs: 10,
+            AbortControllerCtor: AbortControllerDouble,
+            setTimeoutImpl(callback) { previewTimeoutCallback = callback; return 31; },
+            clearTimeoutImpl() {}
+        }
+    );
+    previewTimeoutCallback();
+    assert.strictEqual(aborted, true);
+    assert.strictEqual(await pending, false);
 
     console.log("template catalog tests passed");
 })().catch((error) => {

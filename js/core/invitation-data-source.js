@@ -1,12 +1,16 @@
 (function (root, factory) {
-    const source = factory();
+    const source = factory(
+        typeof module === "object" && module.exports
+            ? require("./template-registry")
+            : root.TemplateRegistry
+    );
 
     if (typeof module === "object" && module.exports) {
         module.exports = source;
     }
 
     root.InvitationDataSource = source;
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (templateRegistry) {
     const ALLOWED_FIXTURES = new Set(["boda-civil-esencial"]);
     const ALLOWED_DRAFTS = new Set([
         "kaly-joha-boda-civil",
@@ -75,6 +79,18 @@
                 : { mode: "invalid-preview" };
         }
 
+        const catalogPreview = params.get("catalogPreview");
+        if (catalogPreview) {
+            const registered = templateRegistry?.getCatalogPreview?.(catalogPreview);
+            return registered
+                ? {
+                    mode: "catalog-preview",
+                    eventId: registered.eventId,
+                    url: `/api/catalogo/previews/${encodeURIComponent(registered.eventId)}`
+                }
+                : { mode: "invalid-preview" };
+        }
+
         const id = params.get("id");
         return id
             ? { mode: "public", eventId: id, url: `/api/eventos/${encodeURIComponent(id)}` }
@@ -95,7 +111,22 @@
                 ? "Invitacion no encontrada."
                 : "Vista previa no disponible.");
         }
-        return response.json();
+        const payload = await response.json();
+        if (source.mode !== "catalog-preview") return payload;
+        const registered = templateRegistry?.getCatalogPreview?.(source.eventId);
+        if (!registered
+            || !payload
+            || payload.eventId !== source.eventId
+            || typeof payload.versionId !== "string"
+            || payload.versionId.trim() === ""
+            || payload.content?.schema_version !== 2
+            || payload.content.template?.slug !== registered.templateSlug
+            || payload.content.theme?.slug !== registered.themeSlug
+            || payload.content.metadata?.demo !== true
+            || payload.content.metadata?.purpose !== "template-catalog-preview") {
+            throw new Error("Vista previa no disponible.");
+        }
+        return payload.content;
     }
 
     function showPrivatePreviewBadge(documentRef) {

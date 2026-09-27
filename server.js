@@ -3,6 +3,7 @@ const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const { validateEventForPersistence } = require('./js/core/event-validator');
 const ThemeRegistry = require('./js/core/theme-registry');
+const TemplateRegistry = require('./js/core/template-registry');
 const { createPublicEventResolver } = require('./js/core/public-event-resolver');
 const { createEventVersionRpcAdapter } = require('./js/core/event-version-rpc-adapter');
 const { createEventVersionEditorialService } = require('./js/core/event-version-editorial-service');
@@ -272,6 +273,7 @@ const publicEventResolver = createPublicEventResolver({
         return data;
     }
 }, {
+    validatePublishedContent: validateEventForPersistence,
     onFallback({ eventId, reason, publishedVersionId }) {
         console.warn('Public event legacy fallback:', {
             eventId,
@@ -282,6 +284,27 @@ const publicEventResolver = createPublicEventResolver({
 });
 
 // Endpoint para leer la invitación desde el frontend (invitacion.html)
+app.get('/api/catalogo/previews/:eventId', async (req, res) => {
+    const preview = TemplateRegistry.getCatalogPreview(req.params.eventId);
+    if (!preview) return res.status(404).json({ error: 'Vista previa no disponible' });
+    try {
+        const result = await publicEventResolver.resolveCatalogPreview(preview.eventId, preview);
+        return res.status(200).json(result);
+    } catch (err) {
+        if (err.code === 'CATALOG_PREVIEW_NOT_FOUND') {
+            return res.status(404).json({ error: 'Vista previa no disponible' });
+        }
+        if (err.code === 'CATALOG_PREVIEW_INVALID_CONTENT') {
+            return res.status(422).json({ error: 'Vista previa no disponible' });
+        }
+        console.error('Catalog preview read failed:', {
+            eventId: req.params.eventId,
+            code: err.code || 'CATALOG_PREVIEW_READ_FAILED'
+        });
+        return res.status(500).json({ error: 'Vista previa no disponible' });
+    }
+});
+
 app.get('/api/eventos/:id', async (req, res) => {
     try {
         const event = await publicEventResolver.resolvePublicEvent(req.params.id);

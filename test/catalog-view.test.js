@@ -34,7 +34,7 @@ function findByTag(node, tagName) {
     ]);
 }
 
-async function renderCatalog({ entries, loadableEntries }) {
+async function renderCatalog({ entries, loadableEntries, previewable = [] }) {
     const root = new FakeNode("div");
     const status = new FakeNode("p");
     let onReady;
@@ -65,7 +65,11 @@ async function renderCatalog({ entries, loadableEntries }) {
             probeImage: async () => {
                 probeCalls += 1;
                 return loadableEntries.length > 0;
-            }
+            },
+            verifyCatalogPreview: async (entry) => previewable.includes(entry),
+            catalogPreviewHref: (entry) => entry.previewEventId
+                ? `/invitacion.html?catalogPreview=${entry.previewEventId}`
+                : null
         }
     };
     vm.createContext(context);
@@ -81,6 +85,8 @@ async function renderCatalog({ entries, loadableEntries }) {
         categoryLabel: "Bodas",
         description: "Invitación sintética.",
         variantName: "Elegante",
+        themeSlug: "elegante",
+        previewEventId: "ycor-template-demo-boda-vertical",
         thumbnail: { src: "/assets/templates/boda-vertical/thumbnail.webp", alt: "Demo" }
     };
 
@@ -101,11 +107,20 @@ async function renderCatalog({ entries, loadableEntries }) {
         thumbnail: { src: "/assets/templates/cumple-clasico/thumbnail.webp", alt: "Demo de cumpleaños" }
     };
     const visibleEntries = [entry, birthdayEntry, civilEntry];
-    const visible = await renderCatalog({ entries: visibleEntries, loadableEntries: visibleEntries });
+    const visible = await renderCatalog({
+        entries: visibleEntries,
+        loadableEntries: visibleEntries,
+        previewable: [entry]
+    });
     assert.strictEqual(visible.root.children.length, 3);
     assert.strictEqual(visible.status.hidden, true);
     assert.strictEqual(visible.probeCalls, 3);
-    assert.strictEqual(findByTag(visible.root, "a").length, 0);
+    assert.strictEqual(findByTag(visible.root, "a").length, 1);
+    assert.strictEqual(findByTag(visible.root, "a")[0].textContent, "Ver invitación");
+    assert.strictEqual(
+        findByTag(visible.root, "a")[0].href,
+        "/invitacion.html?catalogPreview=ycor-template-demo-boda-vertical"
+    );
     assert.strictEqual(visible.root.children[1].children[1].children[1].textContent, "Cumpleaños / Fiesta clásica");
     assert.strictEqual(visible.root.children[2].children[1].children[1].textContent, "Boda civil / Romántica");
 
@@ -119,6 +134,10 @@ async function renderCatalog({ entries, loadableEntries }) {
     assert.strictEqual(failedImage.status.textContent, "No se pudo cargar la imagen del diseño.");
     assert.strictEqual(failedImage.root.children.length, 0);
 
+    const failedPreview = await renderCatalog({ entries: [entry], loadableEntries: [entry] });
+    assert.strictEqual(failedPreview.root.children.length, 1);
+    assert.strictEqual(findByTag(failedPreview.root, "a").length, 0);
+
     assert(html.includes('id="catalogStatus"'));
     assert(html.includes('role="status"'));
     assert(html.includes('/js/core/template-registry.js'));
@@ -126,9 +145,8 @@ async function renderCatalog({ entries, loadableEntries }) {
     assert(html.includes('/js/core/template-catalog.js'));
     assert(html.includes('/js/catalogo.js'));
     assert(!html.includes("Ver invitación"));
-    assert(!script.includes("fetch("));
-    assert(!script.includes("previewHref"));
-    assert(!script.includes("verifyPublicPreview"));
+    assert(script.includes("verifyCatalogPreview"));
+    assert(script.includes("catalogPreviewHref"));
 
     console.log("catalog view tests passed");
 })().catch((error) => {

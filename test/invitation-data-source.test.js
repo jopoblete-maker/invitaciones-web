@@ -22,6 +22,59 @@ const VERSION_ID = "11111111-1111-4111-8111-111111111111";
     });
     assert.deepStrictEqual(publicCalls, [{ url: "/api/eventos/public-event", options: undefined }]);
 
+    const catalogSource = InvitationDataSource.selectInvitationSource(
+        "?catalogPreview=ycor-template-demo-boda-vertical&id=must-not-win",
+        "invitaciones.example.test"
+    );
+    assert.deepStrictEqual(catalogSource, {
+        mode: "catalog-preview",
+        eventId: "ycor-template-demo-boda-vertical",
+        url: "/api/catalogo/previews/ycor-template-demo-boda-vertical"
+    });
+    const catalogCalls = [];
+    assert.deepStrictEqual(
+        await InvitationDataSource.loadInvitationSource(catalogSource, async (url, options) => {
+            catalogCalls.push({ url, options });
+            return {
+                ok: true,
+                json: async () => ({
+                    eventId: "ycor-template-demo-boda-vertical",
+                    versionId: VERSION_ID,
+                    content: {
+                        schema_version: 2,
+                        template: { slug: "boda-vertical" },
+                        theme: { slug: "elegante" },
+                        metadata: { demo: true, purpose: "template-catalog-preview" }
+                    }
+                })
+            };
+        }),
+        {
+            schema_version: 2,
+            template: { slug: "boda-vertical" },
+            theme: { slug: "elegante" },
+            metadata: { demo: true, purpose: "template-catalog-preview" }
+        }
+    );
+    assert.deepStrictEqual(catalogCalls, [{
+        url: "/api/catalogo/previews/ycor-template-demo-boda-vertical",
+        options: { cache: "no-store" }
+    }]);
+    assert.deepStrictEqual(
+        InvitationDataSource.selectInvitationSource(
+            "?catalogPreview=not-registered",
+            "invitaciones.example.test"
+        ),
+        { mode: "invalid-preview" }
+    );
+    await assert.rejects(
+        () => InvitationDataSource.loadInvitationSource(catalogSource, async () => ({
+            ok: true,
+            json: async () => ({ eventId: "wrong", content: { mustNotRender: true } })
+        })),
+        /Vista previa/
+    );
+
     const previewSource = InvitationDataSource.selectInvitationSource(
         `?preview=1&eventId=preview-event&versionId=${VERSION_ID}`,
         "127.0.0.1"

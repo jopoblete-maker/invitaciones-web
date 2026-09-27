@@ -1,5 +1,7 @@
 const assert = require("assert");
 const Module = require("module");
+const fs = require("fs");
+const path = require("path");
 
 const routes = {};
 const rows = {
@@ -79,6 +81,8 @@ try {
 
 const readEvent = routes["GET /api/eventos/:id"];
 assert.strictEqual(typeof readEvent, "function");
+const readCatalogPreview = routes["GET /api/catalogo/previews/:eventId"];
+assert.strictEqual(typeof readCatalogPreview, "function");
 
 function responseDouble() {
     return {
@@ -98,6 +102,12 @@ function responseDouble() {
 async function request(id) {
     const response = responseDouble();
     await readEvent({ params: { id } }, response);
+    return response;
+}
+
+async function previewRequest(id) {
+    const response = responseDouble();
+    await readCatalogPreview({ params: { eventId: id } }, response);
     return response;
 }
 
@@ -196,6 +206,47 @@ function reset() {
     const missing = await request("missing");
     assert.strictEqual(missing.statusCode, 404);
     assert.deepStrictEqual(missing.body, { error: "Invitación no encontrada" });
+
+    reset();
+    const demoContent = JSON.parse(fs.readFileSync(
+        path.resolve(__dirname, "..", ".dev", "drafts", "ycor-template-demo-boda-vertical.event.json"),
+        "utf8"
+    ));
+    rows.eventos.set("ycor-template-demo-boda-vertical", {
+        id: "ycor-template-demo-boda-vertical",
+        datos: { mustNotLeak: true },
+        published_version_id: "published-demo",
+        event_status: "active"
+    });
+    rows.event_versions.set("published-demo", {
+        id: "published-demo",
+        event_id: "ycor-template-demo-boda-vertical",
+        workflow_status: "approved",
+        content: demoContent
+    });
+    const catalogPreview = await previewRequest("ycor-template-demo-boda-vertical");
+    assert.strictEqual(catalogPreview.statusCode, 200);
+    assert.deepStrictEqual(catalogPreview.body, {
+        eventId: "ycor-template-demo-boda-vertical",
+        versionId: "published-demo",
+        content: demoContent
+    });
+
+    reset();
+    rows.eventos.set("ycor-template-demo-boda-vertical", {
+        id: "ycor-template-demo-boda-vertical",
+        datos: demoContent,
+        published_version_id: null,
+        event_status: "active"
+    });
+    const noPublishedFallback = await previewRequest("ycor-template-demo-boda-vertical");
+    assert.strictEqual(noPublishedFallback.statusCode, 404);
+    assert.deepStrictEqual(queries.map((query) => query.table), ["eventos"]);
+
+    reset();
+    const unregistered = await previewRequest("not-registered");
+    assert.strictEqual(unregistered.statusCode, 404);
+    assert.deepStrictEqual(queries, []);
 
     console.log("server public event read tests passed");
 })().catch((error) => {
