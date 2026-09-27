@@ -57,7 +57,19 @@
             supportedModules: [...SUPPORTED_MODULES],
             supportedActions: [...TEMPLATE_ACTIONS],
             status: "active",
-            catalog: defineCatalogMetadata(null)
+            catalog: defineCatalogMetadata({
+                displayName: "Cumpleaños",
+                description: "Invitación de cumpleaños alegre y clásica, con una composición festiva adaptable a dispositivos móviles.",
+                variant: {
+                    name: "Fiesta clásica",
+                    themeSlug: "fiesta"
+                },
+                thumbnail: {
+                    src: "/assets/templates/cumple-clasico/thumbnail.webp",
+                    alt: "Vista previa de la plantilla Cumpleaños Fiesta clásica"
+                },
+                preview: null
+            }, "cumple-clasico")
         },
         "boda-civil-esencial": {
             slug: "boda-civil-esencial",

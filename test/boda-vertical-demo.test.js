@@ -136,7 +136,7 @@ function previewRequest(url) {
     });
     assert.deepStrictEqual(
         TemplateRegistry.listCatalogTemplates().map((catalogTemplate) => catalogTemplate.slug),
-        ["boda-vertical", "boda-civil-esencial"]
+        ["boda-vertical", "cumple-clasico", "boda-civil-esencial"]
     );
     assert.strictEqual(
         fs.existsSync(path.join(ROOT, "assets", "templates", "boda-vertical", "thumbnail.webp")),

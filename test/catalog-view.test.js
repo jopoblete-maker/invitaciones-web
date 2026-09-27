@@ -92,13 +92,22 @@ async function renderCatalog({ entries, loadableEntries }) {
         variantName: "Romántica",
         thumbnail: { src: "/assets/templates/boda-civil-esencial/thumbnail.webp", alt: "Demo civil" }
     };
-    const visibleEntries = [entry, civilEntry];
+    const birthdayEntry = {
+        slug: "cumple-clasico",
+        name: "Cumpleaños",
+        categoryLabel: "Cumpleaños",
+        description: "Invitación de cumpleaños sintética.",
+        variantName: "Fiesta clásica",
+        thumbnail: { src: "/assets/templates/cumple-clasico/thumbnail.webp", alt: "Demo de cumpleaños" }
+    };
+    const visibleEntries = [entry, birthdayEntry, civilEntry];
     const visible = await renderCatalog({ entries: visibleEntries, loadableEntries: visibleEntries });
-    assert.strictEqual(visible.root.children.length, 2);
+    assert.strictEqual(visible.root.children.length, 3);
     assert.strictEqual(visible.status.hidden, true);
-    assert.strictEqual(visible.probeCalls, 2);
+    assert.strictEqual(visible.probeCalls, 3);
     assert.strictEqual(findByTag(visible.root, "a").length, 0);
-    assert.strictEqual(visible.root.children[1].children[1].children[1].textContent, "Boda civil / Romántica");
+    assert.strictEqual(visible.root.children[1].children[1].children[1].textContent, "Cumpleaños / Fiesta clásica");
+    assert.strictEqual(visible.root.children[2].children[1].children[1].textContent, "Boda civil / Romántica");
 
     const empty = await renderCatalog({ entries: [], loadableEntries: [] });
     assert.strictEqual(empty.status.hidden, false);

@@ -109,7 +109,7 @@ listed.pop();
 assert.strictEqual(listTemplates().length, 3);
 
 assert.strictEqual(typeof listCatalogTemplates, "function");
-assert.deepStrictEqual(listCatalogTemplates().map((template) => template.slug), ["boda-vertical", "boda-civil-esencial"]);
+assert.deepStrictEqual(listCatalogTemplates().map((template) => template.slug), ["boda-vertical", "cumple-clasico", "boda-civil-esencial"]);
 assert.deepStrictEqual(wedding.catalog, {
     description: "Invitación de boda elegante en formato vertical, con ubicación, cuenta regresiva y una experiencia visual adaptable a dispositivos móviles.",
     variant: {
@@ -132,7 +132,17 @@ assert.throws(() => { wedding.catalog.preview.eventId = "mutado"; }, TypeError);
 assert.deepStrictEqual(getTemplate("boda-vertical").catalog.preview, {
     eventId: "ycor-template-demo-boda-vertical"
 });
-assert.strictEqual(birthday.catalog, null);
+assert.deepStrictEqual(birthday.catalog, {
+    displayName: "Cumpleaños",
+    description: "Invitación de cumpleaños alegre y clásica, con una composición festiva adaptable a dispositivos móviles.",
+    variant: { name: "Fiesta clásica", themeSlug: "fiesta" },
+    thumbnail: {
+        src: "/assets/templates/cumple-clasico/thumbnail.webp",
+        alt: "Vista previa de la plantilla Cumpleaños Fiesta clásica"
+    },
+    preview: null
+});
+assert.strictEqual(Object.isFrozen(birthday.catalog), true);
 assert.deepStrictEqual(civil.catalog, {
     displayName: "Boda civil",
     description: "Invitación civil romántica en formato vertical, con flores delicadas, tonos suaves y detalles dorados.",
@@ -146,7 +156,7 @@ assert.deepStrictEqual(civil.catalog, {
 assert.strictEqual(Object.isFrozen(civil.catalog), true);
 const catalogListed = listCatalogTemplates();
 catalogListed.push({ slug: "template-ajeno" });
-assert.deepStrictEqual(listCatalogTemplates().map((template) => template.slug), ["boda-vertical", "boda-civil-esencial"]);
+assert.deepStrictEqual(listCatalogTemplates().map((template) => template.slug), ["boda-vertical", "cumple-clasico", "boda-civil-esencial"]);
 assert.strictEqual(listTemplates().length, 3);
 
 const catalogWithoutPreview = defineCatalogMetadata({

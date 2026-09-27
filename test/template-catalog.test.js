@@ -40,10 +40,11 @@ function registryWith(templates) {
     const entries = TemplateCatalog.buildCatalogEntries(TemplateRegistry, ThemeRegistry);
     assert.deepStrictEqual(entries.map((entry) => `${entry.name} / ${entry.variantName}`), [
         "Boda vertical / Elegante",
+        "Cumpleaños / Fiesta clásica",
         "Boda civil / Romántica"
     ]);
     assert.strictEqual(TemplateRegistry.getTemplate("boda-civil-esencial").name, "Boda civil esencial");
-    assert.deepStrictEqual(entries.map((entry) => entry.categoryLabel), ["Bodas", "Bodas"]);
+    assert.deepStrictEqual(entries.map((entry) => entry.categoryLabel), ["Bodas", "Cumpleaños", "Bodas"]);
     entries.forEach((entry) => {
         assert.strictEqual(Object.prototype.hasOwnProperty.call(entry, "demoEventId"), false);
         assert.strictEqual(fs.existsSync(path.join(ROOT, entry.thumbnail.src.slice(1))), true);
