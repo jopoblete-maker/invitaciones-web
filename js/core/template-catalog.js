@@ -28,6 +28,7 @@
             && isNonEmptyString(template.category)
             && isNonEmptyString(CATEGORY_LABELS[template.category])
             && isObject(catalog)
+            && (catalog.displayName === undefined || isNonEmptyString(catalog.displayName))
             && isNonEmptyString(catalog.description)
             && isObject(catalog.variant)
             && isNonEmptyString(catalog.variant.name)
@@ -53,7 +54,7 @@
             .filter((template) => hasValidCatalogMetadata(template, themeRegistry, templateRegistry))
             .map((template) => ({
                 slug: template.slug,
-                name: template.name,
+                name: template.catalog.displayName || template.name,
                 category: template.category,
                 categoryLabel: CATEGORY_LABELS[template.category],
                 description: template.catalog.description,

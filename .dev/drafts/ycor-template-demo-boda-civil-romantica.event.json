@@ -1,0 +1,153 @@
+{
+  "schema_version": 2,
+  "id": "ycor-template-demo-boda-civil-romantica",
+  "event_type": "wedding-civil",
+  "plan": "esencial",
+  "status": "ready_for_preview",
+  "template": {
+    "slug": "boda-civil-esencial"
+  },
+  "identity": {
+    "title": "Clara & Tomas",
+    "subtitle": "Nuestro civil",
+    "message": "Una celebracion ficticia creada para presentar este diseno romantico."
+  },
+  "schedule": {
+    "date": "2031-04-26",
+    "time": "17:30",
+    "date_text": "26 DE ABRIL",
+    "time_text": "17:30 hs.",
+    "timezone": "America/Argentina/Buenos_Aires"
+  },
+  "location": {
+    "name": "Jardin de demostracion",
+    "address": "Direccion ficticia 245",
+    "city": "Buenos Aires",
+    "maps_url": "https://www.google.com/maps/search/?api=1&query=Buenos+Aires",
+    "message": "Todos los datos de esta invitacion son ficticios."
+  },
+  "theme": {
+    "slug": "romantico"
+  },
+  "sections": [
+    {
+      "id": "hero",
+      "type": "hero",
+      "enabled": true,
+      "order": 10,
+      "data": {
+        "title": "Clara & Tomas",
+        "subtitle": "Nuestro civil",
+        "dateText": "26 DE ABRIL",
+        "media_id": "civil-hero",
+        "imageAlt": "Flores romanticas en tonos suaves y detalles dorados"
+      },
+      "config": {
+        "showCopy": true
+      }
+    },
+    {
+      "id": "event-info",
+      "type": "event-info",
+      "enabled": true,
+      "order": 20,
+      "data": {
+        "dateText": "26 DE ABRIL",
+        "timeText": "17:30 hs.",
+        "place": "Jardin de demostracion",
+        "address": "Direccion ficticia 245",
+        "city": "Buenos Aires",
+        "message": "Ceremonia civil y brindis en un entorno intimo."
+      },
+      "config": {
+        "showMessage": true
+      }
+    },
+    {
+      "id": "location",
+      "type": "location",
+      "enabled": true,
+      "order": 30,
+      "data": {
+        "name": "Jardin de demostracion",
+        "address": "Direccion ficticia 245",
+        "city": "Buenos Aires",
+        "message": "Una ubicacion generica usada solo para esta demostracion.",
+        "timeText": "17:30 hs."
+      },
+      "config": {
+        "show_maps": true,
+        "show_calendar": true
+      }
+    },
+    {
+      "id": "rsvp",
+      "type": "rsvp",
+      "enabled": false,
+      "order": 40,
+      "data": {},
+      "config": {}
+    },
+    {
+      "id": "countdown",
+      "type": "countdown",
+      "enabled": true,
+      "order": 50,
+      "data": {
+        "target_datetime": "2031-04-26T17:30:00-03:00",
+        "eyebrow": "FALTAN",
+        "footer": "PARA NUESTRO CIVIL",
+        "completedMessage": "La celebracion ha comenzado"
+      },
+      "config": {}
+    },
+    {
+      "id": "closing",
+      "type": "closing",
+      "enabled": true,
+      "order": 60,
+      "data": {
+        "title": "Gracias",
+        "message": "Una historia ficticia para descubrir esta variante.",
+        "names": "Clara & Tomas"
+      },
+      "config": {}
+    }
+  ],
+  "modules": {
+    "music": {
+      "enabled": false,
+      "playMode": "selector",
+      "tracks": []
+    },
+    "rsvp": {
+      "enabled": true,
+      "deadline": "2031-04-12",
+      "contacts": []
+    },
+    "branding": {
+      "enabled": true,
+      "brandName": "YCOR Digital",
+      "badgeText": "YCOR Demo",
+      "cta": "Conoce una invitacion civil romantica",
+      "serviceText": "Contenido ficticio para evaluacion visual",
+      "whatsapp": "",
+      "whatsappMessage": "",
+      "portfolioUrl": "",
+      "instagramUrl": ""
+    }
+  },
+  "media": {
+    "items": {
+      "civil-hero": {
+        "type": "image",
+        "src": "/assets/templates/boda-civil-esencial/demo/hero.webp"
+      }
+    }
+  },
+  "metadata": {
+    "locale": "es-AR",
+    "purpose": "template-catalog-preview",
+    "demo": true
+  }
+}

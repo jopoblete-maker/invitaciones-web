@@ -109,7 +109,7 @@ listed.pop();
 assert.strictEqual(listTemplates().length, 3);
 
 assert.strictEqual(typeof listCatalogTemplates, "function");
-assert.deepStrictEqual(listCatalogTemplates().map((template) => template.slug), ["boda-vertical"]);
+assert.deepStrictEqual(listCatalogTemplates().map((template) => template.slug), ["boda-vertical", "boda-civil-esencial"]);
 assert.deepStrictEqual(wedding.catalog, {
     description: "Invitación de boda elegante en formato vertical, con ubicación, cuenta regresiva y una experiencia visual adaptable a dispositivos móviles.",
     variant: {
@@ -133,10 +133,20 @@ assert.deepStrictEqual(getTemplate("boda-vertical").catalog.preview, {
     eventId: "ycor-template-demo-boda-vertical"
 });
 assert.strictEqual(birthday.catalog, null);
-assert.strictEqual(civil.catalog, null);
+assert.deepStrictEqual(civil.catalog, {
+    displayName: "Boda civil",
+    description: "Invitación civil romántica en formato vertical, con flores delicadas, tonos suaves y detalles dorados.",
+    variant: { name: "Romántica", themeSlug: "romantico" },
+    thumbnail: {
+        src: "/assets/templates/boda-civil-esencial/thumbnail.webp",
+        alt: "Vista previa de la plantilla Boda civil romántica"
+    },
+    preview: null
+});
+assert.strictEqual(Object.isFrozen(civil.catalog), true);
 const catalogListed = listCatalogTemplates();
 catalogListed.push({ slug: "template-ajeno" });
-assert.deepStrictEqual(listCatalogTemplates().map((template) => template.slug), ["boda-vertical"]);
+assert.deepStrictEqual(listCatalogTemplates().map((template) => template.slug), ["boda-vertical", "boda-civil-esencial"]);
 assert.strictEqual(listTemplates().length, 3);
 
 const catalogWithoutPreview = defineCatalogMetadata({
@@ -177,6 +187,9 @@ const validCatalogBase = {
     preview: null
 };
 [
+    { ...validCatalogBase, displayName: "" },
+    { ...validCatalogBase, displayName: "   " },
+    { ...validCatalogBase, displayName: 42 },
     { ...validCatalogBase, description: "" },
     { ...validCatalogBase, variant: undefined },
     { ...validCatalogBase, variant: { ...validCatalogBase.variant, name: "" } },

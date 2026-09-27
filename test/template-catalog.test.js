@@ -39,19 +39,21 @@ function registryWith(templates) {
 (async () => {
     const entries = TemplateCatalog.buildCatalogEntries(TemplateRegistry, ThemeRegistry);
     assert.deepStrictEqual(entries.map((entry) => `${entry.name} / ${entry.variantName}`), [
-        "Boda vertical / Elegante"
+        "Boda vertical / Elegante",
+        "Boda civil / Romántica"
     ]);
-    assert.deepStrictEqual(entries.map((entry) => entry.categoryLabel), ["Bodas"]);
-    assert.strictEqual(Object.prototype.hasOwnProperty.call(entries[0], "demoEventId"), false);
-    assert.strictEqual(
-        fs.existsSync(path.join(ROOT, entries[0].thumbnail.src.slice(1))),
-        true
-    );
+    assert.strictEqual(TemplateRegistry.getTemplate("boda-civil-esencial").name, "Boda civil esencial");
+    assert.deepStrictEqual(entries.map((entry) => entry.categoryLabel), ["Bodas", "Bodas"]);
+    entries.forEach((entry) => {
+        assert.strictEqual(Object.prototype.hasOwnProperty.call(entry, "demoEventId"), false);
+        assert.strictEqual(fs.existsSync(path.join(ROOT, entry.thumbnail.src.slice(1))), true);
+    });
 
     const incomplete = [
         template({ catalog: null }),
         template({ status: "inactive" }),
         template({ category: "unknown" }),
+        template({ catalog: { ...template().catalog, displayName: "" } }),
         template({ catalog: { ...template().catalog, variant: { name: "Demo", themeSlug: "unknown" } } }),
         template({ catalog: { ...template().catalog, description: "" } }),
         template({ catalog: { ...template().catalog, variant: { name: "", themeSlug: "elegante" } } }),
@@ -63,6 +65,9 @@ function registryWith(templates) {
         template({ catalog: { ...template().catalog, preview: {} } })
     ];
     assert.deepStrictEqual(TemplateCatalog.buildCatalogEntries(registryWith(incomplete), ThemeRegistry), []);
+
+    const fallbackName = TemplateCatalog.buildCatalogEntries(registryWith([template()]), ThemeRegistry);
+    assert.strictEqual(fallbackName[0].name, "Demo");
 
     const loadable = await TemplateCatalog.filterLoadableThumbnails([
         { thumbnail: { src: "/valid.webp" } },

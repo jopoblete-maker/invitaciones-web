@@ -59,7 +59,7 @@ async function renderCatalog({ entries, loadableEntries }) {
             buildCatalogEntries: () => entries,
             filterLoadableThumbnails: async (received, loadImage) => {
                 assert.strictEqual(received, entries);
-                if (received.length > 0) await loadImage(received[0].thumbnail.src);
+                await Promise.all(received.map((catalogEntry) => loadImage(catalogEntry.thumbnail.src)));
                 return loadableEntries;
             },
             probeImage: async () => {
@@ -84,11 +84,21 @@ async function renderCatalog({ entries, loadableEntries }) {
         thumbnail: { src: "/assets/templates/boda-vertical/thumbnail.webp", alt: "Demo" }
     };
 
-    const visible = await renderCatalog({ entries: [entry], loadableEntries: [entry] });
-    assert.strictEqual(visible.root.children.length, 1);
+    const civilEntry = {
+        slug: "boda-civil-esencial",
+        name: "Boda civil",
+        categoryLabel: "Bodas",
+        description: "Invitación civil sintética.",
+        variantName: "Romántica",
+        thumbnail: { src: "/assets/templates/boda-civil-esencial/thumbnail.webp", alt: "Demo civil" }
+    };
+    const visibleEntries = [entry, civilEntry];
+    const visible = await renderCatalog({ entries: visibleEntries, loadableEntries: visibleEntries });
+    assert.strictEqual(visible.root.children.length, 2);
     assert.strictEqual(visible.status.hidden, true);
-    assert.strictEqual(visible.probeCalls, 1);
+    assert.strictEqual(visible.probeCalls, 2);
     assert.strictEqual(findByTag(visible.root, "a").length, 0);
+    assert.strictEqual(visible.root.children[1].children[1].children[1].textContent, "Boda civil / Romántica");
 
     const empty = await renderCatalog({ entries: [], loadableEntries: [] });
     assert.strictEqual(empty.status.hidden, false);

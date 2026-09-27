@@ -67,6 +67,13 @@ const VERSION_ID = "11111111-1111-4111-8111-111111111111";
     );
     assert.strictEqual(
         InvitationDataSource.selectInvitationSource(
+            "?devDraft=ycor-template-demo-boda-civil-romantica",
+            "localhost"
+        ).url,
+        "/__dev-drafts/ycor-template-demo-boda-civil-romantica.event.json"
+    );
+    assert.strictEqual(
+        InvitationDataSource.selectInvitationSource(
             "?devFixture=boda-civil-esencial",
             "localhost"
         ).url,

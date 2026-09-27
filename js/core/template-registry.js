@@ -73,7 +73,19 @@
             supportedModules: [...SUPPORTED_MODULES],
             supportedActions: [...TEMPLATE_ACTIONS],
             status: "active",
-            catalog: defineCatalogMetadata(null)
+            catalog: defineCatalogMetadata({
+                displayName: "Boda civil",
+                description: "Invitación civil romántica en formato vertical, con flores delicadas, tonos suaves y detalles dorados.",
+                variant: {
+                    name: "Romántica",
+                    themeSlug: "romantico"
+                },
+                thumbnail: {
+                    src: "/assets/templates/boda-civil-esencial/thumbnail.webp",
+                    alt: "Vista previa de la plantilla Boda civil romántica"
+                },
+                preview: null
+            }, "boda-civil-esencial")
         }
     });
 
@@ -112,8 +124,11 @@
             && isNonEmptyString(catalog.variant.themeSlug);
         const validPreview = catalog?.preview === null
             || (isObject(catalog?.preview) && isValidEventId(catalog.preview.eventId));
+        const validDisplayName = catalog?.displayName === undefined
+            || isNonEmptyString(catalog.displayName);
 
         if (!isObject(catalog)
+            || !validDisplayName
             || !isNonEmptyString(catalog.description)
             || !validVariant
             || !validThumbnail

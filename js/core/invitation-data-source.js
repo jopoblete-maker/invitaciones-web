@@ -11,6 +11,7 @@
     const ALLOWED_DRAFTS = new Set([
         "kaly-joha-boda-civil",
         "demo-event-v2",
+        "ycor-template-demo-boda-civil-romantica",
         "ycor-template-demo-boda-vertical"
     ]);
 
