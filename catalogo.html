@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de invitaciones | YCOR Digital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/catalogo.css">
+</head>
+
+<body>
+    <header class="catalog-header">
+        <div class="catalog-header__inner">
+            <p class="catalog-brand">YCOR Digital</p>
+            <h1>Catálogo de invitaciones</h1>
+        </div>
+    </header>
+
+    <main class="catalog-main">
+        <div id="catalogGrid" class="catalog-grid" aria-live="polite"></div>
+        <p id="catalogStatus" class="catalog-status" role="status">Cargando diseños...</p>
+    </main>
+
+    <script src="/js/core/template-registry.js" defer></script>
+    <script src="/js/core/theme-registry.js" defer></script>
+    <script src="/js/core/template-catalog.js" defer></script>
+    <script src="/js/catalogo.js" defer></script>
+</body>
+
+</html>

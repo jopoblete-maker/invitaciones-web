@@ -1,0 +1,135 @@
+:root {
+    color-scheme: light;
+    --catalog-ink: #202722;
+    --catalog-muted: #657069;
+    --catalog-surface: #ffffff;
+    --catalog-canvas: #f4f6f3;
+    --catalog-line: #d9ded9;
+    --catalog-accent: #8c6a2f;
+    --catalog-action: #185f4b;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--catalog-ink);
+    background: var(--catalog-canvas);
+    font-family: "Lato", Arial, sans-serif;
+}
+
+.catalog-header {
+    border-bottom: 1px solid var(--catalog-line);
+    background: var(--catalog-surface);
+}
+
+.catalog-header__inner,
+.catalog-main {
+    width: min(1120px, calc(100% - 32px));
+    margin-inline: auto;
+}
+
+.catalog-header__inner {
+    padding-block: 24px 20px;
+}
+
+.catalog-brand {
+    margin: 0 0 6px;
+    color: var(--catalog-action);
+    font-size: 0.78rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+h1 {
+    margin: 0;
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 2.4rem;
+    line-height: 1.15;
+    letter-spacing: 0;
+}
+
+.catalog-main {
+    padding-block: 32px 56px;
+}
+
+.catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 340px));
+    gap: 24px;
+}
+
+.catalog-card {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    border: 1px solid var(--catalog-line);
+    border-radius: 8px;
+    background: var(--catalog-surface);
+    box-shadow: 0 12px 32px rgba(30, 42, 34, 0.08);
+}
+
+.catalog-card__image {
+    display: block;
+    width: 100%;
+    height: 420px;
+    object-fit: cover;
+    object-position: center 34%;
+    background: #edf0ec;
+}
+
+.catalog-card__body {
+    padding: 20px;
+}
+
+.catalog-card__category {
+    margin: 0 0 8px;
+    color: var(--catalog-accent);
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.catalog-card__title {
+    margin: 0;
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 1.35rem;
+    line-height: 1.25;
+    letter-spacing: 0;
+}
+
+.catalog-card__description {
+    margin: 12px 0 0;
+    color: var(--catalog-muted);
+    font-size: 0.95rem;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+}
+
+.catalog-status {
+    margin: 0;
+    padding-block: 48px;
+    color: var(--catalog-muted);
+}
+
+@media (max-width: 520px) {
+    h1 {
+        font-size: 1.8rem;
+    }
+
+    .catalog-header__inner,
+    .catalog-main {
+        width: min(calc(100% - 24px), 1120px);
+    }
+
+    .catalog-main {
+        padding-top: 20px;
+    }
+
+    .catalog-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

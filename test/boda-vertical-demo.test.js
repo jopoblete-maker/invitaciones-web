@@ -122,6 +122,10 @@ function previewRequest(url) {
 
     assert.deepStrictEqual(template.catalog, {
         description: "Invitación de boda elegante en formato vertical, con ubicación, cuenta regresiva y una experiencia visual adaptable a dispositivos móviles.",
+        variant: {
+            name: "Elegante",
+            themeSlug: "elegante"
+        },
         thumbnail: {
             src: "/assets/templates/boda-vertical/thumbnail.webp",
             alt: "Vista previa de la plantilla Boda vertical"

@@ -12,6 +12,8 @@ const {
     defineCatalogMetadata,
     getTemplate,
     hasTemplate,
+    isTemplateAssetPath,
+    isValidEventId,
     listCatalogTemplates,
     listTemplates,
     resolveTemplate
@@ -110,6 +112,10 @@ assert.strictEqual(typeof listCatalogTemplates, "function");
 assert.deepStrictEqual(listCatalogTemplates().map((template) => template.slug), ["boda-vertical"]);
 assert.deepStrictEqual(wedding.catalog, {
     description: "Invitación de boda elegante en formato vertical, con ubicación, cuenta regresiva y una experiencia visual adaptable a dispositivos móviles.",
+    variant: {
+        name: "Elegante",
+        themeSlug: "elegante"
+    },
     thumbnail: {
         src: "/assets/templates/boda-vertical/thumbnail.webp",
         alt: "Vista previa de la plantilla Boda vertical"
@@ -119,6 +125,7 @@ assert.deepStrictEqual(wedding.catalog, {
     }
 });
 assert.strictEqual(Object.isFrozen(wedding.catalog), true);
+assert.strictEqual(Object.isFrozen(wedding.catalog.variant), true);
 assert.strictEqual(Object.isFrozen(wedding.catalog.thumbnail), true);
 assert.strictEqual(Object.isFrozen(wedding.catalog.preview), true);
 assert.throws(() => { wedding.catalog.preview.eventId = "mutado"; }, TypeError);
@@ -134,12 +141,13 @@ assert.strictEqual(listTemplates().length, 3);
 
 const catalogWithoutPreview = defineCatalogMetadata({
     description: "Plantilla demo",
+    variant: { name: "Demo", themeSlug: "elegante" },
     thumbnail: {
         src: "/assets/templates/demo/thumbnail.webp",
         alt: "Vista previa de plantilla demo"
     },
     preview: null
-});
+}, "demo");
 assert.strictEqual(Object.isFrozen(catalogWithoutPreview), true);
 assert.strictEqual(Object.isFrozen(catalogWithoutPreview.thumbnail), true);
 assert.throws(() => { catalogWithoutPreview.description = "Mutada"; }, TypeError);
@@ -147,6 +155,7 @@ assert.throws(() => { catalogWithoutPreview.thumbnail.src = "/otro.webp"; }, Typ
 
 const catalogWithPreview = defineCatalogMetadata({
     description: "Plantilla demo",
+    variant: { name: "Demo", themeSlug: "elegante" },
     thumbnail: {
         src: "/assets/templates/demo/thumbnail.webp",
         alt: "Vista previa de plantilla demo"
@@ -154,12 +163,13 @@ const catalogWithPreview = defineCatalogMetadata({
     preview: {
         eventId: "ycor-template-demo-demo"
     }
-});
+}, "demo");
 assert.strictEqual(Object.isFrozen(catalogWithPreview.preview), true);
 assert.throws(() => { catalogWithPreview.preview.eventId = "mutado"; }, TypeError);
 
 const validCatalogBase = {
     description: "Plantilla demo",
+    variant: { name: "Demo", themeSlug: "elegante" },
     thumbnail: {
         src: "/assets/templates/demo/thumbnail.webp",
         alt: "Vista previa de plantilla demo"
@@ -168,6 +178,9 @@ const validCatalogBase = {
 };
 [
     { ...validCatalogBase, description: "" },
+    { ...validCatalogBase, variant: undefined },
+    { ...validCatalogBase, variant: { ...validCatalogBase.variant, name: "" } },
+    { ...validCatalogBase, variant: { ...validCatalogBase.variant, themeSlug: "" } },
     { ...validCatalogBase, thumbnail: undefined },
     { ...validCatalogBase, thumbnail: { ...validCatalogBase.thumbnail, src: "" } },
     { ...validCatalogBase, thumbnail: { ...validCatalogBase.thumbnail, src: "https://example.test/demo.webp" } },
@@ -175,7 +188,40 @@ const validCatalogBase = {
     { ...validCatalogBase, preview: {} },
     { ...validCatalogBase, preview: { eventId: "" } }
 ].forEach((catalog) => {
-    assert.throws(() => defineCatalogMetadata(catalog), TypeError);
+    assert.throws(() => defineCatalogMetadata(catalog, "demo"), TypeError);
 });
+
+[
+    "HTTPS://example.test/demo",
+    "https://example.test/demo",
+    "demo/path",
+    "Demo",
+    "demo%2Fpath",
+    "demo?query=1"
+].forEach((eventId) => {
+    assert.throws(() => defineCatalogMetadata({
+        ...validCatalogBase,
+        preview: { eventId }
+    }, "demo"), TypeError);
+});
+
+[
+    "/assets/templates/demo/../client/thumbnail.webp",
+    "/assets/templates/demo/%2e%2e/client/thumbnail.webp",
+    "/assets/templates/demo/thumbnail.webp?size=large",
+    "/assets/templates/demo/thumbnail.webp#preview",
+    "https://example.test/assets/templates/demo/thumbnail.webp",
+    "/assets/templates/other/thumbnail.webp"
+].forEach((src) => {
+    assert.throws(() => defineCatalogMetadata({
+        ...validCatalogBase,
+        thumbnail: { src, alt: "Vista previa" }
+    }, "demo"), TypeError);
+});
+
+assert.strictEqual(isValidEventId("demo-template-1"), true);
+assert.strictEqual(isValidEventId("demo/template"), false);
+assert.strictEqual(isTemplateAssetPath("demo", "/assets/templates/demo/thumbnail.webp"), true);
+assert.strictEqual(isTemplateAssetPath("demo", "/assets/templates/demo/../thumbnail.webp"), false);
 
 console.log("template-registry test passed");
