@@ -145,6 +145,14 @@ async function renderCatalog({ entries, loadableEntries, previewable = [] }) {
     assert(html.includes('/js/core/template-catalog.js'));
     assert(html.includes('/js/catalogo.js'));
     assert(!html.includes("Ver invitación"));
+    assert(html.includes('aria-labelledby="catalogOffersTitle"'));
+    assert(html.includes("<h3>Esencial</h3>"));
+    assert(html.includes("<h3>Premium</h3>"));
+    assert(html.includes("Adaptación de una plantilla existente con datos, imágenes y colores del cliente; funciones compatibles con la plantilla."));
+    assert(html.includes("Mayor personalización visual y recursos gráficos preparados para el cliente, usando el motor existente."));
+    assert(html.includes("Cada propuesta se define según el evento."));
+    assert(html.indexOf('class="catalog-offers"') > html.indexOf('id="catalogGrid"'));
+    assert(!html.match(/precio|autogesti[oó]n|l[ií]mite/i));
     assert(script.includes("verifyCatalogPreview"));
     assert(script.includes("catalogPreviewHref"));
 

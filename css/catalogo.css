@@ -129,6 +129,61 @@ h1 {
     color: var(--catalog-muted);
 }
 
+.catalog-offers {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.5fr);
+    gap: 48px;
+    margin-top: 56px;
+    padding-block: 40px 8px;
+    border-top: 1px solid var(--catalog-line);
+}
+
+.catalog-offers__eyebrow {
+    margin: 0 0 8px;
+    color: var(--catalog-accent);
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.catalog-offers h2 {
+    margin: 0;
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 1.7rem;
+    line-height: 1.25;
+    letter-spacing: 0;
+}
+
+.catalog-offers__heading > p:last-child {
+    margin: 12px 0 0;
+    color: var(--catalog-muted);
+    line-height: 1.55;
+}
+
+.catalog-offers__options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px;
+}
+
+.catalog-offer {
+    min-width: 0;
+}
+
+.catalog-offer h3 {
+    margin: 0 0 10px;
+    color: var(--catalog-action);
+    font-size: 1.05rem;
+    letter-spacing: 0;
+}
+
+.catalog-offer p {
+    margin: 0;
+    color: var(--catalog-muted);
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+}
+
 @media (max-width: 520px) {
     h1 {
         font-size: 1.8rem;
@@ -145,5 +200,17 @@ h1 {
 
     .catalog-grid {
         grid-template-columns: minmax(0, 1fr);
+    }
+
+    .catalog-offers {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 28px;
+        margin-top: 40px;
+        padding-top: 32px;
+    }
+
+    .catalog-offers__options {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 24px;
     }
 }
