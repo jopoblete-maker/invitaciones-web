@@ -158,12 +158,14 @@ function createRsvpAdminHttp({ service, adminAccess, express }) {
         } catch (error) { return failure(res, error); }
     }
     function errorHandler(error, req, res, next) {
-        if (/^\/api\/admin\/eventos\/[^/]+\/rsvp(?:\/|\?|$)/.test(req.url)) {
+        if (/^\/api\/admin\/eventos\/[^/]+\/rsvp(?:\/|\?|$)/i.test(req.url)) {
             return failure(res, new RsvpError("RSVP_INVALID_PAYLOAD"));
         }
         return next(error);
     }
-    return Object.freeze({ handle, errorHandler });
+    // Unknown routes never authenticate, parse or reach the global logger.
+    const fallback = (_req, res) => failure(res, new RsvpError("RSVP_NOT_AVAILABLE"));
+    return Object.freeze({ handle, fallback, errorHandler });
 }
 
 module.exports = { createRsvpAdminHttp };

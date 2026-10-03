@@ -80,14 +80,17 @@ function createRsvpPublicHttp({ service, limiter, express }) {
         } catch (error) { return failure(res, error); }
     }
     // Route-parameter decoding happens before dispatch; isolate URI errors from
-    // the generic parser/logger error handler for these two paths as well.
+    // the generic parser/logger error handler throughout the RSVP namespace.
     function errorHandler(error, req, res, next) {
-        if (["GET", "POST"].includes(req.method) && /^\/api\/eventos\/[^/]+\/rsvp\/?(?:\?|$)/.test(req.url)) {
+        if (/^\/api\/eventos\/[^/]+\/rsvp(?:\/|\?|$)/i.test(req.url)) {
             return failure(res, new RsvpError("RSVP_NOT_AVAILABLE"));
         }
         return next(error);
     }
-    return Object.freeze({ get: (req, res) => handle(req, res, "GET"), post: (req, res) => handle(req, res, "POST"), errorHandler });
+    // Mounted after the supported routes: reject without inspecting the body
+    // or invoking operational dependencies, before the global parsers.
+    const fallback = (_req, res) => failure(res, new RsvpError("RSVP_NOT_AVAILABLE"));
+    return Object.freeze({ get: (req, res) => handle(req, res, "GET"), post: (req, res) => handle(req, res, "POST"), fallback, errorHandler });
 }
 
 module.exports = { createRsvpPublicHttp };

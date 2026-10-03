@@ -75,6 +75,7 @@ const rsvpPublicLimiter = createRsvpPublicRateLimiter({
 const rsvpPublicHttp = createRsvpPublicHttp({ service: rsvpService, limiter: rsvpPublicLimiter, express });
 app.get('/api/eventos/:eventId/rsvp', rsvpPublicHttp.get);
 app.post('/api/eventos/:eventId/rsvp', rsvpPublicHttp.post);
+app.use('/api/eventos/:eventId/rsvp', rsvpPublicHttp.fallback);
 app.use(rsvpPublicHttp.errorHandler);
 
 const adminAccess = createAdminAccess({
@@ -83,7 +84,7 @@ const adminAccess = createAdminAccess({
     rateLimiter: adminRateLimiter
 });
 const rsvpAdminHttp = createRsvpAdminHttp({ service: rsvpService, adminAccess, express });
-app.use('/api/admin/eventos/:eventId/rsvp', rsvpAdminHttp.handle);
+app.use('/api/admin/eventos/:eventId/rsvp', rsvpAdminHttp.handle, rsvpAdminHttp.fallback);
 app.use(rsvpAdminHttp.errorHandler);
 
 // Aumentamos el límite para permitir subir imágenes locales (Base64)
