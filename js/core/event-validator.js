@@ -78,6 +78,7 @@
         validateOptionalObject(event.music, "music", errors);
         validateOptionalObject(event.location, "location", errors);
         validateOptionalObject(event.rsvp, "rsvp", errors);
+        validateRsvpContract(event, errors);
         validateOptionalObject(event.branding, "branding", errors);
 
         return {
@@ -197,6 +198,7 @@
         const sections = validateV2Sections(event.sections, template, errors);
         validateRequiredSections(sections, template, errors);
         const modules = validateV2Modules(event.modules, template, errors);
+        validateRsvpContract(event, errors);
         const mediaValid = validateObject(event.media, "media", errors);
         validateOptionalObject(event.metadata, "metadata", errors);
 
@@ -218,9 +220,48 @@
             Object.prototype.hasOwnProperty.call(event, "schema_version")
             || Object.prototype.hasOwnProperty.call(event, "sections")
         );
-        return isNewSchema
-            ? validateNewEvent(event)
-            : { valid: true, errors: [] };
+        if (isNewSchema) return validateNewEvent(event);
+        const errors = [];
+        validateRsvpContract(event, errors);
+        return { valid: errors.length === 0, errors };
+    }
+
+    // Structural validation only: temporal disambiguation belongs to the
+    // backend calendar boundary, which must run before operational writes.
+    function validateRsvpContract(event, errors) {
+        const isV2 = event?.schema_version === V2_SCHEMA_VERSION;
+        const config = isV2 ? event.modules?.rsvp : (event?.rsvp || event?.modules?.rsvp);
+        if (!isPlainObject(config) || !hasOwn(config, "mode")) return;
+        if (config.mode !== "whatsapp" && config.mode !== "managed") {
+            errors.push("modules.rsvp.mode debe ser whatsapp o managed.");
+            return;
+        }
+        if (config.mode === "whatsapp") return;
+        if (!isV2) {
+            errors.push("RSVP managed requiere schema_version 2.");
+            return;
+        }
+        if (config.enabled !== true) errors.push("modules.rsvp.enabled debe ser true para managed.");
+        if (hasOwn(config, "contacts")) errors.push("modules.rsvp.contacts no pertenece al contrato managed.");
+        const schedule = event.schedule;
+        const timeValid = (value) => typeof value === "string" && value.length === 5 && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
+        const dateValid = (value) => typeof value === "string" && value.length === 10 && isValidDate(value);
+        if (!isPlainObject(schedule) || !dateValid(schedule.date) || !timeValid(schedule.time)) {
+            errors.push("schedule requiere date YYYY-MM-DD y time HH:mm validos para managed.");
+        }
+        const timezone = schedule?.timezone;
+        let timezoneValid = typeof timezone === "string" && timezone.length <= 100
+            && /^[A-Za-z][A-Za-z0-9_+\-/]*$/.test(timezone) && !/^(posix|right)\//.test(timezone);
+        if (timezoneValid) {
+            try { new Intl.DateTimeFormat("en", { timeZone: timezone }); } catch (_error) { timezoneValid = false; }
+        }
+        if (!timezoneValid) errors.push("schedule.timezone IANA explicita y valida es obligatoria para managed.");
+        const deadline = config.deadline;
+        if (!isPlainObject(deadline) || Object.keys(deadline).length !== 2
+            || !hasOwn(deadline, "date") || !hasOwn(deadline, "time")
+            || !dateValid(deadline.date) || !timeValid(deadline.time)) {
+            errors.push("modules.rsvp.deadline requiere exactamente date YYYY-MM-DD y time HH:mm validos.");
+        }
     }
 
     function validateV2Template(templateValue, errors) {

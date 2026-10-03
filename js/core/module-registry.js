@@ -14,7 +14,7 @@
         },
         rsvp: {
             slug: "rsvp",
-            configKeys: ["enabled", "deadline", "contacts"]
+            configKeys: ["enabled", "mode", "deadline", "contacts"]
         },
         branding: {
             slug: "branding",

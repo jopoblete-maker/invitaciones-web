@@ -19,6 +19,7 @@
     "author": "",
     "license": "MIT",
     "dependencies": {
+        "@js-temporal/polyfill": "0.5.1",
         "@supabase/supabase-js": "^2.112.3",
         "express": "^4.21.2"
     }
