@@ -1,12 +1,15 @@
 (function (root, factory) {
-    const http = factory();
+    const access = typeof module === "object" && module.exports
+        ? require("../../backend/http/admin-access")
+        : root.AdminAccess;
+    const http = factory(access);
 
     if (typeof module === "object" && module.exports) {
         module.exports = http;
     }
 
     root.EventVersionEditorialHttp = http;
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+})(typeof globalThis !== "undefined" ? globalThis : this, function ({ createAdminAccess, sendAccessFailure }) {
     const STATUS_BY_CODE = Object.freeze({
         INVALID_REQUEST: 400,
         INVALID_EVENT_ID: 400,
@@ -40,26 +43,11 @@
         RATE_LIMITED: "Too many requests."
     });
 
-    function createEventVersionEditorialHttp({ service, readRepository, adminPassword, originPolicy, rateLimiter, issuePreviewToken, previewTtlSeconds = 300 }) {
+    function createEventVersionEditorialHttp({ service, readRepository, adminPassword, originPolicy, rateLimiter, adminAccess, issuePreviewToken, previewTtlSeconds = 300 }) {
         if (!service || !readRepository) {
             throw new TypeError("service and readRepository are required.");
         }
-        if (typeof adminPassword !== "string" || adminPassword === "") {
-            throw new TypeError("adminPassword is required.");
-        }
-        if (!originPolicy || typeof originPolicy.validateRequest !== "function") {
-            throw new TypeError("originPolicy is required.");
-        }
-        if (!rateLimiter || typeof rateLimiter.consume !== "function") {
-            throw new TypeError("rateLimiter is required.");
-        }
-
-        function requestPassword(req) {
-            if (req && typeof req.get === "function") {
-                return req.get("X-Admin-Password");
-            }
-            return req?.headers?.["x-admin-password"];
-        }
+        const access = adminAccess || createAdminAccess({ adminPassword, originPolicy, rateLimiter });
 
         function sendError(res, error) {
             const status = STATUS_BY_CODE[error?.code] || 500;
@@ -70,36 +58,10 @@
 
         function protect(handler, { mutate = false, endpoint, action } = {}) {
             return async function protectedEditorialHandler(req, res) {
-                let validatedOrigin = null;
-                if (mutate) {
-                    const origin = originPolicy.validateRequest(req);
-                    if (!origin.ok) {
-                        return res.status(403).json({
-                            error: { code: "ORIGIN_FORBIDDEN", message: "Request origin is not allowed." }
-                        });
-                    }
-                    validatedOrigin = origin.origin;
-                }
-                if (requestPassword(req) !== adminPassword) {
-                    return res.status(401).json({
-                        error: { code: "UNAUTHORIZED", message: "Unauthorized." }
-                    });
-                }
                 try {
-                    if (mutate) {
-                        const rate = await rateLimiter.consume({
-                            origin: validatedOrigin,
-                            endpoint,
-                            action: typeof action === "function" ? action(req) : action
-                        });
-                        if (!rate.allowed) {
-                            res.setHeader("Retry-After", String(rate.retryAfterSeconds));
-                            return res.status(429).json({
-                                error: { code: "RATE_LIMITED", message: "Too many requests." }
-                            });
-                        }
-                    }
-                    return await handler(req, res, validatedOrigin);
+                    const result = await access.authorize(req, { mutate, endpoint, action, originFirst: true });
+                    if (!result.ok) return sendAccessFailure(res, result);
+                    return await handler(req, res, result.origin);
                 } catch (error) {
                     return sendError(res, error);
                 }

@@ -13,6 +13,9 @@ const { createAdminOriginPolicy } = require('./js/core/admin-origin-policy');
 const { createAdminRateLimiter } = require('./js/core/admin-rate-limiter');
 const { signPreviewToken, verifyPreviewToken, DEFAULT_TTL_SECONDS } = require('./js/core/private-preview-token');
 
+const { createAdminAccess } = require('./backend/http/admin-access');
+const { createStaticPolicy } = require('./backend/http/static-policy');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -69,10 +72,14 @@ app.use((err, req, res, next) => {
     });
 });
 
+const staticPolicy = createStaticPolicy({ root: __dirname, express });
+app.use(staticPolicy.guard);
+
 app.use('/assets', express.static(path.join(__dirname, 'assets'), {
-    maxAge: ASSET_CACHE_MAX_AGE_MS
+    maxAge: ASSET_CACHE_MAX_AGE_MS,
+    dotfiles: 'ignore'
 }));
-app.use(express.static(__dirname));
+app.use(staticPolicy.serveRoot);
 
 // Ruta principal para abrir el panel de administración
 app.get('/', (req, res) => {
@@ -186,12 +193,15 @@ const eventVersionReadRepository = createEventVersionReadRepository(supabase, {
     execute: withSupabaseTimeout,
     cursorSecret: PREVIEW_SIGNING_KEY
 });
+const adminAccess = createAdminAccess({
+    adminPassword: ADMIN_PASSWORD,
+    originPolicy: adminOriginPolicy,
+    rateLimiter: adminRateLimiter
+});
 const eventVersionEditorialHttp = createEventVersionEditorialHttp({
     service: eventVersionEditorialService,
     readRepository: eventVersionReadRepository,
-    adminPassword: ADMIN_PASSWORD,
-    originPolicy: adminOriginPolicy,
-    rateLimiter: adminRateLimiter,
+    adminAccess,
     previewTtlSeconds: PREVIEW_TTL_SECONDS,
     issuePreviewToken(options) {
         if (!PREVIEW_SIGNING_KEY) {
