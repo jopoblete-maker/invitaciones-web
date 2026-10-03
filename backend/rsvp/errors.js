@@ -3,14 +3,14 @@
 const DEFINITIONS = Object.freeze(Object.fromEntries([
     ["RSVP_NOT_AVAILABLE", 404, "RSVP_NOT_AVAILABLE", "RSVP no disponible."],
     ["RSVP_DEADLINE_CLOSED", 409, "RSVP_DEADLINE_CLOSED", "El plazo de respuesta terminó."],
-    ["RSVP_REVISION_CONFLICT", 409, "REVISION_CONFLICT", "La configuración cambió. Actualiza antes de continuar."],
+    ["RSVP_REVISION_CONFLICT", 409, "RSVP_REVISION_CONFLICT", "La configuración cambió. Actualiza antes de continuar."],
     ["RSVP_EVENT_ARCHIVED", 409, "RSVP_EVENT_ARCHIVED", "El evento está archivado."],
-    ["RSVP_ATTENDEE_COUNT_INVALID", 422, "RSVP_ATTENDEE_LIMIT", "La cantidad de asistentes no está permitida."],
+    ["RSVP_ATTENDEE_COUNT_INVALID", 422, "RSVP_ATTENDEE_COUNT_INVALID", "La cantidad de asistentes no está permitida."],
     ["RSVP_CALENDAR_INVALID", 422, "INVALID_MANAGED_CALENDAR", "El calendario Managed es inválido."],
-    ["RSVP_RATE_LIMITED", 429, "RATE_LIMITED", "Demasiadas solicitudes."],
-    ["RSVP_RATE_LIMIT_UNAVAILABLE", 503, "RATE_LIMIT_UNAVAILABLE", "El control de solicitudes no está disponible."],
+    ["RSVP_RATE_LIMITED", 429, "RSVP_RATE_LIMITED", "Demasiadas solicitudes."],
+    ["RSVP_RATE_LIMIT_UNAVAILABLE", 503, "RSVP_RATE_LIMIT_UNAVAILABLE", "El control de solicitudes no está disponible."],
     ["RSVP_WRITE_RESULT_UNKNOWN", 504, "RSVP_WRITE_RESULT_UNKNOWN", "No se pudo confirmar el resultado de la operación."],
-    ["RSVP_INTERNAL_ERROR", 500, "INTERNAL_ERROR", "Ocurrió un error interno."],
+    ["RSVP_INTERNAL_ERROR", 500, "RSVP_INTERNAL_ERROR", "Ocurrió un error interno."],
     ["RSVP_INVALID_PAYLOAD", 400, "RSVP_INVALID_PAYLOAD", "Los datos de la solicitud son inválidos."],
     // SQL-backed administrative conditions. Public token failures retain the
     // separate RSVP_NOT_AVAILABLE category; this catalog does not infer scope.

@@ -11,9 +11,7 @@ const statuses = {
     MANAGED_PUBLICATION_REQUIRED: 409, MANAGED_NOT_ENABLED: 409
 };
 const httpCodes = {
-    RSVP_REVISION_CONFLICT: "REVISION_CONFLICT", RSVP_ATTENDEE_COUNT_INVALID: "RSVP_ATTENDEE_LIMIT",
-    RSVP_CALENDAR_INVALID: "INVALID_MANAGED_CALENDAR", RSVP_RATE_LIMITED: "RATE_LIMITED",
-    RSVP_RATE_LIMIT_UNAVAILABLE: "RATE_LIMIT_UNAVAILABLE", RSVP_INTERNAL_ERROR: "INTERNAL_ERROR"
+    RSVP_CALENDAR_INVALID: "INVALID_MANAGED_CALENDAR"
 };
 let checks = 0;
 for (const [code, status] of Object.entries(statuses)) {
@@ -42,7 +40,7 @@ for (const raw of [new Error("raw-password-marker"), { code: "RSVP_NOT_AVAILABLE
 }
 assert.strictEqual(new RsvpError("unknown").code, "RSVP_INTERNAL_ERROR"); checks++;
 assert(Object.isFrozen(DEFINITIONS) && Object.values(DEFINITIONS).every(Object.isFrozen)); checks++;
-assert.strictEqual(toHttpError(new RsvpError("RSVP_REVISION_CONFLICT")).body.error.code, "REVISION_CONFLICT"); checks++;
+assert.strictEqual(toHttpError(new RsvpError("RSVP_REVISION_CONFLICT")).body.error.code, "RSVP_REVISION_CONFLICT"); checks++;
 const readTimeout = toHttpError(new RsvpError("UPSTREAM_TIMEOUT"));
 const writeTimeout = toHttpError(new RsvpError("RSVP_WRITE_RESULT_UNKNOWN"));
 assert.strictEqual(readTimeout.status, 504);
@@ -63,7 +61,7 @@ for (const condition of ["missing", "revoked", "rotated", "deleted", "wrong-even
 for (const code of ["unknown", "RSVP_UNKNOWN", "raw-secret-marker", "toString", "__proto__"]) {
     const error = new RsvpError(code);
     assert.strictEqual(error.code, "RSVP_INTERNAL_ERROR");
-    assert.deepStrictEqual(toHttpError(error), { status: 500, body: { error: { code: "INTERNAL_ERROR", message: "Ocurrió un error interno." } } });
+    assert.deepStrictEqual(toHttpError(error), { status: 500, body: { error: { code: "RSVP_INTERNAL_ERROR", message: "Ocurrió un error interno." } } });
     checks++;
 }
 assert.deepStrictEqual(Object.keys(DEFINITIONS).sort(), Object.keys(statuses).sort()); checks++;
