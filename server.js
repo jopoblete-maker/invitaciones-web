@@ -20,6 +20,7 @@ const { createRsvpContext } = require('./backend/rsvp/context');
 const { createRsvpService } = require('./backend/rsvp/service');
 const { createRsvpPublicRateLimiter } = require('./backend/rsvp/public-rate-limit');
 const { createRsvpPublicHttp } = require('./backend/rsvp/http');
+const { createRsvpAdminHttp } = require('./backend/rsvp/admin-http');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -75,6 +76,15 @@ const rsvpPublicHttp = createRsvpPublicHttp({ service: rsvpService, limiter: rsv
 app.get('/api/eventos/:eventId/rsvp', rsvpPublicHttp.get);
 app.post('/api/eventos/:eventId/rsvp', rsvpPublicHttp.post);
 app.use(rsvpPublicHttp.errorHandler);
+
+const adminAccess = createAdminAccess({
+    adminPassword: ADMIN_PASSWORD,
+    originPolicy: adminOriginPolicy,
+    rateLimiter: adminRateLimiter
+});
+const rsvpAdminHttp = createRsvpAdminHttp({ service: rsvpService, adminAccess, express });
+app.use('/api/admin/eventos/:eventId/rsvp', rsvpAdminHttp.handle);
+app.use(rsvpAdminHttp.errorHandler);
 
 // Aumentamos el límite para permitir subir imágenes locales (Base64)
 app.use(express.json({ limit: '50mb' }));
@@ -213,11 +223,6 @@ const eventVersionRpcAdapter = createEventVersionRpcAdapter({
     }
 });
 const eventVersionEditorialService = createEventVersionEditorialService(eventVersionRpcAdapter);
-const adminAccess = createAdminAccess({
-    adminPassword: ADMIN_PASSWORD,
-    originPolicy: adminOriginPolicy,
-    rateLimiter: adminRateLimiter
-});
 const eventVersionEditorialHttp = createEventVersionEditorialHttp({
     service: eventVersionEditorialService,
     readRepository: eventVersionReadRepository,
