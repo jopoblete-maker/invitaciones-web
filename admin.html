@@ -638,27 +638,22 @@
             <section id="editorialDetail" hidden>
             <button type="button" id="dashboardBack" class="panel-button">Volver a Mis eventos</button>
             <section class="editorial-reader" aria-labelledby="editorialReaderTitle">
-                <div>
-                    <h2 id="editorialReaderTitle" class="section-title">Lectura editorial</h2>
-                    <p class="help-text">Consulta eventos y gestiona el workflow de sus versiones de trabajo.</p>
+                <h2 id="editorialReaderTitle" class="section-title">Resumen del evento</h2>
+                <div id="eventDetailSummary" class="event-detail-summary" aria-live="polite"><p>Selecciona o consulta un evento.</p></div>
+                <p id="eventDetailDescriptionStatus" class="event-detail-meta" role="status"></p>
+                <div class="event-detail-actions">
+                    <button type="button" id="editorialPreviewButton" class="panel-button" hidden>Vista previa</button>
+                    <button type="button" id="editorialCreateVersionButton" class="panel-button" hidden>Crear versión de trabajo</button>
                 </div>
-                <form id="editorialReaderForm">
-                    <div class="form-group">
-                        <label for="editorialEventId">ID del evento:</label>
-                        <input type="text" id="editorialEventId" autocomplete="off" required>
-                    </div>
-                    <button type="submit" class="btn-submit">Consultar evento</button>
-                </form>
                 <p id="editorialReaderStatus" class="editorial-reader-status" role="status"></p>
                 <button type="button" id="editorialReloadStateButton" class="btn-submit" hidden>Recargar estado editorial</button>
-                <label for="editorialEventSelect">Eventos disponibles:</label>
-                <select id="editorialEventSelect"><option value="">Selecciona un evento</option></select>
-                <button type="button" id="editorialCreateVersionButton" class="btn-submit" hidden>Crear versión de trabajo</button>
-                <button type="button" id="editorialPreviewButton" class="btn-submit" hidden>Vista previa privada</button>
-                <section id="editorialState" class="editorial-state" hidden aria-live="polite"></section>
+                <section class="event-detail-section" aria-labelledby="eventDetailContentTitle">
+                <h2 id="eventDetailContentTitle">Contenido</h2>
+                <p id="eventDetailContentStatus" class="event-detail-meta" role="status"></p>
                 <form id="editorialTextEditor" class="editorial-text-editor" hidden>
-                    <h3>Textos de la versión de trabajo</h3>
+                    <p class="event-detail-meta">Textos de la versión de trabajo. Cada guardado crea una nueva versión.</p>
                     <div class="editorial-text-fields">
+                        <h3 class="event-detail-field-heading">Presentación</h3>
                         <div class="form-group">
                             <label for="editorialHeroTitle">Título principal:</label>
                             <input type="text" id="editorialHeroTitle" maxlength="120" required>
@@ -669,6 +664,7 @@
                             <input type="text" id="editorialHeroSubtitle" maxlength="180">
                             <span id="editorialHeroSubtitleStatus" class="editorial-field-status"></span>
                         </div>
+                        <h3 class="event-detail-field-heading">Ubicación</h3>
                         <div class="form-group">
                             <label for="editorialAddress">Dirección:</label>
                             <input type="text" id="editorialAddress" maxlength="240">
@@ -679,6 +675,7 @@
                             <input type="text" id="editorialCity" maxlength="120">
                             <span id="editorialCityStatus" class="editorial-field-status"></span>
                         </div>
+                        <h3 class="event-detail-field-heading">Cierre</h3>
                         <div class="form-group">
                             <label for="editorialClosingTitle">Título de cierre:</label>
                             <input type="text" id="editorialClosingTitle" maxlength="160">
@@ -698,6 +695,29 @@
                     <button type="submit" id="editorialSaveTextButton" class="btn-submit">Guardar como nueva versión</button>
                     <p id="editorialEditorStatus" class="editorial-editor-status" role="status"></p>
                 </form>
+                </section>
+                <section id="editorialState" class="event-detail-state" hidden>
+                    <section class="event-detail-section" aria-labelledby="eventDetailVersionsTitle">
+                        <h2 id="eventDetailVersionsTitle">Versiones</h2>
+                        <ul id="eventDetailVersions" class="editorial-version-list"></ul>
+                    </section>
+                    <section class="event-detail-section" aria-labelledby="eventDetailWorkflowTitle">
+                        <h2 id="eventDetailWorkflowTitle">Workflow / Publicación</h2>
+                        <div id="eventDetailWorkflow"></div>
+                    </section>
+                </section>
+                <details id="eventDetailTechnical" class="event-detail-technical">
+                    <summary>Consulta por ID</summary>
+                    <form id="editorialReaderForm">
+                        <div class="form-group">
+                            <label for="editorialEventId">ID del evento:</label>
+                            <input type="text" id="editorialEventId" autocomplete="off" required>
+                        </div>
+                        <button type="submit" class="panel-button">Consultar evento</button>
+                    </form>
+                    <label for="editorialEventSelect">Eventos disponibles:</label>
+                    <select id="editorialEventSelect"><option value="">Selecciona un evento</option></select>
+                </details>
             </section>
             </section>
             <section id="legacyAdminControls" hidden>
@@ -1052,6 +1072,7 @@
     <script src="js/core/admin-editorial-workflow.js"></script>
     <script src="js/core/admin-event-summary.js"></script>
     <script src="js/core/admin-dashboard.js"></script>
+    <script src="js/core/admin-event-detail.js"></script>
     <script src="js/admin.js"></script>
 </body>
 

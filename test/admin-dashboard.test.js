@@ -20,7 +20,7 @@ assert.strictEqual(Dashboard.canPreview(events[2]), false);
 assert.strictEqual(Dashboard.canPreview(events[3]), false);
 
 function node(tag) {
-    return { tag, children: [], listeners: {}, hidden: false, disabled: false, value: "", textContent: "",
+    return { tag, dataset: {}, children: [], listeners: {}, hidden: false, disabled: false, value: "", textContent: "",
         append(...children) { this.children.push(...children); }, replaceChildren(...children) { this.children = children; },
         addEventListener(type, listener) { this.listeners[type] = listener; } };
 }

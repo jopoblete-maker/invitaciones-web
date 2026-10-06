@@ -27,3 +27,26 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 #editorialDetail { max-width: 900px; margin: 0 auto; }
 #editorialDetail > .panel-button { margin-bottom: 8px; }
 @media (max-width: 800px) { body { padding: 12px; } .admin-card { padding: 20px; } .dashboard-metrics { grid-template-columns: repeat(2, 1fr); } .dashboard-filters { grid-template-columns: 1fr; } .panel-header { align-items: flex-start; } .panel-header h1 { font-size: 1.35rem; } }
+#editorialDetail .event-detail-summary { padding: 24px; background: #f5f8f6; border: 1px solid #dce4df; border-radius: 12px; overflow-wrap: anywhere; }
+#editorialDetail .event-detail-summary h2 { font-size: 1.8rem; color: #285b46; margin-bottom: 10px; }
+#editorialDetail .event-detail-subtitle { margin-bottom: 16px; line-height: 1.5; }
+#editorialDetail .event-detail-meta { color: #60746b; font-size: .85rem; line-height: 1.6; overflow-wrap: anywhere; }
+#editorialDetail .event-detail-source { color: #34715b; font-size: .8rem; margin-top: 12px; }
+#editorialDetail .event-detail-badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+#editorialDetail .event-detail-badge { padding: 5px 9px; border: 1px solid #c9dbcf; border-radius: 6px; background: #edf5ef; color: #285b46; font-size: .73rem; font-weight: 600; }
+#editorialDetail .event-detail-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+#editorialDetail .event-detail-section { padding: 24px; border: 1px solid #dce4df; border-radius: 12px; background: #fff; }
+#editorialDetail .event-detail-section > h2 { font-size: 1.2rem; margin-bottom: 16px; }
+#editorialDetail .event-detail-state { display: grid; gap: 16px; }
+#editorialDetail .event-detail-field-heading { grid-column: 1 / -1; font-size: .95rem; color: #34715b; margin-top: 8px; }
+#editorialDetail .editorial-version { border-color: #dce4df; padding: 18px; }
+#editorialDetail .editorial-version h3 { font-size: 1rem; }
+#editorialDetail .editorial-version p { font-size: .85rem; margin: 8px 0; line-height: 1.5; }
+#editorialDetail details { overflow-wrap: anywhere; }
+#editorialDetail details summary { color: #34715b; cursor: pointer; font-size: .85rem; }
+#editorialDetail .event-detail-technical { padding: 20px; background: #f5f8f6; border-radius: 10px; border: 1px solid #dce4df; }
+#editorialDetail .event-detail-technical form { margin: 20px 0; }
+#editorialDetail .editorial-reader-status { padding: 12px 16px; border-radius: 8px; background: #f5f8f6; }
+#editorialDetail .editorial-reader-status.error { background: #fff1ed; }
+#editorialDetail .btn-submit { width: auto; margin-top: 12px; padding: 10px 18px; font-size: .9rem; }
+@media (max-width: 620px) { #editorialDetail .event-detail-section, #editorialDetail .event-detail-summary { padding: 16px; } #editorialDetail .editorial-text-fields { grid-template-columns: 1fr; } #editorialDetail .event-detail-summary h2 { font-size: 1.4rem; } }

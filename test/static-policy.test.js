@@ -88,7 +88,8 @@ function request(url, method = "GET", headers = {}) {
         "/%2564ocs/sql/phase-a9/01-rsvp-managed.sql", "//docs//sql/phase-a9/01-rsvp-managed.sql",
         "/css/../server.js", "/css/%2e%2e/server.js", "/css/..%5cserver.js", "/SERVER.JS", "/PACKAGE.JSON",
         "/assets/events/kaly-joha/../../../server.js", "/C:/server.js", "/server.js:stream", "/server.js.", "/server.js%20",
-        "/js/core/admin-dashboard-private.js", "/js/core/admin-event-summary.js.map", "/css/admin-private.css"
+        "/js/core/admin-dashboard-private.js", "/js/core/admin-event-summary.js.map", "/css/admin-private.css",
+        "/js/core/admin-event-detail.js.map", "/js/core/admin-event-detail-private.js"
     ];
     for (const url of blocked) {
         const result = await request(url);
@@ -151,6 +152,7 @@ function request(url, method = "GET", headers = {}) {
     }
     const publicResources = new Set(["/", "/data.json", "/data/moira-20-12-2026.json",
         "/js/core/admin-event-summary.js", "/js/core/admin-dashboard.js", "/css/admin.css",
+        "/js/core/admin-event-detail.js",
         "/css/templates/boda-vertical.css", "/css/templates/cumple-clasico.css", "/css/templates/boda-civil-esencial.css",
         "/assets/templates/boda-vertical/thumbnail.webp", "/assets/templates/cumple-clasico/thumbnail.webp",
         "/assets/templates/boda-civil-esencial/thumbnail.webp", "/assets/templates/boda-civil-esencial/demo/hero.webp",

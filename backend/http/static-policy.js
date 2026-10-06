@@ -11,6 +11,7 @@ const PUBLIC_FILES = new Set([
     "js/core/admin-editorial-client.js", "js/core/admin-event-editor.js",
     "js/core/admin-editorial-workflow.js", "js/core/event-schema.js",
     "js/core/admin-event-summary.js", "js/core/admin-dashboard.js", "css/admin.css",
+    "js/core/admin-event-detail.js",
     "js/core/theme-registry.js", "js/core/event-normalizer.js",
     "js/core/template-registry.js", "js/core/template-catalog.js",
     "js/core/section-renderer.js", "js/core/invitation-data-source.js",

@@ -70,6 +70,7 @@
                 const actions = element("td", undefined, "dashboard-actions");
                 const manage = element("button", "Gestionar");
                 manage.type = "button";
+                manage.dataset.eventId = event.eventId;
                 manage.addEventListener("click", () => onManage(event.eventId));
                 const preview = element("button", "Vista previa");
                 preview.type = "button";
