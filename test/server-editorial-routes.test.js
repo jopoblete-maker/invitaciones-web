@@ -135,7 +135,7 @@ function responseDouble() {
         ]
     };
     await routes["POST /api/admin/eventos"]({
-        headers: { "x-admin-password": "test-secret", origin: "http://localhost:3000" },
+        headers: { "x-admin-password": "test-secret", origin: "http://localhost:3000", "content-type": "application/json" },
         params: {},
         body: { eventId: "new-event", content: newEventContent }
     }, createEventResponse);
@@ -157,7 +157,7 @@ function responseDouble() {
         ]
     };
     await routes["POST /api/admin/eventos/:eventId/versions"]({
-        headers: { "x-admin-password": "test-secret", origin: "http://localhost:3000" },
+        headers: { "x-admin-password": "test-secret", origin: "http://localhost:3000", "content-type": "application/json" },
         params: { eventId: "event-one" },
         body: { content, expectedWorkingVersionId: null }
     }, createResponse);

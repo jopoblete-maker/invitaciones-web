@@ -23,7 +23,29 @@ assert.throws(() => createEventEditorialApiClient({
     adminPassword: ""
 }), (error) => error instanceof EditorialApiError && error.code === "CONFIG_ERROR");
 
+for (const url of ['bad-url', 'ftp://example.test', 'https://user:secret@example.test', 'https://example.test?secret=1', 'https://example.test#secret']) {
+    assert.throws(() => normalizeBaseUrl(url), error => error.code === 'CONFIG_ERROR' && !error.message.includes('secret'));
+}
+
 (async () => {
+    for (const baseUrl of ['http://localhost:3000/', 'http://127.0.0.1:3001/', 'https://example.test/', 'https://example.test:8443/prefix']) {
+        const requests = [];
+        const probe = createEventEditorialApiClient({baseUrl, adminPassword: SECRET, fetchImpl: async (url, options) => {
+            requests.push({url, options}); return response(201, {});
+        }});
+        await probe.getEditorialState('test');
+        await probe.createEvent('test', {});
+        await probe.createVersion('test', {content:{}, expectedWorkingVersionId:null});
+        assert.strictEqual(requests[0].options.headers.Origin, undefined);
+        for (const call of requests.slice(1)) {
+            assert.strictEqual(call.options.headers.Origin, new URL(baseUrl).origin);
+            assert.strictEqual(call.options.headers.Referer, undefined);
+            assert.strictEqual(call.options.headers['X-Admin-Password'], SECRET);
+            assert.strictEqual(call.options.headers['Content-Type'], 'application/json');
+            assert(!call.url.includes(SECRET)); assert(!call.options.body.includes(SECRET));
+        }
+        assert.strictEqual(requests[1].url, normalizeBaseUrl(baseUrl) + '/api/admin/eventos');
+    }
     const calls = [];
     const client = createEventEditorialApiClient({
         baseUrl: "https://example.test/",
@@ -94,6 +116,9 @@ assert.throws(() => createEventEditorialApiClient({
     assert.strictEqual(calls[2].options.body.includes(SECRET), false);
 
     const cases = [
+        [403, "ORIGIN_FORBIDDEN", "Acceso administrativo rechazado."],
+        [429, "RATE_LIMITED", "Se alcanzo el limite de solicitudes administrativas."],
+        [503, "RATE_LIMIT_UNAVAILABLE", "El servicio administrativo no esta disponible."],
         [401, "UNAUTHORIZED", "Credencial administrativa invalida."],
         [404, "EVENT_NOT_FOUND", "Evento inexistente."],
         [409, "VERSION_CONFLICT", "Conflicto de version: la version de trabajo cambio."],

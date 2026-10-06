@@ -12,6 +12,8 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function ({ createAdminAccess, sendAccessFailure }) {
     const STATUS_BY_CODE = Object.freeze({
         INVALID_REQUEST: 400,
+        PAYLOAD_TOO_LARGE: 413,
+        UNSUPPORTED_MEDIA_TYPE: 415,
         INVALID_EVENT_ID: 400,
         EVENT_ALREADY_EXISTS: 409,
         EVENT_NOT_FOUND: 404,
@@ -30,6 +32,8 @@
 
     const MESSAGE_BY_CODE = Object.freeze({
         INVALID_REQUEST: "Invalid request.",
+        PAYLOAD_TOO_LARGE: "Request body is too large.",
+        UNSUPPORTED_MEDIA_TYPE: "Content-Type must be application/json.",
         INVALID_EVENT_ID: "Event id is invalid.",
         EVENT_ALREADY_EXISTS: "Event already exists.",
         EVENT_NOT_FOUND: "Event not found.",
@@ -43,7 +47,7 @@
         RATE_LIMITED: "Too many requests."
     });
 
-    function createEventVersionEditorialHttp({ service, readRepository, adminPassword, originPolicy, rateLimiter, adminAccess, issuePreviewToken, previewTtlSeconds = 300 }) {
+    function createEventVersionEditorialHttp({ service, readRepository, adminPassword, originPolicy, rateLimiter, adminAccess, prepareCreateBody, issuePreviewToken, previewTtlSeconds = 300 }) {
         if (!service || !readRepository) {
             throw new TypeError("service and readRepository are required.");
         }
@@ -105,13 +109,14 @@
         });
 
         const createEvent = protect(async (req, res) => {
+            if (prepareCreateBody) await prepareCreateBody(req, res);
             const body = req.body || {};
             const result = await service.createEvent({
                 eventId: body.eventId,
                 content: body.content
             });
             return res.status(201).json(result);
-        });
+        }, { mutate: true, endpoint: "POST /api/admin/eventos", action: "CREATE_EVENT" });
 
         const createVersion = protect(async (req, res, origin) => {
             const body = req.body || {};

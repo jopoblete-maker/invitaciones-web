@@ -87,6 +87,52 @@ const rsvpAdminHttp = createRsvpAdminHttp({ service: rsvpService, adminAccess, e
 app.use('/api/admin/eventos/:eventId/rsvp', rsvpAdminHttp.handle, rsvpAdminHttp.fallback);
 app.use(rsvpAdminHttp.errorHandler);
 
+// Keep creation within the existing 12 MiB snapshot budget, before global parsers.
+const createEventJson = express.json({ limit: 12 * 1024 * 1024 });
+function prepareCreateBody(req, res) {
+    const contentType = req.headers['content-type'];
+    if (typeof contentType !== 'string'
+        || !/^application\/json(?:\s*;|\s*$)/i.test(contentType)) {
+        return Promise.reject(Object.assign(new Error('Unsupported media type.'), {
+            code: 'UNSUPPORTED_MEDIA_TYPE'
+        }));
+    }
+    return new Promise((resolve, reject) => {
+        createEventJson(req, res, (error) => {
+            if (!error) return resolve();
+            const code = error.type === 'entity.too.large'
+                ? 'PAYLOAD_TOO_LARGE' : 'INVALID_REQUEST';
+            reject(Object.assign(new Error('Invalid request body.'), { code }));
+        });
+    });
+}
+
+const eventVersionRpcAdapter = createEventVersionRpcAdapter({
+    rpc(name, parameters) {
+        return withSupabaseTimeout(supabase.rpc(name, parameters));
+    }
+});
+const eventVersionEditorialService = createEventVersionEditorialService(eventVersionRpcAdapter);
+const eventVersionEditorialHttp = createEventVersionEditorialHttp({
+    service: eventVersionEditorialService,
+    readRepository: eventVersionReadRepository,
+    adminAccess,
+    prepareCreateBody,
+    previewTtlSeconds: PREVIEW_TTL_SECONDS,
+    issuePreviewToken(options) {
+        if (!PREVIEW_SIGNING_KEY) {
+            const error = new Error('Preview signing key is not configured.');
+            error.code = 'PREVIEW_NOT_CONFIGURED';
+            throw error;
+        }
+        const token = signPreviewToken({ ...options, secret: PREVIEW_SIGNING_KEY });
+        const payload = verifyPreviewToken(token, { secret: PREVIEW_SIGNING_KEY }).payload;
+        return { token, expiresAt: new Date(payload.expiresAt * 1000).toISOString() };
+    }
+});
+
+app.post('/api/admin/eventos', eventVersionEditorialHttp.createEvent);
+
 // Aumentamos el límite para permitir subir imágenes locales (Base64)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -218,32 +264,8 @@ function withSupabaseTimeout(query, timeoutMs = SUPABASE_TIMEOUT_MS) {
 app.post('/api/eventos', guardarEvento);
 app.put('/api/eventos', guardarEvento);
 
-const eventVersionRpcAdapter = createEventVersionRpcAdapter({
-    rpc(name, parameters) {
-        return withSupabaseTimeout(supabase.rpc(name, parameters));
-    }
-});
-const eventVersionEditorialService = createEventVersionEditorialService(eventVersionRpcAdapter);
-const eventVersionEditorialHttp = createEventVersionEditorialHttp({
-    service: eventVersionEditorialService,
-    readRepository: eventVersionReadRepository,
-    adminAccess,
-    previewTtlSeconds: PREVIEW_TTL_SECONDS,
-    issuePreviewToken(options) {
-        if (!PREVIEW_SIGNING_KEY) {
-            const error = new Error('Preview signing key is not configured.');
-            error.code = 'PREVIEW_NOT_CONFIGURED';
-            throw error;
-        }
-        const token = signPreviewToken({ ...options, secret: PREVIEW_SIGNING_KEY });
-        const payload = verifyPreviewToken(token, { secret: PREVIEW_SIGNING_KEY }).payload;
-        return { token, expiresAt: new Date(payload.expiresAt * 1000).toISOString() };
-    }
-});
-
 app.get('/api/admin/eventos', eventVersionEditorialHttp.listEvents);
 app.get('/api/admin/eventos/:eventId', eventVersionEditorialHttp.getEditorialState);
-app.post('/api/admin/eventos', eventVersionEditorialHttp.createEvent);
 app.post('/api/admin/eventos/:eventId/versions', eventVersionEditorialHttp.createVersion);
 app.get('/api/admin/eventos/:eventId/versions/:versionId', eventVersionEditorialHttp.getVersion);
 app.post(

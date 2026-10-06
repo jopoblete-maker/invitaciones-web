@@ -21,6 +21,9 @@ function normalizeBaseUrl(value) {
     if (!["http:", "https:"].includes(url.protocol)) {
         throw new EditorialApiError("CONFIG_ERROR", "YCOR_API_BASE_URL debe usar http o https.");
     }
+    if (url.username || url.password || url.search || url.hash) {
+        throw new EditorialApiError("CONFIG_ERROR", "La URL base no admite credenciales, query ni fragmento.");
+    }
     return url.toString().replace(/\/+$/, "");
 }
 
@@ -28,6 +31,9 @@ function errorForResponse(status, payload) {
     const remoteCode = payload?.error?.code;
     const byStatus = {
         401: ["UNAUTHORIZED", "Credencial administrativa invalida."],
+        403: ["ORIGIN_FORBIDDEN", "Acceso administrativo rechazado."],
+        429: ["RATE_LIMITED", "Se alcanzo el limite de solicitudes administrativas."],
+        503: ["RATE_LIMIT_UNAVAILABLE", "El servicio administrativo no esta disponible."],
         404: ["EVENT_NOT_FOUND", "Evento inexistente."],
         409: remoteCode === "EVENT_ALREADY_EXISTS"
             ? ["EVENT_ALREADY_EXISTS", "El evento ya existe."]
@@ -55,6 +61,7 @@ async function parseJson(response) {
 
 function createEventEditorialApiClient({ baseUrl, adminPassword, fetchImpl = globalThis.fetch } = {}) {
     const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+    const origin = new URL(normalizedBaseUrl).origin;
     if (typeof adminPassword !== "string" || adminPassword === "") {
         throw new EditorialApiError("CONFIG_ERROR", "YCOR_ADMIN_PASSWORD no esta configurada.");
     }
@@ -70,6 +77,7 @@ function createEventEditorialApiClient({ baseUrl, adminPassword, fetchImpl = glo
                 headers: {
                     Accept: "application/json",
                     "X-Admin-Password": adminPassword,
+                    ...(options.method === "POST" ? { Origin: origin } : {}),
                     ...(options.body ? { "Content-Type": "application/json" } : {})
                 }
             });
