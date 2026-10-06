@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administrador - Creador de Invitaciones</title>
+    <title>YCOR Digital · Panel de Gestión</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -588,13 +588,16 @@
             margin-top: 8px;
         }
     </style>
+    <link rel="stylesheet" href="css/admin.css">
 </head>
 
 <body>
 
     <div class="admin-card">
-        <h1>Panel de Control de Invitaciones</h1>
-        <p class="subtitle">Completa el formulario para generar la invitación personalizada</p>
+        <header class="panel-header">
+            <div><p class="panel-brand">YCOR Digital</p><h1>Panel de Gestión</h1></div>
+            <button type="button" id="btnLogout" class="btn-logout" hidden>Cerrar sesión</button>
+        </header>
 
         <section class="auth-panel" id="authPanel" aria-labelledby="authTitle">
             <h2 id="authTitle" class="section-title">Acceso restringido</h2>
@@ -608,15 +611,38 @@
             </form>
         </section>
 
-        <button type="button" id="btnLogout" class="btn-logout" hidden>Cerrar Sesión</button>
         <section id="adminForm" hidden>
+            <section id="adminDashboard" aria-labelledby="dashboardTitle">
+                <h2 id="dashboardTitle">Resumen</h2>
+                <p class="dashboard-caption">Sobre los eventos cargados. Un evento publicado también puede estar en borrador o revisión.</p>
+                <div id="dashboardMetrics" class="dashboard-metrics"></div>
+                <div class="dashboard-heading">
+                    <h2>Mis eventos</h2>
+                    <button type="button" id="loadEditorialEvents" class="panel-button">Cargar eventos</button>
+                </div>
+                <p class="dashboard-caption">Filtros locales sobre los eventos cargados. Las fechas corresponden al snapshot indicado en cada fila; próximos eventos cuenta fechas posteriores a hoy.</p>
+                <div class="dashboard-filters">
+                    <div><label for="dashboardSearch">Buscar evento</label><input type="text" id="dashboardSearch" placeholder="Título, ID, tipo o template"></div>
+                    <div><label for="dashboardStatusFilter">Estado</label><select id="dashboardStatusFilter"><option value="">Todos</option><option value="active">Activos</option><option value="archived">Archivados</option></select></div>
+                    <div><label for="dashboardWorkflowFilter">Workflow de trabajo</label><select id="dashboardWorkflowFilter"><option value="">Todos</option><option value="draft">En borrador</option><option value="in_review">En revisión</option><option value="approved">Aprobados</option><option value="published">Publicados</option><option value="none">Sin working</option></select></div>
+                </div>
+                <p id="dashboardCount"></p>
+                <div class="dashboard-table-wrap"><table class="dashboard-table" aria-label="Mis eventos">
+                    <thead><tr><th scope="col">Evento</th><th scope="col">Tipo / template</th><th scope="col">Fecha</th><th scope="col">Estado</th><th scope="col">Workflow</th><th scope="col">Versiones</th><th scope="col">Acciones</th></tr></thead>
+                    <tbody id="dashboardRows"></tbody>
+                </table></div>
+                <p id="dashboardStatus" role="status" aria-live="polite"></p>
+                <button type="button" id="dashboardLoadMore" class="panel-button" hidden>Cargar más</button>
+                <button type="button" id="dashboardOpenDetail" class="panel-button">Consultar por ID / selector</button>
+            </section>
+            <section id="editorialDetail" hidden>
+            <button type="button" id="dashboardBack" class="panel-button">Volver a Mis eventos</button>
             <section class="editorial-reader" aria-labelledby="editorialReaderTitle">
                 <div>
                     <h2 id="editorialReaderTitle" class="section-title">Lectura editorial</h2>
                     <p class="help-text">Consulta eventos y gestiona el workflow de sus versiones de trabajo.</p>
                 </div>
                 <form id="editorialReaderForm">
-                    <button type="button" id="loadEditorialEvents" class="btn-submit">Cargar eventos</button>
                     <div class="form-group">
                         <label for="editorialEventId">ID del evento:</label>
                         <input type="text" id="editorialEventId" autocomplete="off" required>
@@ -672,6 +698,7 @@
                     <button type="submit" id="editorialSaveTextButton" class="btn-submit">Guardar como nueva versión</button>
                     <p id="editorialEditorStatus" class="editorial-editor-status" role="status"></p>
                 </form>
+            </section>
             </section>
             <section id="legacyAdminControls" hidden>
             <!-- 1. Seguridad y Acceso -->
@@ -1023,6 +1050,8 @@
     <script src="js/core/admin-editorial-client.js"></script>
     <script src="js/core/admin-event-editor.js"></script>
     <script src="js/core/admin-editorial-workflow.js"></script>
+    <script src="js/core/admin-event-summary.js"></script>
+    <script src="js/core/admin-dashboard.js"></script>
     <script src="js/admin.js"></script>
 </body>
 

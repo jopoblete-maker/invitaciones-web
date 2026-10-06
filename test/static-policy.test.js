@@ -87,7 +87,8 @@ function request(url, method = "GET", headers = {}) {
         "/%73erver.js", "/%2573erver.js", "/docs%2fsql%2fphase-a9%2f01-rsvp-managed.sql",
         "/%2564ocs/sql/phase-a9/01-rsvp-managed.sql", "//docs//sql/phase-a9/01-rsvp-managed.sql",
         "/css/../server.js", "/css/%2e%2e/server.js", "/css/..%5cserver.js", "/SERVER.JS", "/PACKAGE.JSON",
-        "/assets/events/kaly-joha/../../../server.js", "/C:/server.js", "/server.js:stream", "/server.js.", "/server.js%20"
+        "/assets/events/kaly-joha/../../../server.js", "/C:/server.js", "/server.js:stream", "/server.js.", "/server.js%20",
+        "/js/core/admin-dashboard-private.js", "/js/core/admin-event-summary.js.map", "/css/admin-private.css"
     ];
     for (const url of blocked) {
         const result = await request(url);
@@ -149,6 +150,7 @@ function request(url, method = "GET", headers = {}) {
         securityChecks++;
     }
     const publicResources = new Set(["/", "/data.json", "/data/moira-20-12-2026.json",
+        "/js/core/admin-event-summary.js", "/js/core/admin-dashboard.js", "/css/admin.css",
         "/css/templates/boda-vertical.css", "/css/templates/cumple-clasico.css", "/css/templates/boda-civil-esencial.css",
         "/assets/templates/boda-vertical/thumbnail.webp", "/assets/templates/cumple-clasico/thumbnail.webp",
         "/assets/templates/boda-civil-esencial/thumbnail.webp", "/assets/templates/boda-civil-esencial/demo/hero.webp",

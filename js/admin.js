@@ -50,6 +50,13 @@ let currentEditorialVersion = null;
 let currentEditorialEditorModel = null;
 let currentEditorialDraftValues = null;
 let blockedEditorialActionKey = "";
+let adminDashboard;
+let dashboardEvents = [];
+let dashboardNextCursor = null;
+let dashboardLoading = false;
+let dashboardGeneration = 0;
+let dashboardPreviewPending = false;
+const dashboardSnapshots = new Map();
 
 const EDITORIAL_TEXT_INPUTS = Object.freeze({
     heroTitle: "editorialHeroTitle",
@@ -64,6 +71,7 @@ const EDITORIAL_TEXT_INPUTS = Object.freeze({
 document.addEventListener("DOMContentLoaded", () => {
     bindAuthentication();
     bindEditorialReader();
+    bindDashboard();
 });
 
 function showLivePreview() {
@@ -245,7 +253,105 @@ function showAdmin() {
     document.getElementById("authPanel").hidden = true;
     document.getElementById("adminForm").hidden = false;
     document.getElementById("btnLogout").hidden = false;
-    document.getElementById("editorialEventId").focus();
+    navigateAdmin("dashboard");
+    document.getElementById("loadEditorialEvents").focus();
+}
+
+function navigateAdmin(view) {
+    const detail = view === "detail";
+    document.getElementById("adminDashboard").hidden = detail;
+    document.getElementById("editorialDetail").hidden = !detail;
+}
+
+function bindDashboard() {
+    adminDashboard = AdminDashboard.createDashboard({
+        document,
+        onManage: manageDashboardEvent,
+        onPreview: previewDashboardEvent,
+        onLoadMore: () => loadEditorialEvents({ more: true })
+    });
+    adminDashboard.reset();
+    document.getElementById("dashboardOpenDetail").addEventListener("click", () => {
+        navigateAdmin("detail");
+        document.getElementById("editorialEventId").focus();
+    });
+    document.getElementById("dashboardBack").addEventListener("click", returnToDashboard);
+}
+
+async function manageDashboardEvent(eventId) {
+    document.getElementById("editorialEventId").value = eventId;
+    document.getElementById("editorialEventSelect").value = eventId;
+    navigateAdmin("detail");
+    await loadEditorialState();
+}
+
+async function returnToDashboard() {
+    navigateAdmin("dashboard");
+    const state = currentEditorialState;
+    if (!state || !dashboardEvents.some((event) => event.eventId === state.eventId)) return;
+    const generation = dashboardGeneration;
+    const password = administrativePassword;
+    const metadata = (id) => state.versions.find((version) => version.versionId === id) || null;
+    const event = { ...state, workingVersion: metadata(state.currentWorkingVersionId), publishedVersion: metadata(state.publishedVersionId) };
+    try {
+        event.summary = await loadDashboardSummary(event, password);
+        if (generation !== dashboardGeneration || !administrativePassword) return;
+        dashboardEvents = AdminDashboard.mergeEvents(dashboardEvents, [event]);
+        adminDashboard.update({ events: dashboardEvents });
+    } catch (error) {
+        if (generation === dashboardGeneration) handleDashboardError(error);
+    }
+}
+
+function handleDashboardError(error) {
+    if (["UNAUTHORIZED", "FORBIDDEN"].includes(error.code)) {
+        resetForAuthentication(error.message);
+        return;
+    }
+    adminDashboard?.update({ message: error.message || "No se pudieron cargar los eventos. Intenta nuevamente." });
+}
+
+async function loadDashboardSummary(event, password) {
+    const generation = dashboardGeneration;
+    const snapshots = {};
+    for (const [source, versionId] of [["working", event.currentWorkingVersionId], ["published", event.publishedVersionId]]) {
+        if (generation !== dashboardGeneration) return AdminEventSummary.project();
+        if (!versionId) continue;
+        const key = JSON.stringify([event.eventId, versionId]);
+        if (!dashboardSnapshots.has(key)) {
+            dashboardSnapshots.set(key, adminEditorialClient.getVersion({ eventId: event.eventId, versionId, password }));
+        }
+        try {
+            snapshots[source] = (await dashboardSnapshots.get(key)).content;
+        } catch (error) {
+            if (["UNAUTHORIZED", "FORBIDDEN"].includes(error.code)) throw error;
+            // Keep failed promises too: no duplicate reads within this loaded session.
+        }
+        const summary = AdminEventSummary.project(snapshots);
+        if (summary.source !== "none") return summary;
+    }
+    return AdminEventSummary.project(snapshots);
+}
+
+async function previewDashboardEvent(eventId) {
+    if (dashboardPreviewPending) return;
+    const event = dashboardEvents.find((entry) => entry.eventId === eventId);
+    if (!event || !AdminDashboard.canPreview(event)) {
+        adminDashboard.update({ message: "Vista previa no disponible para este evento." });
+        return;
+    }
+    const generation = dashboardGeneration;
+    dashboardPreviewPending = true;
+    try {
+        await requestPrivatePreview({
+            eventId,
+            versionId: event.currentWorkingVersionId || event.publishedVersionId,
+            status: document.getElementById("dashboardStatus"),
+            isCurrent: () => generation === dashboardGeneration && Boolean(administrativePassword)
+        });
+    } finally {
+        if (generation === dashboardGeneration) dashboardPreviewPending = false;
+    }
 }
 
 function bindEditorialReader() {
@@ -300,19 +406,42 @@ function handleEditorialEventInput(event) {
     }
 }
 
-async function loadEditorialEvents() {
-    const status = document.getElementById("editorialReaderStatus");
+async function loadEditorialEvents({ more = false } = {}) {
     if (!administrativePassword) return resetForAuthentication("Credencial administrativa invalida.");
-    status.textContent = "Cargando eventos...";
+    if (dashboardLoading || (more && !dashboardNextCursor)) return;
+    const generation = dashboardGeneration;
+    const password = administrativePassword;
+    dashboardLoading = true;
+    adminDashboard.update({ loading: true, message: "Cargando eventos…" });
     try {
-        const result = await adminEditorialClient.listEvents({ password: administrativePassword });
+        const result = await adminEditorialClient.listEvents({ password, cursor: more ? dashboardNextCursor : undefined });
+        if (generation !== dashboardGeneration) return;
+        // Bound concurrent snapshot reads; descriptive failures stay local to each row.
+        const events = AdminDashboard.mergeEvents([], result.events);
+        let index = 0;
+        await Promise.all(Array.from({ length: Math.min(4, events.length) }, async () => {
+            while (index < events.length && generation === dashboardGeneration) {
+                const event = events[index++];
+                event.summary = await loadDashboardSummary(event, password);
+            }
+        }));
+        if (generation !== dashboardGeneration) return;
+        dashboardEvents = more ? AdminDashboard.mergeEvents(dashboardEvents, events) : events;
+        dashboardNextCursor = result.nextCursor;
         const select = document.getElementById("editorialEventSelect");
+        const selected = select.value;
         select.replaceChildren(new Option("Selecciona un evento", ""));
-        result.events.forEach((event) => select.append(new Option(`${event.eventId} (${event.eventStatus})`, event.eventId)));
-        status.textContent = result.events.length ? "Eventos cargados." : "No hay eventos disponibles.";
+        dashboardEvents.forEach((event) => select.append(new Option(`${event.eventId} (${event.eventStatus})`, event.eventId)));
+        select.value = selected;
+        adminDashboard.update({ events: dashboardEvents, nextCursor: dashboardNextCursor,
+            message: dashboardNextCursor ? "Eventos cargados. Hay más eventos disponibles." : "Carga completa. Resumen sobre los eventos cargados." });
     } catch (error) {
-        status.classList.add("error");
-        status.textContent = error.code === "SERVER_ERROR" ? "Error del servidor administrativo." : error.message;
+        if (generation === dashboardGeneration) handleDashboardError(error);
+    } finally {
+        if (generation === dashboardGeneration) {
+            dashboardLoading = false;
+            adminDashboard.update({ loading: false });
+        }
     }
 }
 
@@ -373,6 +502,14 @@ async function loadEditorialState() {
 
 function resetForAuthentication(message) {
     administrativePassword = "";
+    dashboardGeneration += 1;
+    dashboardLoading = false;
+    dashboardPreviewPending = false;
+    dashboardEvents = [];
+    dashboardNextCursor = null;
+    dashboardSnapshots.clear();
+    adminDashboard?.reset();
+    document.getElementById("editorialEventSelect")?.replaceChildren(new Option("Selecciona un evento", ""));
     adminEditorialViewGuard?.reset();
     document.getElementById("adminForm").hidden = true;
     document.getElementById("btnLogout").hidden = true;
@@ -919,19 +1056,25 @@ function editorialErrorMessage(error) {
     return error?.message || "No se pudo completar la operacion editorial.";
 }
 
-async function requestPrivatePreview() {
-    const eventId = document.getElementById("editorialEventId").value.trim();
-    const versionId = currentEditorialState?.currentWorkingVersionId || currentEditorialState?.publishedVersionId;
-    const status = document.getElementById("editorialReaderStatus");
-    if (!versionId) return;
+async function requestPrivatePreview(options = {}) {
+    const eventId = options.eventId || document.getElementById("editorialEventId").value.trim();
+    const versionId = options.versionId || currentEditorialState?.currentWorkingVersionId || currentEditorialState?.publishedVersionId;
+    const status = options.status || document.getElementById("editorialReaderStatus");
+    const generation = dashboardGeneration;
+    const isCurrent = options.isCurrent || (() => generation === dashboardGeneration && Boolean(administrativePassword)
+        && document.getElementById("editorialEventId").value.trim() === eventId);
+    if (!versionId) { status.textContent = "Vista previa no disponible: el evento no tiene versión."; return; }
     status.textContent = "Solicitando vista previa...";
     try {
         const result = await adminEditorialClient.requestPreview({ eventId, versionId, password: administrativePassword });
+        if (!isCurrent()) return;
         const previewUrl = new URL(result.previewUrl, window.location.origin);
         const invitationUrl = `/invitacion.html?previewToken=${encodeURIComponent(previewUrl.searchParams.get("token"))}`;
         window.open(invitationUrl, "_blank", "noopener,noreferrer");
         status.textContent = `Vista previa válida hasta ${formatDate(result.expiresAt)}.`;
     } catch (error) {
+        if (!isCurrent()) return;
+        if (["UNAUTHORIZED", "FORBIDDEN"].includes(error.code)) return resetForAuthentication(error.message);
         status.classList.add("error");
         status.textContent = error.code === "TOKEN_EXPIRED" ? "La vista previa expiró. Solicita una nueva." : error.message;
     }
