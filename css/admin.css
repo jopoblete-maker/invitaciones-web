@@ -50,3 +50,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 #editorialDetail .editorial-reader-status.error { background: #fff1ed; }
 #editorialDetail .btn-submit { width: auto; margin-top: 12px; padding: 10px 18px; font-size: .9rem; }
 @media (max-width: 620px) { #editorialDetail .event-detail-section, #editorialDetail .event-detail-summary { padding: 16px; } #editorialDetail .editorial-text-fields { grid-template-columns: 1fr; } #editorialDetail .event-detail-summary h2 { font-size: 1.4rem; } }
+
+.dashboard-heading { flex-wrap: wrap; }
+.dashboard-heading h2 { margin-right: auto; }
+.event-create { max-width: 850px; }
+.event-create > p, #createStatus, .event-create small { color: #60746b; line-height: 1.6; }
+.event-create fieldset { border: 1px solid #dce4df; border-radius: 10px; padding: 20px; margin: 20px 0; }
+.event-create legend { font-weight: 600; padding: 0 8px; color: #285b46; }
+.create-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.event-create label { display: block; margin-bottom: 8px; }
+.event-create input, .event-create select { width: 100%; box-sizing: border-box; }
+.event-create small { display: block; margin-top: 6px; }
+.create-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+#createSubmit { background: #285b46; color: #fff; }
+.event-create [aria-invalid="true"] { border-color: #aa3c3c; }
+.event-create :focus-visible { outline: 3px solid #598774; outline-offset: 3px; }
+@media (max-width: 640px) { .create-grid { grid-template-columns: 1fr; } .event-create fieldset { padding: 14px; } }

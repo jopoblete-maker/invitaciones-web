@@ -40,6 +40,12 @@ const editorState = {
 };
 
 let administrativePassword = "";
+let adminEventCreate;
+let createPending = false;
+let createAttempt = null;
+let createRecovery = "";
+let createFoundId = "";
+let createRevision = 0;
 let adminEditorialClient;
 let adminEditorialWorkflowRunner;
 let adminWorkingVersionRunner;
@@ -78,6 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
     bindAuthentication();
     bindEditorialReader();
     bindDashboard();
+    bindEventCreation();
 });
 
 function showLivePreview() {
@@ -265,8 +272,143 @@ function showAdmin() {
 
 function navigateAdmin(view) {
     const detail = view === "detail";
-    document.getElementById("adminDashboard").hidden = detail;
+    document.getElementById("adminDashboard").hidden = view !== "dashboard";
     document.getElementById("editorialDetail").hidden = !detail;
+    document.getElementById("adminEventCreate").hidden = view !== "create";
+}
+
+function resetEventCreation() {
+    createRevision += 1;
+    createPending = false;
+    createAttempt = null;
+    createRecovery = "";
+    createFoundId = "";
+    adminEventCreate?.reset();
+}
+
+function bindEventCreation() {
+    adminEventCreate = AdminEventCreate.createView({ document, onSubmit: submitNewEvent,
+        onCancel: () => { resetEventCreation(); navigateAdmin("dashboard"); restoreDashboardPosition(); },
+        onCheck: checkNewEvent, onOpen: openFoundEvent });
+    document.getElementById("newEventButton").addEventListener("click", () => {
+        rememberDashboardPosition(); resetEventCreation(); navigateAdmin("create"); adminEventCreate.focus();
+    });
+}
+
+function creationOperation() {
+    const generation = dashboardGeneration;
+    const revision = createRevision;
+    const password = administrativePassword;
+    return { password, isCurrent: () => Boolean(administrativePassword)
+        && generation === dashboardGeneration && revision === createRevision };
+}
+
+function creationAccessError(error) {
+    if (error.status === 401 || error.status === 403) {
+        resetForAuthentication(error.status === 401 ? "Credencial administrativa inválida." : "Acceso administrativo rechazado.");
+        return true;
+    }
+    return false;
+}
+
+async function submitNewEvent(values) {
+    if (createPending || ["uncertain", "created", "found"].includes(createRecovery) || !administrativePassword) return;
+    adminEventCreate.clearErrors();
+    const built = AdminEventCreateBuilder.build(values);
+    if (!built.valid) { adminEventCreate.showErrors(built.errors); return; }
+    createAttempt = { eventId: built.content.id, content: built.content };
+    createFoundId = "";
+    const attempt = createAttempt;
+    const operation = creationOperation();
+    createPending = true;
+    adminEventCreate.update({ pending: true, message: "Creando borrador…" });
+    try {
+        await adminEditorialClient.createEvent({ ...attempt, password: operation.password });
+        if (!operation.isCurrent()) return;
+        createRecovery = "created";
+        try {
+            await loadCreatedEvent(attempt.eventId, operation);
+        } catch (error) {
+            if (!operation.isCurrent() || creationAccessError(error)) return;
+            adminEventCreate.update({ blocked: true, check: true, message: "Evento creado; no se pudo cargar el detalle." });
+        }
+    } catch (error) {
+        if (!operation.isCurrent() || creationAccessError(error)) return;
+        if (error.code === "EVENT_ALREADY_EXISTS" || error.status === 409) {
+            createRecovery = "collision";
+            adminEventCreate.update({ check: true, message: "El ID está ocupado. Puedes editarlo o consultar el evento existente." });
+        } else if (["NETWORK_ERROR", "TIMEOUT", "INVALID_RESPONSE"].includes(error.code)
+            || (error.status >= 500 && error.status !== 503)) {
+            createRecovery = "uncertain";
+            adminEventCreate.update({ blocked: true, check: true,
+                message: "Resultado incierto. Comprueba el ID antes de volver a enviar." });
+        } else {
+            createRecovery = "";
+            const message = error.status === 422 ? "El backend rechazó el contenido. Revisa los datos."
+                : error.status === 429 ? "Límite de solicitudes alcanzado. Espera antes de reintentar."
+                : error.status === 503 ? "Servicio administrativo no disponible. Intenta más tarde."
+                : "No se pudo crear el borrador. Revisa los datos.";
+            adminEventCreate.update({ message });
+        }
+    } finally { if (operation.isCurrent()) createPending = false; }
+}
+
+async function checkNewEvent() {
+    if (createPending || !createAttempt || !administrativePassword) return;
+    const id = createAttempt.eventId;
+    const previous = createRecovery;
+    const operation = creationOperation();
+    createPending = true;
+    adminEventCreate.update({ pending: true, blocked: true, check: true, message: "Comprobando el ID…" });
+    try {
+        if (previous === "created") {
+            await loadCreatedEvent(id, operation);
+            return;
+        }
+        await adminEditorialClient.getEditorialState({ eventId: id, password: operation.password });
+        if (!operation.isCurrent()) return;
+        createFoundId = id;
+        createRecovery = "found";
+        adminEventCreate.update({ blocked: true, open: true, message: "Se encontró un evento con este ID." });
+    } catch (error) {
+        if (!operation.isCurrent() || creationAccessError(error)) return;
+        if (error.status === 404 && previous !== "created") {
+            createRecovery = "retry";
+            adminEventCreate.update({ check: true, message: "No se encontró el evento en esta consulta. Puedes reintentar conscientemente con el mismo ID." });
+        } else {
+            adminEventCreate.update({ blocked: true, check: true, message: previous === "created"
+                ? "Evento creado; no se pudo cargar el detalle." : "No se pudo comprobar el resultado. Vuelve a consultar el ID." });
+        }
+    } finally { if (operation.isCurrent()) createPending = false; }
+}
+
+async function openFoundEvent() {
+    if (createPending || !createFoundId) return;
+    await manageDashboardEvent(createFoundId, { preserveReturn: true });
+}
+
+async function loadCreatedEvent(eventId, operation) {
+    const state = await adminEditorialClient.getEditorialState({ eventId, password: operation.password });
+    if (!operation.isCurrent()) return;
+    const working = state.versions.find(version => version.versionId === state.currentWorkingVersionId);
+    if (!working || !state.currentWorkingVersionId) throw new Error("Missing working version.");
+    const snapshot = await adminEditorialClient.getVersion({ eventId, versionId: state.currentWorkingVersionId, password: operation.password });
+    if (!operation.isCurrent()) return;
+    const event = { ...state, workingVersion: working,
+        publishedVersion: state.versions.find(version => version.versionId === state.publishedVersionId) || null,
+        summary: AdminEventSummary.project({ working: snapshot.content }) };
+    const filters = { text: document.getElementById("dashboardSearch").value,
+        status: document.getElementById("dashboardStatusFilter").value,
+        workflow: document.getElementById("dashboardWorkflowFilter").value };
+    if (AdminDashboard.filterEvents([event], filters).length) {
+        dashboardEvents = AdminDashboard.mergeEvents(dashboardEvents, [event]);
+        adminDashboard.update({ events: dashboardEvents });
+    }
+    const loaded = await manageDashboardEvent(eventId, { preserveReturn: true });
+    if (operation.isCurrent() && !loaded) {
+        navigateAdmin("create");
+        throw new Error("Detail could not be loaded.");
+    }
 }
 
 function bindDashboard() {
@@ -287,14 +429,14 @@ function bindDashboard() {
     document.getElementById("dashboardBack").addEventListener("click", returnToDashboard);
 }
 
-async function manageDashboardEvent(eventId) {
-    rememberDashboardPosition();
+async function manageDashboardEvent(eventId, { preserveReturn = false } = {}) {
+    if (!preserveReturn) rememberDashboardPosition();
     document.getElementById("eventDetailTechnical").open = false;
     document.getElementById("editorialEventId").value = eventId;
     document.getElementById("editorialEventSelect").value = eventId;
     navigateAdmin("detail");
     document.getElementById("dashboardBack").focus({ preventScroll: true });
-    await loadEditorialState();
+    return await loadEditorialState();
 }
 
 async function returnToDashboard() {
@@ -508,6 +650,7 @@ async function loadEditorialState() {
                 ? "Acceso administrativo confirmado. Draft V2 listo para editar."
                 : "Acceso administrativo confirmado.";
         }
+        return editorLoaded !== null;
     } catch (error) {
         if (!adminEditorialViewGuard.isCurrent(operation)) return;
         if (error.code === "UNAUTHORIZED") {
@@ -525,10 +668,12 @@ async function loadEditorialState() {
         if (adminWorkingVersionRunner.requiresRefresh(eventId) || adminDraftSaveRunner.requiresRefresh(eventId)) {
             document.getElementById("editorialReloadStateButton").hidden = false;
         }
+        return false;
     }
 }
 
 function resetForAuthentication(message) {
+    resetEventCreation();
     administrativePassword = "";
     dashboardGeneration += 1;
     dashboardLoading = false;

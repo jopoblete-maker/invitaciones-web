@@ -14,7 +14,7 @@ function element(tag) {
     return { tag, dataset: {}, value: "", textContent: "", children: [], listeners: {}, hidden: false, disabled: false,
         classList: { add() {}, remove() {} }, append(...children) { this.children.push(...children); },
         replaceChildren(...children) { this.children = children; }, addEventListener(type, listener) { this.listeners[type] = listener; },
-        setAttribute(name) { if (name === "hidden") this.hidden = true; }, focus(options) { this.focusOptions = options; }, reset() {} };
+        setAttribute(name) { if (name === "hidden") this.hidden = true; }, removeAttribute() {}, focus(options) { this.focusOptions = options; }, reset() {} };
 }
 function harness(client) {
     const elements = new Map();
@@ -25,6 +25,7 @@ function harness(client) {
     const context = vm.createContext({ document, console, URL, Object,
         Option: function (label, value) { return { textContent: label, value }; },
         AdminEventSummary: Summary, AdminDashboard: Dashboard, AdminEventDetail: Detail, AdminEditorialWorkflow: Workflow, AdminEventEditor: Editor,
+        AdminEventCreate: require("../js/core/admin-event-create"), AdminEventCreateBuilder: require("../js/core/admin-event-create-builder"),
         AdminEditorialClient: { ...EditorialClient, createAdminEditorialClient: () => client },
         window: { location: { origin: "http://synthetic.local" }, open(...args) { opened.push(args); }, confirm() { return true; } } });
     vm.runInContext(source, context);

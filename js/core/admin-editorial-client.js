@@ -208,6 +208,44 @@
             return { versionId: payload.versionId, versionNumber: payload.versionNumber };
         }
 
+        async function createEvent({ eventId, content, password, timeoutMs = 15000 } = {}) {
+            if (!eventId || !isPlainObject(content)) throw new AdminEditorialApiError("INVALID_REQUEST", "Debe indicar ID y contenido.");
+            if (!password) throw new AdminEditorialApiError("UNAUTHORIZED", "Credencial administrativa invalida.");
+            const controller = new AbortController();
+            let timer;
+            const timeout = new Promise((_, reject) => {
+                timer = setTimeout(() => {
+                    controller.abort();
+                    reject(new AdminEditorialApiError("TIMEOUT", "No se pudo confirmar el resultado del alta."));
+                }, timeoutMs);
+            });
+            try {
+                return await Promise.race([timeout, (async () => {
+                    let response;
+                    try {
+                        response = await fetchImpl("/api/admin/eventos", {
+                            method: "POST", signal: controller.signal,
+                            headers: { Accept: "application/json", "Content-Type": "application/json", "X-Admin-Password": password },
+                            body: JSON.stringify({ eventId, content })
+                        });
+                    } catch { throw new AdminEditorialApiError("NETWORK_ERROR", "No se pudo confirmar el resultado del alta."); }
+                    if (!response || typeof response.ok !== "boolean") throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa inválida.");
+                    const payload = await parseJson(response);
+                    if (!response.ok) {
+                        if (response.status === 409 && payload?.error?.code === "EVENT_ALREADY_EXISTS") {
+                            throw new AdminEditorialApiError("EVENT_ALREADY_EXISTS", "El ID del evento está ocupado.", 409);
+                        }
+                        throw errorForStatus(response.status, payload, response);
+                    }
+                    if (response.status !== 201 || payload?.eventId !== eventId || typeof payload.versionId !== "string"
+                        || !payload.versionId || payload.versionNumber !== 1 || payload.workflowStatus !== "draft") {
+                        throw new AdminEditorialApiError("INVALID_RESPONSE", "No se pudo confirmar el resultado del alta.");
+                    }
+                    return payload;
+                })()]);
+            } finally { clearTimeout(timer); }
+        }
+
         async function requestPreview({ eventId, versionId, password } = {}) {
             if (!eventId || !versionId) throw new AdminEditorialApiError("INVALID_REQUEST", "Debe indicar evento y version.");
             if (typeof password !== "string" || password === "") throw new AdminEditorialApiError("UNAUTHORIZED", "Credencial administrativa invalida.");
@@ -266,7 +304,7 @@
             return sendWorkflowRequest({ eventId, versionId, password, pathSuffix: "publish" });
         }
 
-        return { getEditorialState, listEvents, getVersion, createVersion, requestPreview, transitionWorkflow, publishVersion };
+        return { getEditorialState, listEvents, getVersion, createEvent, createVersion, requestPreview, transitionWorkflow, publishVersion };
     }
 
     function workingVersionSource(state) {

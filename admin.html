@@ -618,6 +618,7 @@
                 <div id="dashboardMetrics" class="dashboard-metrics"></div>
                 <div class="dashboard-heading">
                     <h2>Mis eventos</h2>
+                    <button type="button" id="newEventButton" class="panel-button">Nuevo evento</button>
                     <button type="button" id="loadEditorialEvents" class="panel-button">Cargar eventos</button>
                 </div>
                 <p class="dashboard-caption">Filtros locales sobre los eventos cargados. Las fechas corresponden al snapshot indicado en cada fila; próximos eventos cuenta fechas posteriores a hoy.</p>
@@ -634,6 +635,32 @@
                 <p id="dashboardStatus" role="status" aria-live="polite"></p>
                 <button type="button" id="dashboardLoadMore" class="panel-button" hidden>Cargar más</button>
                 <button type="button" id="dashboardOpenDetail" class="panel-button">Consultar por ID / selector</button>
+            </section>
+            <section id="adminEventCreate" class="event-create" aria-labelledby="createHeading" hidden>
+                <h2 id="createHeading">Nuevo evento</h2>
+                <p>Inicia una invitación en borrador. No se publicará automáticamente.</p>
+                <form id="eventCreateForm" novalidate>
+                    <fieldset><legend>Datos básicos</legend><div class="create-grid">
+                        <div><label for="createTitle">Título *</label><input id="createTitle" name="title" required></div>
+                        <div><label for="createEventId">ID del evento *</label><input id="createEventId" name="eventId" required aria-describedby="createIdHelp"><small id="createIdHelp">Minúsculas, números y guiones. Podrás editar la sugerencia antes de crear.</small></div>
+                    </div></fieldset>
+                    <fieldset><legend>Tipo y plantilla</legend><div class="create-grid">
+                        <div><label for="createType">Tipo *</label><select id="createType" name="eventType" required></select></div>
+                        <div><label for="createTemplate">Plantilla *</label><select id="createTemplate" name="templateSlug" required></select></div>
+                        <div><label for="createPlan">Plan *</label><select id="createPlan" name="plan" required></select></div>
+                    </div></fieldset>
+                    <fieldset><legend>Fecha y ubicación</legend><div class="create-grid">
+                        <div><label for="createDate">Fecha *</label><input id="createDate" name="date" type="date" required></div>
+                        <div><label for="createAddress">Dirección (opcional)</label><input id="createAddress" name="address"></div>
+                    </div></fieldset>
+                    <p id="createStatus" role="status" aria-live="polite"></p>
+                    <div class="create-actions">
+                        <button id="createCancel" type="button" class="panel-button">Cancelar</button>
+                        <button id="createSubmit" type="submit" class="panel-button">Crear borrador</button>
+                        <button id="createCheck" type="button" class="panel-button" hidden>Comprobar ID / consultar existente</button>
+                        <button id="createOpen" type="button" class="panel-button" hidden>Abrir detalle</button>
+                    </div>
+                </form>
             </section>
             <section id="editorialDetail" hidden>
             <button type="button" id="dashboardBack" class="panel-button">Volver a Mis eventos</button>
@@ -1067,6 +1094,15 @@
         <div id="resultBox"></div>
     </div>
 
+    <script src="js/core/event-schema.js"></script>
+    <script src="js/core/template-registry.js"></script>
+    <script src="js/core/plan-registry.js"></script>
+    <script src="js/core/theme-registry.js"></script>
+    <script src="js/core/section-contracts.js"></script>
+    <script src="js/core/module-registry.js"></script>
+    <script src="js/core/event-validator.js"></script>
+    <script src="js/core/admin-event-create-builder.js"></script>
+    <script src="js/core/admin-event-create.js"></script>
     <script src="js/core/admin-editorial-client.js"></script>
     <script src="js/core/admin-event-editor.js"></script>
     <script src="js/core/admin-editorial-workflow.js"></script>
