@@ -409,6 +409,9 @@
         const countdownAliases = type === "countdown" && data.target_datetime
             ? { targetDateTime: firstString(data.targetDateTime, data.target_datetime) }
             : {};
+        const galleryAliases = section.type === "gallery" && Array.isArray(data.items)
+            ? { items: normalizeGalleryItems(data.items, mediaItems) }
+            : {};
 
         return {
             ...section,
@@ -416,9 +419,26 @@
             type,
             enabled: section.enabled !== false,
             order: Number.isFinite(order) ? order : (index + 1) * 10,
-            data: { ...data, ...mediaAliases, ...countdownAliases },
+            data: { ...data, ...mediaAliases, ...countdownAliases, ...galleryAliases },
             config: isPlainObject(section.config) ? section.config : {}
         };
+    }
+
+    function normalizeGalleryItems(items, mediaItems) {
+        return items.map((item) => {
+            if (!isPlainObject(item)) return item;
+            const copy = { ...item };
+            delete copy.src;
+            const id = item.media_id;
+            if (typeof id !== "string" || !isPlainObject(mediaItems)
+                || !Object.prototype.hasOwnProperty.call(mediaItems, id)) return copy;
+            const media = mediaItems[id];
+            if (!isPlainObject(media) || media.type !== "image"
+                || typeof media.src !== "string" || !media.src.trim()) return copy;
+            const src = resolveMediaSource(mediaItems, id);
+            if (src) copy.src = src;
+            return copy;
+        });
     }
 
     function normalizeSection(section, index) {

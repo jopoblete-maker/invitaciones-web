@@ -206,4 +206,65 @@ assert.deepStrictEqual(normalizedOverrides.estilos, {
     colorBordeDecorativo: "value-line"
 });
 
+// Premium normalization is runtime-only and must not modify canonical snapshots.
+const photoItems = Object.assign(Object.create({ inherited: { type: "image", src: "/assets/inherited.jpg" } }), {
+    first: { type: "image", src: "/assets/first.jpg" },
+    second: { type: "image", src: "/assets/second.webp" },
+    audio: { type: "audio", src: "/assets/audio.mp3" },
+    invalid: "https://example.test/image.jpg",
+    bad: { type: "image", src: 123 },
+    empty: { type: "image", src: "", url: "/assets/fallback.jpg" }
+});
+const galleryItems = ["second", "first", "missing", "inherited", "audio", "invalid", "bad", "empty"]
+    .map((media_id) => ({ media_id, alt: `Texto ${media_id}`, caption: `Detalle ${media_id}`, src: "/assets/untrusted.jpg" }));
+galleryItems.push(null, 42);
+const premiumSections = [
+    { id: "gallery", type: "gallery", enabled: false, order: 40, data: { items: galleryItems }, config: {} },
+    { id: "dress", type: "dress-code", enabled: true, order: 50,
+        data: { description: "Formal", reserved_colors: [{ color: "Blanco", reserved_for: "La novia" }] }, config: {} },
+    ...[true, false, undefined].map((allow_copy, index) => ({ id: `gifts-${index}`, type: "gifts", enabled: true, order: 60 + index,
+        data: { message: "Regalo sintético", alias: "alias.demo", cbu: "0".repeat(22) },
+        config: allow_copy === undefined ? {} : { allow_copy } })),
+    { id: "album", type: "collaborative-album", enabled: true, order: 70,
+        data: { url: "https://album.example.test/demo", title: "Recuerdos", description: "Fotos y videos", button_label: "Abrir" }, config: {} }
+];
+const premiumSnapshot = { ...v2Event, media: { items: photoItems }, sections: premiumSections };
+function freezeTree(value) {
+    if (value && typeof value === "object" && !Object.isFrozen(value)) {
+        Object.values(value).forEach(freezeTree); Object.freeze(value);
+    }
+    return value;
+}
+const beforePremium = JSON.stringify(premiumSnapshot);
+freezeTree(premiumSnapshot);
+const forbiddenCalls = [];
+const savedEffects = { fetch: globalThis.fetch, log: console.log, warn: console.warn, error: console.error };
+globalThis.fetch = () => { forbiddenCalls.push("fetch"); throw new Error("Unexpected fetch"); };
+console.log = console.warn = console.error = () => forbiddenCalls.push("log");
+let premium;
+try { premium = normalizeEvent(premiumSnapshot); }
+finally { globalThis.fetch = savedEffects.fetch; Object.assign(console, { log: savedEffects.log, warn: savedEffects.warn, error: savedEffects.error }); }
+assert.deepStrictEqual(forbiddenCalls, []);
+assert.strictEqual(JSON.stringify(premiumSnapshot), beforePremium);
+assert.deepStrictEqual(premium.media.items, photoItems);
+assert.strictEqual(premium.media.items, photoItems);
+const gallery = premium.sections[0];
+assert.strictEqual(gallery.enabled, false); assert.strictEqual(gallery.order, 40);
+assert.notStrictEqual(gallery.data.items, galleryItems);
+gallery.data.items.slice(0, 8).forEach((item, index) => {
+    assert.notStrictEqual(item, galleryItems[index]);
+    assert.strictEqual(item.media_id, galleryItems[index].media_id);
+    assert.strictEqual(item.alt, galleryItems[index].alt);
+    assert.strictEqual(item.caption, galleryItems[index].caption);
+    if (index >= 2) assert.strictEqual(Object.hasOwn(item, "src"), false);
+});
+assert.strictEqual(gallery.data.items[0].src, "/assets/second.webp");
+assert.strictEqual(gallery.data.items[1].src, "/assets/first.jpg");
+assert.strictEqual(gallery.data.items[8], null); assert.strictEqual(gallery.data.items[9], 42);
+premium.sections.slice(1).forEach((section, index) => {
+    assert.deepStrictEqual(section.data, premiumSections[index + 1].data);
+    assert.deepStrictEqual(section.config, premiumSections[index + 1].config);
+});
+assert.deepStrictEqual(normalizeEvent(premiumSnapshot), premium);
+assert.deepStrictEqual(normalizeEvent(premium).sections, premium.sections);
 console.log("event-normalizer v2 test passed");
