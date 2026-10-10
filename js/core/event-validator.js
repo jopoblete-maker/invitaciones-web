@@ -23,7 +23,8 @@
         sectionContracts,
         moduleRegistry,
         themeRegistry,
-        planRegistry
+        planRegistry,
+        typeof module === "object" && module.exports ? require("./premium-section-validator") : root.PremiumSectionValidator
     );
 
     if (typeof module === "object" && module.exports) {
@@ -37,7 +38,8 @@
     sectionContracts,
     moduleRegistry,
     themeRegistry,
-    planRegistry
+    planRegistry,
+    premiumValidator
 ) {
     const CURRENT_SCHEMA_VERSION = schema?.CURRENT_SCHEMA_VERSION || 1;
     const V2_SCHEMA_VERSION = schema?.V2_SCHEMA_VERSION || 2;
@@ -161,7 +163,7 @@
         return Boolean(value && typeof value === "object" && !Array.isArray(value));
     }
 
-    function validateV2Event(event) {
+    function validateV2Event(event, premiumOptions = {}) {
         const errors = [];
 
         if (!isPlainObject(event)) {
@@ -195,7 +197,7 @@
 
         validateOptionalObject(event.location, "location", errors);
         validateV2Theme(event.theme, errors);
-        const sections = validateV2Sections(event.sections, template, errors);
+        const sections = validateV2Sections(event.sections, template, errors, event.media?.items, premiumOptions);
         validateRequiredSections(sections, template, errors);
         const modules = validateV2Modules(event.modules, template, errors);
         validateRsvpContract(event, errors);
@@ -296,7 +298,7 @@
         }
     }
 
-    function validateV2Sections(sections, template, errors) {
+    function validateV2Sections(sections, template, errors, mediaItems, premiumOptions) {
         if (!Array.isArray(sections)) {
             errors.push("sections debe ser un array.");
             return [];
@@ -337,6 +339,11 @@
                 errors.push(`${prefix}.order debe ser numerico.`);
             }
 
+            if (["gallery", "dress-code", "gifts", "collaborative-album"].includes(section.type)) {
+                if (!premiumValidator) errors.push(`${prefix}: premium validation unavailable.`);
+                else errors.push(...premiumValidator.validateSection(section, { ...premiumOptions, mediaItems }).errors.map(error => `${prefix}: ${error}`));
+                return section;
+            }
             const dataValid = validateObject(section.data, `${prefix}.data`, errors);
             const configValid = section.config === undefined
                 ? true

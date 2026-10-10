@@ -229,7 +229,7 @@ const demoV2Draft = JSON.parse(fs.readFileSync(
     incompatibleV2.sections[0].type = "gallery";
     const incompatibleResponse = await request({ ...incompatibleV2, password: ADMIN_PASSWORD });
     assert.strictEqual(incompatibleResponse.statusCode, 400);
-    assert(incompatibleResponse.body.validationErrors.some((error) => error.includes("type no registrado")));
+    assert(incompatibleResponse.body.validationErrors.some((error) => error.includes("type no soportado por template.slug")));
     assert.strictEqual(database.calls, 0);
 
     resetDatabase();

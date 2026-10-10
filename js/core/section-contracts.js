@@ -8,6 +8,18 @@
     root.SectionContracts = contracts;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
     const SECTION_CONTRACTS = createRegistry({
+        gallery: {
+            type: "gallery", allowedDataKeys: ["title", "items"], allowedConfigKeys: []
+        },
+        "dress-code": {
+            type: "dress-code", allowedDataKeys: ["title", "description", "reserved_colors"], allowedConfigKeys: []
+        },
+        gifts: {
+            type: "gifts", allowedDataKeys: ["title", "message", "alias", "cbu"], allowedConfigKeys: ["allow_copy"]
+        },
+        "collaborative-album": {
+            type: "collaborative-album", allowedDataKeys: ["title", "description", "url", "button_label"], allowedConfigKeys: []
+        },
         hero: {
             type: "hero",
             allowedDataKeys: ["title", "subtitle", "dateText", "message", "text", "image", "imageAlt", "alt", "backgroundImage", "media_id"],

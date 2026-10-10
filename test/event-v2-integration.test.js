@@ -102,7 +102,7 @@ const incompatibleSection = clone(fixture);
 incompatibleSection.sections.find((section) => section.id === "closing").type = "gallery";
 const incompatibleSectionResult = validateV2Event(incompatibleSection);
 assert.strictEqual(incompatibleSectionResult.valid, false);
-assert(incompatibleSectionResult.errors.some((error) => error.includes("type no registrado")));
+assert(incompatibleSectionResult.errors.some((error) => error.includes("type no soportado por template.slug")));
 
 const missingRsvpModule = clone(fixture);
 delete missingRsvpModule.modules.rsvp;

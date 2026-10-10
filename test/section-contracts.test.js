@@ -2,6 +2,7 @@ const assert = require("assert");
 const SectionContracts = require("../js/core/section-contracts");
 
 const expectedTypes = [
+    "gallery", "dress-code", "gifts", "collaborative-album",
     "hero",
     "event-info",
     "location",
@@ -18,8 +19,8 @@ expectedTypes.forEach((type) => {
     assert(Array.isArray(SectionContracts.get(type).allowedDataKeys));
     assert(Array.isArray(SectionContracts.get(type).allowedConfigKeys));
 });
-assert.strictEqual(SectionContracts.has("gallery"), false);
-assert.strictEqual(SectionContracts.get("gallery"), undefined);
+assert.strictEqual(SectionContracts.has("gallery"), true);
+assert.strictEqual(SectionContracts.get("unknown"), undefined);
 assert(SectionContracts.get("countdown").allowedDataKeys.includes("targetDateTime"));
 assert(SectionContracts.get("hero").allowedConfigKeys.includes("showCopy"));
 assert.strictEqual(Object.isFrozen(SectionContracts.SECTION_CONTRACTS), true);
