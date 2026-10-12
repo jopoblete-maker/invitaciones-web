@@ -42,20 +42,24 @@ function approvedUrls(value) {
 
 /** Exact, independent approvals. No digest calculation, persistence or browser transport. */
 function resolveAuthorization(input) {
-    if (!shape(input, ['identity', 'manifest'], ['mediaItems', 'giftSections'])) return denied();
+    if (!shape(input, ['identity', 'manifest'], ['mediaItems', 'giftSections', 'albumSections'])) return denied();
     const { identity, manifest } = input;
     const scope = ['eventId', 'templateSlug', 'canonicalDigest'];
     if (!shape(identity, scope) || !scope.every(key => nonempty(identity[key]))
         || !['eventId', 'templateSlug'].every(key => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(identity[key]))
-        || !shape(manifest, ['status', ...scope, 'media', 'gifts'], ['imageUrls'])
+        || !shape(manifest, ['status', ...scope, 'media', 'gifts'], ['imageUrls', 'albumUrls'])
         || manifest.status !== 'approved'
         || !scope.every(key => manifest[key] === identity[key])
         || !record(manifest.media) || !record(manifest.gifts)) return denied();
 
-    let imagePolicy;
+    let imagePolicy, albumPolicy;
     const urls = own(manifest, 'imageUrls') ? approvedUrls(manifest.imageUrls) : [];
-    if (urls === null) return denied();
-    try { imagePolicy = createPolicy({ allowedUrls: urls }); }
+    const albumUrls = own(manifest, 'albumUrls') ? approvedUrls(manifest.albumUrls) : [];
+    if (urls === null || albumUrls === null) return denied();
+    try {
+        imagePolicy = createPolicy({ allowedUrls: urls });
+        albumPolicy = createPolicy({ allowedUrls: albumUrls });
+    }
     catch (_) { return denied(); }
     // Validate every approval, including unused entries, before accepting the manifest.
     for (const [id, media] of Object.entries(manifest.media)) {
@@ -71,7 +75,12 @@ function resolveAuthorization(input) {
 
     const mediaItems = input.mediaItems === undefined ? {} : input.mediaItems;
     const giftSections = input.giftSections === undefined ? {} : input.giftSections;
-    if (!record(mediaItems) || !record(giftSections)) return denied();
+    const albumSections = input.albumSections === undefined ? {} : input.albumSections;
+    if (!record(mediaItems) || !record(giftSections) || !record(albumSections)) return denied();
+    for (const [id, data] of Object.entries(albumSections)) {
+        if (!nonempty(id) || !shape(data, ['url']) || !nonempty(data.url)
+            || !validateSection({ id, type: 'collaborative-album', order: 0, data }, { albumPolicy }).valid) return denied();
+    }
     for (const [id, media] of Object.entries(mediaItems)) {
         if (!own(manifest.media, id) || !shape(media, ['type', 'src'])) return denied();
         const approved = manifest.media[id];
@@ -87,4 +96,10 @@ function resolveAuthorization(input) {
     return { authorized: true, code: 'PREMIUM_AUTHORIZATION_APPROVED' };
 }
 
-module.exports = { resolveAuthorization };
+// Compatibility name: decisions only. Transferable policy projections are retired.
+// Private provider verification is required for any operation.
+function resolveValidationContext(input) {
+    return resolveAuthorization(input);
+}
+
+module.exports = { resolveAuthorization, resolveValidationContext };

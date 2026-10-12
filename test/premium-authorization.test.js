@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const { resolveAuthorization } = require('../js/core/premium-authorization');
+const { resolveAuthorization, resolveValidationContext } = require('../js/core/premium-authorization');
 
 const identity = { eventId: 'synthetic-wedding', templateSlug: 'synthetic-template', canonicalDigest: 'opaque-synthetic-digest' };
 const media = { type: 'image', src: '/assets/events/synthetic/photo.webp' };
@@ -102,4 +102,31 @@ const vmResult = vm.runInContext(`resolveAuthorization(JSON.parse(${JSON.stringi
 assert.equal(vmResult.authorized, true);
 assert.equal(vmResult.code, 'PREMIUM_AUTHORIZATION_APPROVED');
 assert.deepEqual(effects, []);
+const albumUrl = 'https://album.example.com/folder/synthetic?view=guest#photos';
+const albumRequest = { ...request, manifest: { ...manifest, albumUrls: [albumUrl] },
+    albumSections: { album: { url: albumUrl } } };
+accept(albumRequest);
+for (const url of [undefined, '', 'https://album.example.com/other', 'https://album.example.com/',
+    albumUrl + 'extra', 'http://album.example.com/folder', 'javascript:alert(1)', 'data:text/html,test']) {
+    reject({ ...albumRequest, albumSections: { album: { url } } });
+}
+reject({ ...albumRequest, manifest });
+reject({ ...albumRequest, manifest: { ...albumRequest.manifest, status: 'revoked' } });
+reject({ ...albumRequest, albumSections: { album: { url: albumUrl, authorized: true } } });
+for (const urls of [accessorUrls, setterUrls, iteratorUrls, new Array(1), proxy([albumUrl]),
+    Object.assign([albumUrl], { extra: true }), Object.create([albumUrl])]) {
+    reject({ ...albumRequest, manifest: { ...manifest, albumUrls: urls } });
+}
+reject({ ...albumRequest, albumSections: { album: Object.create({ url: albumUrl }) } });
+reject({ ...albumRequest, albumSections: { album: Object.defineProperty({}, 'url', { enumerable: true, get() { accessorCalls++; } }) } });
+for (const url of ['javascript:alert(1)', 'https://*.example.com/folder']) reject({ ...albumRequest, manifest: { ...manifest, albumUrls: [url] } });
+assert.equal(accessorCalls, 0);
+const albumBefore = JSON.stringify(albumRequest);
+const projected = resolveValidationContext(albumRequest);
+assert(projected.authorized);
+assert.equal(Object.hasOwn(projected, 'context'), false);
+assert(!JSON.stringify(projected).includes(gifts.alias));
+assert(!JSON.stringify(projected).includes(identity.canonicalDigest));
+assert.equal(JSON.stringify(albumRequest), albumBefore);
+assert.equal(resolveValidationContext({ ...albumRequest, manifest: undefined }).authorized, false);
 console.log('premium authorization tests passed');

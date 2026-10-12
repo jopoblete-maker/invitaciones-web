@@ -12,6 +12,7 @@ const scopeKey = identity => JSON.stringify([identity.eventId, identity.template
 
 function createAuthorizationProvider(configuration = { entries: [] }) {
     const entries = new Map();
+    const issued = new WeakMap();
     let valid = true;
     try {
         // Safe serialization validates descriptors/proxies before any consumption;
@@ -34,22 +35,63 @@ function createAuthorizationProvider(configuration = { entries: [] }) {
         }
     } catch (_) { valid = false; entries.clear(); }
 
-    function authorize(request) {
+    function decide(request) {
         if (!valid) return deny();
         try {
             const copy = JSON.parse(canonicalSerialize(request));
-            if (!exactKeys(copy, ['identity', 'expectedRevision', 'mediaItems', 'giftSections'])
+            const requestKeys = ['identity', 'expectedRevision', 'mediaItems', 'giftSections'];
+            if (Object.hasOwn(copy || {}, 'albumSections')) requestKeys.push('albumSections');
+            if (!exactKeys(copy, requestKeys)
                 || !exactKeys(copy.identity, ['eventId', 'templateSlug', 'canonicalDigest'])
                 || !Number.isSafeInteger(copy.expectedRevision) || copy.expectedRevision < 1) return deny();
             const entry = entries.get(scopeKey(copy.identity));
             if (!entry || entry.revision !== copy.expectedRevision || entry.manifest.status !== 'approved') return deny();
-            const result = resolveAuthorization({ identity: copy.identity, manifest: entry.manifest,
-                mediaItems: copy.mediaItems, giftSections: copy.giftSections });
+            const input = { identity: copy.identity, manifest: entry.manifest,
+                mediaItems: copy.mediaItems, giftSections: copy.giftSections };
+            if (Object.hasOwn(copy, 'albumSections')) input.albumSections = copy.albumSections;
+            const result = resolveAuthorization(input);
             return result.authorized ? { ...result, revision: entry.revision } : deny();
         } catch (_) { return deny(); }
     }
-    // Never expose stored manifests, financial values or serialization diagnostics.
-    return Object.freeze({ authorize });
+    function operationAllowed(request, operation) {
+        if (!operation || typeof operation.sectionId !== 'string' || !operation.sectionId.trim()) return false;
+        if (operation.type === 'album' && exactKeys(operation, ['type', 'sectionId', 'url'])) {
+            return Object.hasOwn(request.albumSections || {}, operation.sectionId)
+                && request.albumSections[operation.sectionId].url === operation.url;
+        }
+        if (operation.type === 'media' && exactKeys(operation, ['type', 'sectionId', 'mediaId', 'src'])) {
+            return Object.hasOwn(request.mediaItems, operation.mediaId)
+                && request.mediaItems[operation.mediaId].type === 'image'
+                && request.mediaItems[operation.mediaId].src === operation.src;
+        }
+        return false;
+    }
+    // Node-private calls only: trusted caller supplies canonical references and scope.
+    // Context is an opaque lookup reference, never a policy or stand-alone credential.
+    function authorizeForValidation(request, operation) {
+        try {
+            const requestText = canonicalSerialize(request);
+            const operationText = canonicalSerialize(operation);
+            const copy = JSON.parse(requestText);
+            const action = JSON.parse(operationText);
+            const result = decide(copy);
+            if (!result.authorized || !operationAllowed(copy, action)) return deny();
+            const context = Object.freeze(Object.create(null));
+            issued.set(context, { requestText, operationText });
+            return { ...result, context };
+        } catch (_) { return deny(); }
+    }
+    function verifyOperation(context, request, operation) {
+        // WeakMap lookup does not inspect properties or run proxy traps.
+        const binding = issued.get(context);
+        if (!binding) return deny();
+        try {
+            if (canonicalSerialize(request) !== binding.requestText
+                || canonicalSerialize(operation) !== binding.operationText) return deny();
+            return decide(request); // Recheck current private approval/revision.
+        } catch (_) { return deny(); }
+    }
+    return Object.freeze({ authorize: decide, authorizeForValidation, verifyOperation });
 }
 
 module.exports = { createAuthorizationProvider };

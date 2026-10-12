@@ -45,4 +45,57 @@ assert(provider.authorize(request).authorized); // Private copy unaffected; upda
 assert.deepEqual(createAuthorizationProvider(config).authorize(request), denied);
 assert(!JSON.stringify(provider).includes('alias.demo'));
 assert(!JSON.stringify(provider.authorize({ ...request, expectedRevision: 'private-marker' })).includes('private-marker'));
+const albumUrl = 'https://album.example.com/folder/synthetic';
+const albumManifest = { ...manifest, status: 'approved', albumUrls: [albumUrl] };
+const albumConfig = { entries: [{ revision: 3, manifest: albumManifest }] };
+const albumProvider = createAuthorizationProvider(albumConfig);
+const albumRequest = { ...request, expectedRevision: 3, albumSections: { album: { url: albumUrl } } };
+assert(albumProvider.authorize(albumRequest).authorized);
+const operation = { type: 'album', sectionId: 'album', url: albumUrl };
+const projection = albumProvider.authorizeForValidation(albumRequest, operation);
+assert(projection.authorized);
+assert.equal(projection.revision, 3);
+assert.deepEqual(Object.keys(projection.context), []);
+assert(albumProvider.verifyOperation(projection.context, albumRequest, operation).authorized);
+for (const context of [{ ...projection.context }, {}, { albumPolicy: { isAllowed: () => true } },
+    new Proxy(projection.context, { get() { throw new Error('Must not run'); } })]) {
+    assert.deepEqual(albumProvider.verifyOperation(context, albumRequest, operation), denied);
+}
+for (const change of [{ sectionId: 'other' }, { url: 'https://album.example.com/other' }, { type: 'media' }]) {
+    assert.deepEqual(albumProvider.verifyOperation(projection.context, albumRequest, { ...operation, ...change }), denied);
+}
+for (const key of Object.keys(identity)) {
+    assert.deepEqual(albumProvider.verifyOperation(projection.context, { ...albumRequest, identity: { ...identity, [key]: 'different' } }, operation), denied);
+}
+assert.deepEqual(albumProvider.verifyOperation(projection.context, { ...albumRequest, expectedRevision: 4 }, operation), denied);
+assert.deepEqual(createAuthorizationProvider(albumConfig).verifyOperation(projection.context, albumRequest, operation), denied);
+const mediaOperation = { type: 'media', sectionId: 'gallery-a', mediaId: 'photo', src: mediaItems.photo.src };
+const mediaProjection = albumProvider.authorizeForValidation(albumRequest, mediaOperation);
+assert(mediaProjection.authorized);
+assert(albumProvider.verifyOperation(mediaProjection.context, albumRequest, mediaOperation).authorized);
+assert.deepEqual(albumProvider.verifyOperation(mediaProjection.context, albumRequest, { ...mediaOperation, sectionId: 'gallery-b' }), denied);
+assert.deepEqual(albumProvider.verifyOperation(mediaProjection.context, albumRequest, { ...mediaOperation, src: '/assets/other.webp' }), denied);
+for (const privateValue of [giftSections.gifts.alias, giftSections.gifts.cbu, identity.canonicalDigest]) assert(!JSON.stringify(projection).includes(privateValue));
+for (const key of Object.keys(identity)) assert.deepEqual(albumProvider.authorizeForValidation({ ...albumRequest, identity: { ...identity, [key]: 'different' } }, operation), denied);
+for (const albumSections of [{ album: {} }, { album: { url: 'https://album.example.com/other' } },
+    { album: { url: 'javascript:alert(1)' } }, { album: { url: albumUrl, approved: true } }]) {
+    assert.deepEqual(albumProvider.authorizeForValidation({ ...albumRequest, albumSections }, operation), denied);
+}
+assert.deepEqual(provider.authorizeForValidation({ ...request, albumSections: { album: { url: albumUrl } } }, operation), denied);
+const revokedAlbum = createAuthorizationProvider({ entries: [...albumConfig.entries,
+    { revision: 4, manifest: { ...albumManifest, status: 'revoked' } }] });
+assert.deepEqual(revokedAlbum.authorizeForValidation({ ...albumRequest, expectedRevision: 4 }, operation), denied);
+assert.deepEqual(revokedAlbum.verifyOperation(projection.context, albumRequest, operation), denied);
+let albumEffects = 0;
+const maliciousUrls = [];
+Object.defineProperty(maliciousUrls, 0, { enumerable: true, get() { albumEffects++; } });
+assert.deepEqual(createAuthorizationProvider({ entries: [{ revision: 3, manifest: { ...albumManifest, albumUrls: maliciousUrls } }] }).authorize(albumRequest), denied);
+assert.deepEqual(albumProvider.authorizeForValidation(new Proxy(albumRequest, { ownKeys() { albumEffects++; } }), operation), denied);
+const maliciousOperation = Object.defineProperty({}, 'type', { enumerable: true, get() { albumEffects++; } });
+assert.deepEqual(albumProvider.authorizeForValidation(albumRequest, maliciousOperation), denied);
+assert.deepEqual(albumProvider.verifyOperation(projection.context, albumRequest, maliciousOperation), denied);
+assert.equal(albumEffects, 0);
+const original = JSON.stringify(albumRequest);
+albumProvider.authorizeForValidation(albumRequest, operation);
+assert.equal(JSON.stringify(albumRequest), original);
 console.log('premium authorization provider tests passed');
