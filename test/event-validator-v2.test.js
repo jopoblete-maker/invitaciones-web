@@ -208,4 +208,114 @@ assert.strictEqual(v2ThroughV1.valid, false);
 assert(v2ThroughV1.errors.includes("schema_version no soportado: 2."));
 assert.strictEqual(validateEventForPersistence({ ...validV1, schema_version: 3 }).valid, false);
 
+// Only this reloaded validator sees the synthetic template. Production stays closed.
+{
+    const validatorPath = require.resolve("../js/core/event-validator");
+    const registryPath = require.resolve("../js/core/template-registry");
+    const savedValidator = require.cache[validatorPath];
+    const savedRegistry = require.cache[registryPath];
+    const registry = require(registryPath);
+    const { createPolicy } = require("../js/core/external-link-policy");
+    const types = ["gallery", "dress-code", "gifts", "collaborative-album"];
+    const template = { ...registry.getTemplate("boda-civil-esencial"), supportedSections: ["hero", ...types] };
+    const url = "https://album.example.test/approved";
+    const mediaItems = { photo: { type: "image", src: "/assets/synthetic/photo.webp" } };
+    const gifts = { title: "Regalos", message: "Gracias", alias: "alias.demo", cbu: "0".repeat(22) };
+    const sections = [
+        { id: "gallery-a", type: "gallery", enabled: true, order: 20, data: { items: [{ media_id: "photo", alt: "Foto" }] } },
+        { id: "dress-a", type: "dress-code", enabled: true, order: 30, data: { description: "Formal" } },
+        { id: "gifts-a", type: "gifts", enabled: true, order: 40, data: gifts },
+        { id: "album-a", type: "collaborative-album", enabled: true, order: 50, data: { url } }
+    ];
+    const options = { bySectionId: {
+        "gallery-a": { authorizedMediaIds: ["photo"], mediaItems },
+        "dress-a": {},
+        "gifts-a": { authorizedGiftData: gifts },
+        "album-a": { albumUrl: url, albumPolicy: createPolicy({ allowedUrls: [url] }) }
+    } };
+    const event = validEvent({ media: { items: mediaItems }, sections: [...validEvent().sections, ...sections] });
+    const before = JSON.stringify({ event, options });
+    const freeze = value => {
+        if (value && typeof value === "object") { Object.values(value).forEach(freeze); Object.freeze(value); }
+        return value;
+    };
+    freeze(event); freeze(options);
+    try {
+        require.cache[registryPath] = { id: registryPath, filename: registryPath, loaded: true, exports: {
+            ...registry, hasTemplate: slug => slug === "boda-civil-esencial", getTemplate: () => template
+        } };
+        delete require.cache[validatorPath];
+        const isolated = require(validatorPath);
+        const check = (value = event, config = options) => isolated.validateV2Event(value, config).valid;
+        assert(check());
+        assert(check({ ...event, sections: event.sections.map(value => types.includes(value.type)
+            ? { ...value, enabled: false } : value) }));
+        assert(!check({ ...event, sections: event.sections.map(value => value.type === "gifts"
+            ? { ...value, enabled: false, data: { ...gifts, cbu: "invalid" } } : value) }));
+        assert(!check(event, {}));
+        assert(!isolated.validateEventForPersistence(event).valid);
+        for (const section of sections) {
+            const changed = { ...event, sections: event.sections.map(value => value === section ? { ...value, id: value.id + "-b" } : value) };
+            assert(!check(changed), "A different section cannot inherit options");
+            const incomplete = { ...options.bySectionId }; delete incomplete[section.id];
+            assert(!check(event, { bySectionId: incomplete }));
+            assert(!check({ ...changed, sections: changed.sections.map(value => ({ ...value, enabled: false })) }));
+        }
+        assert(!check({ ...event, sections: [...event.sections, sections[0]] }));
+        assert(!check(event, { ...options, albumPolicy: { isAllowed: () => true } }));
+        assert(!check(event, { bySectionId: { ...options.bySectionId, nonexistent: {} } }));
+        const disabled = { ...event, sections: event.sections.map(value => types.includes(value.type)
+            ? { ...value, enabled: false } : value) };
+        assert(!check(disabled, { bySectionId: { ...options.bySectionId, nonexistent: {} } }));
+        assert(check(disabled, options));
+        const revoked = Proxy.revocable({}, {}); revoked.revoke();
+        assert.doesNotThrow(() => assert(!check(event, revoked.proxy)));
+        assert.doesNotThrow(() => assert(!check(event, { bySectionId: revoked.proxy })));
+        assert.doesNotThrow(() => assert(!check(event, { bySectionId: { ...options.bySectionId, "gallery-a": revoked.proxy } })));
+        for (const malformed of [null, [], { bySectionId: null }, { bySectionId: [] },
+            { bySectionId: { ...options.bySectionId, "gifts-a": null } }]) {
+            assert.doesNotThrow(() => assert(!check(event, malformed)));
+        }
+        let accessorCalls = 0;
+        const accessorOptions = Object.defineProperty({}, "bySectionId", { get() { accessorCalls++; throw new Error("synthetic"); } });
+        assert(!check(event, accessorOptions));
+        const accessorEntry = Object.defineProperty({}, "albumUrl", { get() { accessorCalls++; return url; } });
+        assert(!check(event, { bySectionId: { ...options.bySectionId, "album-a": accessorEntry } }));
+        assert.strictEqual(accessorCalls, 0);
+        assert(!check(event, { bySectionId: Object.create(options.bySectionId) }));
+        assert(!check({ ...event, premiumOptions: options, authorized: true }, {}));
+        assert(!check({ ...event, sections: event.sections.map(value => value.type === "collaborative-album"
+            ? { ...value, data: { url: "https://album.example.test/different" } } : value) }));
+        assert(!check(event, { bySectionId: { ...options.bySectionId, "album-a": { albumUrl: url } } }));
+        assert(!check({ ...event, media: { items: { photo: { type: "image", src: "/assets/synthetic/other.webp" } } } }));
+        assert(!check({ ...event, sections: event.sections.map(value => value.type === "gallery"
+            ? { ...value, data: { items: [{ media_id: "other", alt: "Foto" }] } } : value) }));
+        for (const field of ["title", "message", "alias", "cbu"]) {
+            const expected = { ...gifts }; delete expected[field];
+            assert(!check(event, { bySectionId: { ...options.bySectionId, "gifts-a": { authorizedGiftData: expected } } }));
+            assert(!check(event, { bySectionId: { ...options.bySectionId, "gifts-a": { authorizedGiftData: { ...gifts, [field]: "different" } } } }));
+        }
+        // Previous explicit global calls remain structural-only and compatible.
+        assert(check(event, { authorizedMediaIds: ["photo"], albumPolicy: createPolicy({ allowedUrls: [url] }) }));
+        // A permissive legacy callback can satisfy structure, but is not private authority.
+        const permissive = { authorizedMediaIds: ["photo"], albumPolicy: { isAllowed: () => true } };
+        assert(check(event, permissive));
+        assert(!isolated.validateEventForPersistence(event).valid);
+        const { createPremiumWriteBoundary } = require("../backend/premium/write-boundary");
+        const boundary = createPremiumWriteBoundary({ getAuthorizationState: () => undefined });
+        assert.deepStrictEqual(boundary.validateForWrite({ eventId: event.id, content: event }), { accepted: false });
+        assert(isolated.validateV2Event(validEvent()).valid);
+        assert(isolated.validateEventForPersistence(validEvent()).valid);
+        assert(isolated.validateEventForPersistence(validV1).valid);
+        assert(isolated.validateEventForPersistence({}).valid);
+        assert.strictEqual(JSON.stringify({ event, options }), before);
+    } finally {
+        require.cache[validatorPath] = savedValidator;
+        require.cache[registryPath] = savedRegistry;
+    }
+    const production = require(validatorPath);
+    assert(!production.validateV2Event(event, options).valid);
+    assert(production.validateV2Event(event, options).errors.some(error => error.includes("no soportado por template")));
+}
+
 console.log("event-validator v2 test passed");

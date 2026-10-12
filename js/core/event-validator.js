@@ -304,6 +304,8 @@
             return [];
         }
 
+        const premiumScopeValid = validatePremiumOptionsScope(sections, premiumOptions);
+        if (!premiumScopeValid) errors.push("premiumOptions: opciones estructurales ausentes o inconsistentes.");
         const ids = new Set();
         return sections.map((section, index) => {
             const prefix = `sections[${index}]`;
@@ -341,7 +343,17 @@
 
             if (["gallery", "dress-code", "gifts", "collaborative-album"].includes(section.type)) {
                 if (!premiumValidator) errors.push(`${prefix}: premium validation unavailable.`);
-                else errors.push(...premiumValidator.validateSection(section, { ...premiumOptions, mediaItems }).errors.map(error => `${prefix}: ${error}`));
+                else {
+                    try {
+                        const options = premiumScopeValid && resolvePremiumSectionOptions(section, premiumOptions, mediaItems);
+                        if (!options) errors.push(`${prefix}: opciones estructurales premium ausentes o inconsistentes.`);
+                        else {
+                            errors.push(...premiumValidator.validateSection(section, options).errors.map(error => `${prefix}: ${error}`));
+                        }
+                    } catch (_error) {
+                        errors.push(`${prefix}: opciones estructurales premium invalidas.`);
+                    }
+                }
                 return section;
             }
             const dataValid = validateObject(section.data, `${prefix}.data`, errors);
@@ -361,6 +373,68 @@
             }
             return section;
         });
+    }
+
+    // These options are structural assertions, never credentials. Operational
+    // authorization must independently pass the private Node write boundary.
+    // Legacy global options remain supported; bySectionId never falls back to them.
+    function validatePremiumOptionsScope(sections, options) {
+        try {
+            if (!isDataRecord(options)) return false;
+            if (!hasOwn(options, "bySectionId")) return true;
+            if (Reflect.ownKeys(options).length !== 1 || !isDataRecord(options.bySectionId)) return false;
+            const premiumIds = sections.filter(section => isPlainObject(section)
+                && ["gallery", "dress-code", "gifts", "collaborative-album"].includes(section.type)).map(section => section.id);
+            const keys = Reflect.ownKeys(options.bySectionId);
+            return new Set(premiumIds).size === premiumIds.length && keys.length === premiumIds.length
+                && premiumIds.every(id => typeof id === "string" && hasOwn(options.bySectionId, id));
+        } catch (_error) {
+            return false;
+        }
+    }
+
+    function resolvePremiumSectionOptions(section, options, mediaItems) {
+        if (!isDataRecord(options)) return null;
+        if (!hasOwn(options, "bySectionId")) return Reflect.ownKeys(options).length ? { ...options, mediaItems } : null;
+        if (Reflect.ownKeys(options).length !== 1 || !isDataRecord(options.bySectionId)) return null;
+        if (!hasOwn(options.bySectionId, section.id)) return null;
+        const entry = options.bySectionId[section.id];
+        const allowedKeys = ["authorizedMediaIds", "mediaItems", "imagePolicy", "albumPolicy", "albumUrl", "authorizedGiftData"];
+        if (!isDataRecord(entry) || Reflect.ownKeys(entry).some(key => !allowedKeys.includes(key))) return null;
+
+        if (section.type === "gallery") {
+            if (!isDataRecord(entry.mediaItems) || !isDataRecord(mediaItems)
+                || !Array.isArray(entry.authorizedMediaIds) || !Array.isArray(section.data?.items)) return null;
+            for (const item of section.data.items) {
+                const id = item?.media_id;
+                if (!hasOwn(entry.mediaItems, id) || !hasOwn(mediaItems, id)) return null;
+                const expected = entry.mediaItems[id];
+                const actual = mediaItems[id];
+                if (!isDataRecord(expected) || !isDataRecord(actual) || expected.type !== "image"
+                    || actual.type !== expected.type || typeof expected.src !== "string" || actual.src !== expected.src) return null;
+            }
+        }
+        if (section.type === "collaborative-album"
+            && (!hasOwn(entry, "albumUrl") || typeof entry.albumUrl !== "string" || entry.albumUrl !== section.data?.url)) return null;
+        if (section.type === "gifts") {
+            if (!isDataRecord(entry.authorizedGiftData) || !isDataRecord(section.data)) return null;
+            for (const field of ["title", "message", "alias", "cbu"]) {
+                if (hasOwn(section.data, field) && (!hasOwn(entry.authorizedGiftData, field)
+                    || entry.authorizedGiftData[field] !== section.data[field])) return null;
+            }
+        }
+        return { ...entry, mediaItems };
+    }
+
+    function isDataRecord(value) {
+        // Accessors are rejected before reads. Arbitrary proxies can execute traps
+        // during reflection; capture errors, but require trusted data-only options.
+        // This portable structural validator is not the private Node security boundary.
+        if (!isPlainObject(value)) return false;
+        const prototype = Object.getPrototypeOf(value);
+        if (prototype !== Object.prototype && prototype !== null) return false;
+        return Reflect.ownKeys(value).every(key => typeof key === "string"
+            && hasOwn(Object.getOwnPropertyDescriptor(value, key), "value"));
     }
 
     function validateRequiredSections(sections, template, errors) {
