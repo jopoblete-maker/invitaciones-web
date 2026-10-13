@@ -9,6 +9,7 @@ const { createEventVersionRpcAdapter } = require('./js/core/event-version-rpc-ad
 const { createEventVersionEditorialService } = require('./js/core/event-version-editorial-service');
 const { createAuthorizationProvider } = require('./backend/premium/authorization-provider');
 const { inspectSnapshotBudget } = require('./backend/premium/snapshot-budget');
+const { checkPremiumStartupAuthorization } = require('./backend/premium/startup-authorization-check');
 const { createEventVersionReadRepository } = require('./js/core/event-version-read-repository-supabase');
 const { createEventVersionEditorialHttp } = require('./js/core/event-version-editorial-http');
 const { createAdminOriginPolicy } = require('./js/core/admin-origin-policy');
@@ -138,7 +139,20 @@ function composePremiumAuthorizationState(configurationText) {
         };
     } catch (_) { return () => null; }
 }
-const getAuthorizationState = composePremiumAuthorizationState(process.env.PREMIUM_AUTHORIZATION_CONFIG);
+const privateAuthorizationState = composePremiumAuthorizationState(process.env.PREMIUM_AUTHORIZATION_CONFIG);
+// Opt-in private reference is the canonical event JSON, not an approval manifest.
+// The check and operational service share the exact same provider instance.
+const premiumStartupCheck = checkPremiumStartupAuthorization({
+    enabled: process.env.PREMIUM_AUTHORIZATION_CHECK_ENABLED,
+    referenceText: process.env.PREMIUM_AUTHORIZATION_REFERENCE_CONTENT,
+    getAuthorizationState: privateAuthorizationState
+});
+if (premiumStartupCheck !== 'DISABLED') {
+    console.log(`PREMIUM_STARTUP_AUTHORIZATION ${premiumStartupCheck}`);
+}
+// A configured failure disables premium for this process, never legacy/V1/V2
+// non-premium. Install a corrected configuration with a subsequent deployment.
+const getAuthorizationState = premiumStartupCheck === 'FAIL' ? () => null : privateAuthorizationState;
 const eventVersionEditorialService = createEventVersionEditorialService(eventVersionRpcAdapter, {
     getAuthorizationState
 });

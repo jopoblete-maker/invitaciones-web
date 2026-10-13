@@ -25,8 +25,9 @@ function configuration(value) {
         gifts: { gift: { ...value.sections[1].data } }, albumUrls: [value.sections[2].data.url] } }] };
 }
 
-function server(configurationText, rows) {
+function server(configurationText, rows, startupEnvironment = {}) {
     const routes = {}, writes = [], logs = [];
+    let rpcCalls = 0;
     const express = () => ({ use() {}, listen() {},
         get(p, handler) { routes[`GET ${p}`] = handler; },
         post(p, handler) { routes[`POST ${p}`] = handler; },
@@ -39,6 +40,7 @@ function server(configurationText, rows) {
             maybeSingle() { return Promise.resolve({ data: rows[table]?.[id] || null, error: null }); } };
     },
         async rpc(name, parameters) {
+            rpcCalls++;
             if (name === "consume_admin_rate_limit") return { data: [{ allowed: true,
                 retry_after_seconds: 0, current_count: 1 }], error: null };
             writes.push({ name, parameters });
@@ -52,12 +54,13 @@ function server(configurationText, rows) {
         ADMIN_RATE_LIMIT_WINDOW_SECONDS: "60", ADMIN_RATE_LIMIT_MAX_REQUESTS: "100",
         SUPABASE_URL: "https://example.supabase.co", SUPABASE_KEY: "synthetic-key" };
     if (configurationText !== undefined) env.PREMIUM_AUTHORIZATION_CONFIG = configurationText;
+    Object.assign(env, startupEnvironment);
     const run = vm.runInNewContext(`(function(require, __dirname, process, console, Buffer, setTimeout, clearTimeout, JSON) {
         ${fs.readFileSync(filename, "utf8")}
     })`, {});
     run(requireDouble, path.dirname(filename), { env },
         { log: (...args) => logs.push(args), error: (...args) => logs.push(args) }, Buffer, setTimeout, clearTimeout, JSON);
-    return { routes, writes, logs, express };
+    return { routes, writes, logs, express, rpcCalls: () => rpcCalls };
 }
 function response() {
     return { statusCode: 200, headers: {}, setHeader(key, value) { this.headers[key] = value; },
@@ -106,6 +109,66 @@ async function request(h, value, extra = {}, eventId = value.id) {
     await missingApproval.routes["GET /api/eventos/:id"]({ params: { id: value.id } }, deniedResponse);
     assert.equal(deniedResponse.statusCode, 404);
     assert.equal(missingApproval.writes.length, 0);
+
+    // Startup uses the operational provider with an independent canonical JSON
+    // reference. No RPC, database query or writable adapter is used by the check.
+    const enabled = { PREMIUM_AUTHORIZATION_CHECK_ENABLED: "true",
+        PREMIUM_AUTHORIZATION_REFERENCE_CONTENT: JSON.stringify(value) };
+    const checked = server(text, rows, enabled);
+    assert.equal(checked.rpcCalls(), 0);
+    assert.equal(checked.writes.length, 0);
+    assert.deepEqual(checked.logs.filter(args => String(args[0]).startsWith("PREMIUM_STARTUP_AUTHORIZATION")),
+        [["PREMIUM_STARTUP_AUTHORIZATION PASS"]]);
+    assert.deepEqual(Object.keys(checked.routes), Object.keys(valid.routes));
+    const checkedResponse = response();
+    await checked.routes["GET /api/eventos/:id"]({ params: { id: value.id } }, checkedResponse);
+    assert.equal(checkedResponse.statusCode, 200);
+    assert.equal(checked.rpcCalls(), 0);
+
+    const revocation = structuredClone(cfg);
+    revocation.entries.push({ revision: 2, manifest: { ...revocation.entries[0].manifest, status: "revoked" } });
+    for (const [approval, environment] of [
+        [text, { PREMIUM_AUTHORIZATION_CHECK_ENABLED: "true" }],
+        [undefined, enabled], ["not-json", enabled], [JSON.stringify(revocation), enabled],
+        [text, { ...enabled, PREMIUM_AUTHORIZATION_REFERENCE_CONTENT: "not-json" }],
+        [text, { ...enabled, PREMIUM_AUTHORIZATION_REFERENCE_CONTENT: JSON.stringify(cfg) }],
+        [text, { ...enabled, PREMIUM_AUTHORIZATION_REFERENCE_CONTENT: JSON.stringify({ ...value, id: "other-event" }) }],
+        [text, { ...enabled, PREMIUM_AUTHORIZATION_REFERENCE_CONTENT: JSON.stringify({ ...value, identity: { title: "Changed" } }) }],
+        [text, { ...enabled, PREMIUM_AUTHORIZATION_CHECK_ENABLED: "invalid" }]
+    ]) {
+        const failed = server(approval, rows, environment);
+        assert.equal(failed.rpcCalls(), 0);
+        assert.equal(failed.writes.length, 0);
+        assert.deepEqual(failed.logs.filter(args => String(args[0]).startsWith("PREMIUM_STARTUP_AUTHORIZATION")),
+            [["PREMIUM_STARTUP_AUTHORIZATION FAIL"]]);
+        const res = response();
+        await failed.routes["GET /api/eventos/:id"]({ params: { id: value.id } }, res);
+        assert.equal(res.statusCode, 404);
+        assert.equal(failed.rpcCalls(), 0);
+        for (const result of await request(failed, value)) assert.notEqual(result.statusCode, 201);
+        assert.equal(failed.writes.length, 0);
+        for (const result of await request(failed, { nombre: "Synthetic legacy" }, {}, "synthetic-legacy")) {
+            assert.equal(result.statusCode, 201);
+        }
+        const civil = { schema_version: 2, id: "synthetic-civil", event_type: "wedding-civil", plan: "esencial",
+            status: "draft", template: { slug: "boda-civil-esencial" }, identity: { title: "Synthetic civil" },
+            schedule: { date: "2026-12-05" }, modules: {}, media: { items: {} },
+            sections: [{ id: "hero", type: "hero", enabled: true, order: 1, data: {} }] };
+        for (const result of await request(failed, civil)) assert.equal(result.statusCode, 201);
+        const logs = JSON.stringify(failed.logs);
+        for (const secret of ["canonicalDigest", cfg.entries[0].manifest.canonicalDigest,
+            value.identity.title, value.sections[1].data.cbu, "synthetic-password", "synthetic-key"]) {
+            assert(!logs.includes(secret));
+        }
+    }
+    const disabled = server(text, rows, { PREMIUM_AUTHORIZATION_CHECK_ENABLED: "false",
+        PREMIUM_AUTHORIZATION_REFERENCE_CONTENT: "invalid" });
+    for (const h of [valid, disabled]) {
+        assert(!h.logs.some(args => String(args[0]).startsWith("PREMIUM_STARTUP_AUTHORIZATION")));
+    }
+    const disabledResponse = response();
+    await disabled.routes["GET /api/eventos/:id"]({ params: { id: value.id } }, disabledResponse);
+    assert.equal(disabledResponse.statusCode, 200);
 
     const revoked = structuredClone(cfg);
     revoked.entries.push({ revision: 2, manifest: { ...revoked.entries[0].manifest, status: "revoked" } });
