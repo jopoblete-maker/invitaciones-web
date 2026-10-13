@@ -11,6 +11,10 @@
 
     root.InvitationDataSource = source;
 })(typeof globalThis !== "undefined" ? globalThis : this, function (templateRegistry) {
+    // Local display hints are associated with a fetched response, never read
+    // from permissions declared inside canonical event content.
+    const localPresentation = new WeakMap();
+    const publicPresentation = new WeakMap();
     const ALLOWED_FIXTURES = new Set(["boda-civil-esencial"]);
     const ALLOWED_DRAFTS = new Set([
         "kaly-joha-boda-civil",
@@ -61,6 +65,11 @@
 
         const devDraft = params.get("devDraft");
         if (devDraft) {
+            if (devDraft === "kaly-joha-boda-fiesta-demo") {
+                return isLoopbackHost(hostname)
+                    ? { mode: "local-premium", eventId: devDraft, privatePreview: true, url: "/__premium-local-preview/kaly-joha-boda-fiesta-demo" }
+                    : { mode: "invalid-preview" };
+            }
             return isLocalPreviewHost(hostname) && ALLOWED_DRAFTS.has(devDraft)
                 ? {
                     mode: "local-draft",
@@ -112,6 +121,28 @@
                 : "Vista previa no disponible.");
         }
         const payload = await response.json();
+        if (source.mode === "public" && (payload?.content?.template?.slug === "boda-fiesta-premium"
+            || payload?.template?.slug === "boda-fiesta-premium")) {
+            if (payload?.eventId !== source.eventId || payload.content?.id !== source.eventId
+                || payload.content?.schema_version !== 2 || payload.content.template?.slug !== "boda-fiesta-premium"
+                || typeof payload.versionId !== "string" || !payload.versionId.trim()
+                || !payload.presentation?.giftFields || typeof payload.presentation.giftFields !== "object"
+                || !Array.isArray(payload.presentation.albumSections)
+                || !payload.presentation.gallerySections || typeof payload.presentation.gallerySections !== "object") {
+                throw new Error("Invitacion no disponible.");
+            }
+            publicPresentation.set(payload.content, payload.presentation);
+            return payload.content;
+        }
+        if (source.mode === "local-premium") {
+            if (payload?.content?.id !== source.eventId
+                || payload.content.template?.slug !== "boda-fiesta-premium"
+                || !payload.presentation?.giftFields || typeof payload.presentation.giftFields !== "object") {
+                throw new Error("Vista previa no disponible.");
+            }
+            localPresentation.set(payload.content, payload.presentation);
+            return payload.content;
+        }
         if (source.mode !== "catalog-preview") return payload;
         const registered = templateRegistry?.getCatalogPreview?.(source.eventId);
         if (!registered
@@ -141,6 +172,8 @@
     }
 
     return {
+        getPublicPremiumPresentation: content => publicPresentation.get(content) || null,
+        getLocalPremiumPresentation: content => localPresentation.get(content) || null,
         isLoopbackHost,
         isLocalPreviewHost,
         selectInvitationSource,

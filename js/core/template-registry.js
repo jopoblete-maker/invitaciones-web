@@ -14,6 +14,22 @@
     const TEMPLATE_ACTIONS = Object.freeze(["maps", "calendar"]);
 
     const TEMPLATES = deepFreeze({
+        "boda-fiesta-premium": {
+            slug: "boda-fiesta-premium",
+            name: "Nuestra Boda · demo local",
+            category: "wedding",
+            layout: "vertical",
+            className: "template-boda-fiesta-premium",
+            stylesheet: "/css/templates/boda-fiesta-premium.css",
+            defaultTheme: null,
+            supportedEventTypes: ["wedding"],
+            supportedSections: [...SUPPORTED_SECTIONS, "gallery", "dress-code", "gifts", "collaborative-album"],
+            requiredSections: ["hero"],
+            supportedModules: [...SUPPORTED_MODULES],
+            supportedActions: [...TEMPLATE_ACTIONS],
+            status: "local-preview",
+            catalog: null
+        },
         "boda-vertical": {
             slug: "boda-vertical",
             name: "Boda vertical",

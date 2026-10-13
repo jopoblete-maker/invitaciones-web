@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { validateEventForPersistence } = require("../js/core/event-validator");
 const { createPrivatePreviewBridge } = require("./private-preview-bridge");
+const { EVENT_ID, preparePremiumLocalPreview } = require("./premium-local-preview");
 
 const ROOT = path.resolve(__dirname, "..");
 const HOST = process.env.PREVIEW_HOST || "127.0.0.1";
@@ -16,6 +17,8 @@ const CONTENT_TYPES = {
     ".mp4": "video/mp4",
     ".svg": "image/svg+xml",
     ".png": "image/png",
+    ".webp": "image/webp",
+    ".mp3": "audio/mpeg",
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg"
 };
@@ -61,6 +64,15 @@ function sendJson(res, status, body) {
 }
 
 function createPreviewRequestHandler(options = {}) {
+    // Trusted Node composition only. Tests supply synthetic JSON inputs without
+    // reading commercial files; HTTP requests cannot select or replace this loader.
+    const loadPremiumPreviewInput = options.loadPremiumPreviewInput || (() => {
+        const draftPath = path.join(ROOT, ".dev", "drafts", `${EVENT_ID}.event.json`);
+        const approvalPath = path.join(ROOT, ".dev", "premium", `${EVENT_ID}.authorization.json`);
+        if (fs.statSync(draftPath).size > 12 * 1024 * 1024 || fs.statSync(approvalPath).size > 12 * 1024 * 1024) throw new Error();
+        return { content: JSON.parse(fs.readFileSync(draftPath, "utf8")),
+            configuration: JSON.parse(fs.readFileSync(approvalPath, "utf8")) };
+    });
     const privatePreviewBridge = createPrivatePreviewBridge({
         apiBaseUrl: options.apiBaseUrl ?? process.env.YCOR_API_BASE_URL,
         adminPassword: options.adminPassword ?? process.env.YCOR_ADMIN_PASSWORD,
@@ -68,8 +80,39 @@ function createPreviewRequestHandler(options = {}) {
     });
 
     return function handlePreviewRequest(req, res) {
-        const requestUrl = new URL(req.url, `http://${HOST}:${PORT}`);
-        const pathname = decodeURIComponent(requestUrl.pathname);
+        let pathname;
+        try {
+            const requestUrl = new URL(req.url, `http://${HOST}:${PORT}`);
+            pathname = decodeURIComponent(requestUrl.pathname);
+        } catch (_) {
+            res.writeHead(400); res.end("Invalid request"); return;
+        }
+
+        if (pathname === `/__premium-local-preview/${EVENT_ID}`) {
+            const address = req.socket?.remoteAddress;
+            if (address && !["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(address)) {
+                sendJson(res, 403, { error: "Local preview only." }); return;
+            }
+            if ((req.method || "GET") !== "GET") { sendJson(res, 405, { error: "Method not allowed." }); return; }
+            try {
+                const input = loadPremiumPreviewInput();
+                // Every loader, including synthetic tests, uses the same budget,
+                // private authorization and full event validation composition.
+                const result = preparePremiumLocalPreview(input.content, input.configuration);
+                sendJson(res, result.accepted ? 200 : 422, result.accepted
+                    ? { content: result.content, presentation: result.presentation }
+                    : { error: "Premium preview unavailable." });
+            } catch (_) { sendJson(res, 422, { error: "Premium preview unavailable." }); }
+            return;
+        }
+
+        // Never serve private approvals, reference material or Node modules.
+        // Reject both separators and traversal before mapping dev aliases.
+        if (pathname.includes("\\") || pathname.includes("%")
+            || pathname.split("/").some(segment => segment === "." || segment === "..")
+            || /^\/(?:backend|scripts|node_modules)(?:\/|$)/i.test(pathname)) {
+            res.writeHead(404); res.end("Not found"); return;
+        }
 
         if (privatePreviewBridge.matches(pathname)) {
             privatePreviewBridge.handle(req, res, pathname);
@@ -94,6 +137,12 @@ function createPreviewRequestHandler(options = {}) {
             res.writeHead(403);
             res.end("Forbidden");
             return;
+        }
+
+        const normalizedFile = path.relative(ROOT, filePath).split(path.sep).join("/").toLowerCase();
+        if (normalizedFile.startsWith(".dev/premium/") || normalizedFile.startsWith(".dev/referencias/")
+            || normalizedFile === `.dev/drafts/${EVENT_ID}.event.json`) {
+            res.writeHead(404); res.end("Not found"); return;
         }
 
         if (isDraftRequest) {

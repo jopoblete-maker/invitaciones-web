@@ -104,7 +104,8 @@ for(const [fn,value,ctx] of [['renderGallery',runtime,context],['renderDressCode
 }
 assert.deepEqual(effects,[]);assert.equal(JSON.stringify({runtime,dress,album,giftsData,mediaItems}),before);
 for(const type of ['gallery','dress-code','gifts','collaborative-album']) {
-    assert(!Object.hasOwn(Dispatcher.SECTION_RENDERER_REGISTRY,type));
-    for(const template of Templates.listTemplates()) assert(!template.supportedSections.includes(type));
+    assert(Object.hasOwn(Dispatcher.SECTION_RENDERER_REGISTRY,type));
+    assert.equal(Dispatcher.renderSection(section(type,{}), {renderers:{gallery:()=> 'blocked',dressCode:()=> 'blocked',gifts:()=> 'blocked',collaborativeAlbum:()=> 'blocked'}}),'');
+    for(const template of Templates.listTemplates().filter(value=>value.status==='active')) assert(!template.supportedSections.includes(type));
 }
 console.log('pure premium renderer tests passed');

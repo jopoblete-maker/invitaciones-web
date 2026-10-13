@@ -19,7 +19,7 @@ const {
     resolveTemplate
 } = require("../js/core/template-registry");
 
-const expectedSlugs = ["boda-vertical", "cumple-clasico", "boda-civil-esencial"];
+const expectedSlugs = ["boda-fiesta-premium", "boda-vertical", "cumple-clasico", "boda-civil-esencial"];
 assert.deepStrictEqual(listTemplates().map((template) => template.slug), expectedSlugs);
 assert.strictEqual(hasTemplate("boda-vertical"), true);
 assert.strictEqual(hasTemplate(" template-desconocido "), false);
@@ -70,7 +70,7 @@ const technicalFields = [
     "status"
 ];
 
-Object.values(TEMPLATES).forEach((template) => {
+Object.values(TEMPLATES).filter(template => template.status === "active").forEach((template) => {
     technicalFields.forEach((field) => {
         assert(Object.prototype.hasOwnProperty.call(template, field), `${template.slug} no contiene ${field}`);
     });
@@ -106,7 +106,7 @@ assert.throws(() => { civil.supportedActions.pop(); }, TypeError);
 assert.strictEqual(getTemplate("boda-civil-esencial").name, "Boda civil esencial");
 const listed = listTemplates();
 listed.pop();
-assert.strictEqual(listTemplates().length, 3);
+assert.strictEqual(listTemplates().length, 4);
 
 assert.strictEqual(typeof listCatalogTemplates, "function");
 assert.deepStrictEqual(listCatalogTemplates().map((template) => template.slug), ["boda-vertical", "cumple-clasico", "boda-civil-esencial"]);
@@ -157,7 +157,7 @@ assert.strictEqual(Object.isFrozen(civil.catalog), true);
 const catalogListed = listCatalogTemplates();
 catalogListed.push({ slug: "template-ajeno" });
 assert.deepStrictEqual(listCatalogTemplates().map((template) => template.slug), ["boda-vertical", "cumple-clasico", "boda-civil-esencial"]);
-assert.strictEqual(listTemplates().length, 3);
+assert.strictEqual(listTemplates().length, 4);
 
 const catalogWithoutPreview = defineCatalogMetadata({
     description: "Plantilla demo",

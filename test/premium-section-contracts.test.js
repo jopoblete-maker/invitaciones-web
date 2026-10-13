@@ -29,7 +29,7 @@ for(const [type,value] of Object.entries(samples)) {
     assert(!validateSection({...value,data:{...value.data,title:'x\n'}},options).valid);
     assert(validateSection({...value,data:{...value.data,title:'😀'.repeat(120)}},options).valid);
     assert.equal(Renderer.renderSection(value,{warn(){}}),'');
-    for(const template of Templates.listTemplates()) assert(!template.supportedSections.includes(type));
+    for(const template of Templates.listTemplates().filter(value=>value.status==='active')) assert(!template.supportedSections.includes(type));
 }
 for(const url of ['javascript:alert(1)','data:text/html,bad','blob:https://example.test/a','http://album.example.test/a',
     '/folder/demo','https://u:p@album.example.test/folder/demo','https://localhost/a','https://127.0.0.1/a',

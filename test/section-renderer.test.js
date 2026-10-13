@@ -93,7 +93,7 @@ assert.deepStrictEqual(
     renderSections([{ id: "only", type: "hero", enabled: true, order: 10, data: {} }], { renderers }),
     ["hero:only:0/1"]
 );
-assert.deepStrictEqual(Object.keys(SECTION_RENDERER_REGISTRY), ["hero", "event-info", "location", "rsvp", "closing", "countdown", "media-closing"]);
+assert.deepStrictEqual(Object.keys(SECTION_RENDERER_REGISTRY), ["hero", "event-info", "location", "rsvp", "closing", "countdown", "media-closing", "gallery", "dress-code", "gifts", "collaborative-album"]);
 
 const civilTemplate = resolveTemplate("boda-civil-esencial");
 const weddingTemplate = resolveTemplate("boda-vertical");

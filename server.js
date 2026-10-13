@@ -7,6 +7,8 @@ const TemplateRegistry = require('./js/core/template-registry');
 const { createPublicEventResolver } = require('./js/core/public-event-resolver');
 const { createEventVersionRpcAdapter } = require('./js/core/event-version-rpc-adapter');
 const { createEventVersionEditorialService } = require('./js/core/event-version-editorial-service');
+const { createAuthorizationProvider } = require('./backend/premium/authorization-provider');
+const { inspectSnapshotBudget } = require('./backend/premium/snapshot-budget');
 const { createEventVersionReadRepository } = require('./js/core/event-version-read-repository-supabase');
 const { createEventVersionEditorialHttp } = require('./js/core/event-version-editorial-http');
 const { createAdminOriginPolicy } = require('./js/core/admin-origin-policy');
@@ -112,7 +114,34 @@ const eventVersionRpcAdapter = createEventVersionRpcAdapter({
         return withSupabaseTimeout(supabase.rpc(name, parameters));
     }
 });
-const eventVersionEditorialService = createEventVersionEditorialService(eventVersionRpcAdapter);
+// Optional private process configuration. Never read approvals from HTTP inputs,
+// public files or .dev. Install revised/revoked approvals by restarting the process.
+// Missing/malformed configuration disables premium without affecting other events.
+function composePremiumAuthorizationState(configurationText) {
+    try {
+        if (typeof configurationText !== 'string' || !configurationText
+            || Buffer.byteLength(configurationText, 'utf8') > MAX_EVENT_PAYLOAD_BYTES) return () => null;
+        const configuration = JSON.parse(configurationText);
+        inspectSnapshotBudget(configuration);
+        const provider = createAuthorizationProvider(configuration);
+        if (!Array.isArray(configuration.entries)) return () => null;
+        return identity => {
+            let revision = 0;
+            for (const entry of configuration.entries) {
+                const manifest = entry?.manifest;
+                if (manifest?.eventId === identity.eventId
+                    && manifest.templateSlug === identity.templateSlug
+                    && manifest.canonicalDigest === identity.canonicalDigest
+                    && Number.isSafeInteger(entry.revision) && entry.revision > revision) revision = entry.revision;
+            }
+            return revision ? { provider, revision } : null;
+        };
+    } catch (_) { return () => null; }
+}
+const getAuthorizationState = composePremiumAuthorizationState(process.env.PREMIUM_AUTHORIZATION_CONFIG);
+const eventVersionEditorialService = createEventVersionEditorialService(eventVersionRpcAdapter, {
+    getAuthorizationState
+});
 const eventVersionEditorialHttp = createEventVersionEditorialHttp({
     service: eventVersionEditorialService,
     readRepository: eventVersionReadRepository,
@@ -324,7 +353,7 @@ const publicEventResolver = createPublicEventResolver({
     async getVersion(id) {
         const { data, error } = await withSupabaseTimeout(supabase
             .from('event_versions')
-            .select('id, event_id, content')
+            .select('id, event_id, content, workflow_status, published_at')
             .eq('id', id)
             .maybeSingle());
         if (error) throw error;
@@ -332,6 +361,7 @@ const publicEventResolver = createPublicEventResolver({
     }
 }, {
     validatePublishedContent: validateEventForPersistence,
+    preparePremiumContent: eventVersionEditorialService.preparePremiumContent,
     onFallback({ eventId, reason, publishedVersionId }) {
         console.warn('Public event legacy fallback:', {
             eventId,
@@ -366,6 +396,10 @@ app.get('/api/catalogo/previews/:eventId', async (req, res) => {
 app.get('/api/eventos/:id', async (req, res) => {
     try {
         const event = await publicEventResolver.resolvePublicEvent(req.params.id);
+        if (event.presentation && event.content?.template?.slug === 'boda-fiesta-premium') {
+            res.setHeader('Cache-Control', 'no-store');
+            res.setHeader('Referrer-Policy', 'no-referrer');
+        }
         res.json(event);
     } catch (err) {
         if (err.code === 'PUBLIC_EVENT_NOT_FOUND') {

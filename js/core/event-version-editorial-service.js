@@ -2,14 +2,21 @@
     const validator = typeof require === "function"
         ? require("./event-validator")
         : root.EventValidator;
-    const service = factory(validator);
+    // Private dependencies exist only in Node. Browser callers cannot inject
+    // an authorization provider or turn structural options into credentials.
+    const privatePremium = typeof module === "object" && module.exports ? {
+        createBoundary: require("../../backend/premium/write-boundary").createPremiumWriteBoundary,
+        inspectBudget: require("../../backend/premium/snapshot-budget").inspectSnapshotBudget,
+        createPolicy: require("./external-link-policy").createPolicy
+    } : null;
+    const service = factory(validator, privatePremium);
 
     if (typeof module === "object" && module.exports) {
         module.exports = service;
     }
 
     root.EventVersionEditorialService = service;
-})(typeof globalThis !== "undefined" ? globalThis : this, function (validator) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (validator, privatePremium) {
     function editorialError(code, message, details) {
         const error = new Error(message);
         error.code = code;
@@ -31,7 +38,9 @@
         if (value !== null) requireString(value, name);
     }
 
-    function createEventVersionEditorialService(adapter) {
+    // dependencies belongs to trusted Node composition, never HTTP options/body.
+    // getAuthorizationState returns the current private provider and revision.
+    function createEventVersionEditorialService(adapter, dependencies = {}) {
         const requiredMethods = [
             "createEvent",
             "createVersion",
@@ -43,6 +52,61 @@
             throw new TypeError(`adapter must implement ${requiredMethods.join(", ")}.`);
         }
 
+        const boundary = privatePremium && typeof dependencies.getAuthorizationState === "function"
+            ? privatePremium.createBoundary({ getAuthorizationState: dependencies.getAuthorizationState }) : null;
+        const premiumTypes = ["gallery", "dress-code", "gifts", "collaborative-album"];
+
+        function prepareContent(eventId, content) {
+            // Inspect JSON before reading content fields or calculating any digest.
+            // Ordinary JSON V1/V2/legacy retains its existing persistence path.
+            if (privatePremium) {
+                try { privatePremium.inspectBudget(content); }
+                catch (_) { throw editorialError("INVALID_EVENT", "Event content is invalid."); }
+            }
+            const premium = Array.isArray(content?.sections)
+                && content.sections.some(section => premiumTypes.includes(section?.type));
+            if (!premium) {
+                const validation = validator.validateEventForPersistence(content);
+                if (!validation.valid) {
+                    throw editorialError("INVALID_EVENT", "Event content is invalid.", validation.errors);
+                }
+                return content;
+            }
+            try {
+                if (!boundary) throw new Error();
+                const result = boundary.validateForWrite({ eventId, content });
+                if (!result.accepted) throw new Error();
+                const canonical = result.content;
+                // Structural assertions come exclusively from the privately
+                // accepted canonical copy, including disabled premium sections.
+                const bySectionId = Object.fromEntries(canonical.sections
+                    .filter(section => premiumTypes.includes(section.type))
+                    .map(section => {
+                        let options = {};
+                        if (section.type === "gallery") {
+                            const ids = section.data.items.map(item => item.media_id);
+                            options = { authorizedMediaIds: ids, mediaItems: canonical.media.items,
+                                imagePolicy: privatePremium.createPolicy({ allowedUrls: ids
+                                    .map(id => canonical.media.items[id].src).filter(src => !src.startsWith("/assets/")) }) };
+                        } else if (section.type === "gifts") {
+                            options = { authorizedGiftData: section.data };
+                        } else if (section.type === "collaborative-album") {
+                            options = { albumUrl: section.data.url,
+                                albumPolicy: privatePremium.createPolicy({ allowedUrls: [section.data.url] }) };
+                        }
+                        return [section.id, options];
+                    }));
+                if (!validator.validateV2Event(canonical, { bySectionId }).valid) throw new Error();
+                // Recheck current private state after full structural validation.
+                // No asynchronous gap or consumer callback occurs before the write.
+                if (!boundary.validateForWrite({ eventId, content: canonical }).accepted) throw new Error();
+                return canonical;
+            } catch (_) {
+                // No manifests, private scope, values or validation details escape.
+                throw editorialError("PREMIUM_AUTHORIZATION_DENIED", "Premium content cannot be persisted.");
+            }
+        }
+
         function createEvent(options = {}) {
             requireString(options.eventId, "eventId");
             if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(options.eventId)) {
@@ -51,18 +115,15 @@
             if (!isPlainObject(options.content)) {
                 throw editorialError("INVALID_EVENT", "Event content is invalid.");
             }
-            if (Object.prototype.hasOwnProperty.call(options.content, "id")
-                && options.content.id !== options.eventId) {
+            const content = prepareContent(options.eventId, options.content);
+            if (Object.prototype.hasOwnProperty.call(content, "id")
+                && content.id !== options.eventId) {
                 throw editorialError("INVALID_EVENT", "Event content id does not match eventId.");
             }
 
-            const validation = validator.validateEventForPersistence(options.content);
-            if (!validation.valid) {
-                throw editorialError("INVALID_EVENT", "Event content is invalid.", validation.errors);
-            }
             return adapter.createEvent({
                 eventId: options.eventId,
-                content: options.content
+                content
             });
         }
 
@@ -89,14 +150,11 @@
                 throw editorialError("INVALID_EVENT", "Event content is invalid.");
             }
 
-            const validation = validator.validateEventForPersistence(options.content);
-            if (!validation.valid) {
-                throw editorialError("INVALID_EVENT", "Event content is invalid.", validation.errors);
-            }
+            const content = prepareContent(options.eventId, options.content);
 
             return adapter.createVersion({
                 eventId: options.eventId,
-                content: options.content,
+                content,
                 expectedWorkingVersionId: options.expectedWorkingVersionId,
                 sourceVersionId: options.sourceVersionId ?? null,
                 initialWorkflow,
@@ -141,6 +199,9 @@
         }
 
         return {
+            // Read-only reuse of the same private authorization/full validation
+            // path. No adapter invocation and no private contexts are returned.
+            preparePremiumContent: prepareContent,
             createEvent,
             createVersion,
             transitionWorkflow,

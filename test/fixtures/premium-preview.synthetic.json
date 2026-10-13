@@ -1,0 +1,43 @@
+{
+  "schema_version": 2,
+  "id": "kaly-joha-boda-fiesta-demo",
+  "event_type": "wedding",
+  "plan": "premium",
+  "status": "ready_for_preview",
+  "template": { "slug": "boda-fiesta-premium" },
+  "identity": { "title": "Pareja Sintética", "subtitle": "Nuestra Boda" },
+  "schedule": { "date": "2026-12-05", "time": "18:00", "timezone": "America/Argentina/Buenos_Aires" },
+  "location": { "name": "Lugar sintético", "address": "Dirección sintética", "maps_url": "https://maps.example.test/synthetic" },
+  "sections": [
+    { "id": "portada", "type": "hero", "enabled": true, "order": 1, "data": { "subtitle": "Nuestra Boda" } },
+    { "id": "cuenta-regresiva", "type": "countdown", "enabled": true, "order": 2,
+      "data": { "targetDateTime": "2026-12-05T18:00:00-03:00", "footer": "Mensaje romántico sintético." } },
+    { "id": "fotografia-pareja", "type": "media-closing", "enabled": true, "order": 3,
+      "data": { "media_id": "foto-pareja", "alt": "Fotografía sintética de prueba" } },
+    { "id": "fiesta", "type": "event-info", "enabled": true, "order": 4, "data": {} },
+    { "id": "confirmacion", "type": "rsvp", "enabled": true, "order": 5, "data": {} },
+    { "id": "vestimenta", "type": "dress-code", "enabled": true, "order": 6,
+      "data": { "title": "Dress Code", "description": "Vestimenta sintética", "reserved_colors": [
+        { "color": "Blanco", "reserved_for": "Novia sintética" },
+        { "color": "Verde", "reserved_for": "Damas sintéticas" }
+      ] } },
+    { "id": "regalos-pendientes", "type": "gifts", "enabled": true, "order": 7,
+      "data": { "title": "Regalo", "message": "Mensaje de regalos sintético", "cbu": "1111111111111111111111" },
+      "config": { "allow_copy": true } },
+    { "id": "album-pendiente", "type": "collaborative-album", "enabled": true, "order": 8,
+      "data": { "title": "Carpeta Compartida", "description": "Carpeta sintética de fotografías y videos.",
+        "button_label": "Subir Aquí", "url": "https://album.example.test/synthetic" } },
+    { "id": "cierre", "type": "media-closing", "enabled": true, "order": 9,
+      "data": { "media_id": "foto-cierre", "alt": "Fotografía sintética de cierre" } }
+  ],
+  "modules": {
+    "music": { "enabled": true, "playMode": "selector", "tracks": [{ "media_id": "musica-boda", "name": "Prueba musical" }] },
+    "rsvp": { "enabled": true, "mode": "whatsapp", "contacts": [{ "phone": "5491100000000" }] }
+  },
+  "media": { "items": {
+    "musica-boda": { "type": "audio", "src": "/assets/templates/boda-fiesta-premium/musica-boda.mp3" },
+    "foto-pareja": { "type": "image", "src": "/assets/templates/boda-fiesta-premium/nuestra-boda-fotografia.webp" },
+    "foto-cierre": { "type": "image", "src": "/assets/templates/boda-fiesta-premium/cierre-puente.webp" }
+  } },
+  "metadata": { "demo": true, "purpose": "local-only-preview", "synthetic": true }
+}

@@ -52,12 +52,20 @@ async function initInvitation() {
         const data = await InvitationDataSource.loadInvitationSource(source, fetch);
         const event = EventNormalizer.normalizeEvent(data, { fontFamilies: FONT_FAMILIES });
         const templateConfig = TemplateRegistry.resolveTemplate(event.template.slug || event.template_slug);
+        const premiumPresentation = templateConfig.slug === "boda-fiesta-premium"
+            ? source.mode === "local-premium" ? InvitationDataSource.getLocalPremiumPresentation(data)
+                : source.mode === "public" ? InvitationDataSource.getPublicPremiumPresentation(data) : null
+            : null;
+        if (templateConfig.slug === "boda-fiesta-premium" && !premiumPresentation) {
+            throw new Error("Invitación premium no disponible.");
+        }
+        if (templateConfig.slug === "boda-fiesta-premium") await loadLocalPremiumRenderers();
         const themeName = inferTheme(event, source.eventId, templateConfig);
 
         applyTemplateConfig(templateConfig);
         await loadTemplateStylesheet(templateConfig);
         applyTheme(themeName, event.fontFamily, event.estilos);
-        renderInvitation(event, templateConfig);
+        renderInvitation(event, templateConfig, premiumPresentation);
         hideLoader();
     } catch (error) {
         console.error(error);
@@ -202,10 +210,30 @@ function normalizeColor(value, fallback) {
     return /^#[0-9a-f]{6}$/i.test(String(value || "")) ? value : fallback;
 }
 
-function renderInvitation(event, templateConfig) {
+function loadLocalPremiumRenderers() {
+    return Promise.all([
+        ["PremiumSectionRenderers", "/js/core/premium-section-renderers.js"],
+        ["ExternalLinkPolicy", "/js/core/external-link-policy.js"]
+    ].map(([name, src]) => {
+        if (globalThis[name]) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = src;
+            script.onload = () => globalThis[name] ? resolve() : reject(new Error("Premium renderer unavailable."));
+            script.onerror = () => reject(new Error("Premium renderer unavailable."));
+            document.head.append(script);
+        });
+    }));
+}
+
+function renderInvitation(event, templateConfig, localPresentation = null) {
     document.title = event.nombre ? `Invitación de ${event.nombre}` : "Invitación Digital";
+    if (event.id === "kaly-joha-boda-fiesta-demo" && templateConfig.slug === "boda-fiesta-premium") {
+        document.title = `${event.nombre} — ${event.identity.subtitle}`;
+    }
 
     const renderableSections = SectionRenderer.getRenderableSections(event.sections, {
+        templateConfig,
         warn: (message) => console.warn(message)
     });
     const context = {
@@ -217,8 +245,35 @@ function renderInvitation(event, templateConfig) {
             rsvp: renderConfirmationPage,
             closing: renderClosingPage,
             countdown: Countdown.renderPage,
-            mediaClosing: renderMediaClosingPage
+            mediaClosing: renderMediaClosingPage,
+            gallery: (section, rendererContext) => {
+                const ids = localPresentation?.gallerySections?.[section.id];
+                if (templateConfig.slug !== "boda-fiesta-premium" || !Array.isArray(ids)) return "";
+                const mediaItems = event.media?.items || {};
+                const sources = ids.map(id => mediaItems[id]?.src).filter(src => typeof src === "string");
+                return globalThis.PremiumSectionRenderers.renderGallery(section, { ...rendererContext,
+                    authorizedMediaIds: ids, mediaItems, approvedLocalSources: sources.filter(src => src.startsWith("/assets/")),
+                    imagePolicy: globalThis.ExternalLinkPolicy.createPolicy({ allowedUrls: sources.filter(src => !src.startsWith("/assets/")) }) });
+            },
+            dressCode: globalThis.PremiumSectionRenderers?.renderDressCode,
+            gifts: (section, rendererContext) => {
+                const fields = localPresentation?.giftFields?.[section.id];
+                if (templateConfig.slug !== "boda-fiesta-premium" || !Array.isArray(fields)) return "";
+                // Display only fields approved by the server response.
+                // These hints are not credentials for validation or persistence.
+                const approved = Object.fromEntries(fields.filter(key => ["title", "message", "alias", "cbu"].includes(key))
+                    .map(key => [key, section.data[key]]));
+                return globalThis.PremiumSectionRenderers.renderGifts(section, { ...rendererContext, authorizedGiftData: approved });
+            },
+            collaborativeAlbum: (section, rendererContext) => {
+                if (templateConfig.slug !== "boda-fiesta-premium"
+                    || !localPresentation?.albumSections?.includes(section.id)) return "";
+                return globalThis.PremiumSectionRenderers.renderCollaborativeAlbum(section, { ...rendererContext,
+                    albumPolicy: globalThis.ExternalLinkPolicy.createPolicy({ allowedUrls: [section.data.url] }) });
+            }
         },
+        escapeHtml,
+        escapeAttr,
         templateConfig,
         renderBrochureNavigation: (pageCount) => templateConfig.layout === "vertical" ? "" : renderBrochureNavigation(pageCount),
         getSectionImage: (section, pageIndex) => getSectionImage(event, section, pageIndex),
@@ -230,6 +285,11 @@ function renderInvitation(event, templateConfig) {
         renderBranding(event)
     ].filter(Boolean).join("");
 
+    if (templateConfig.slug === "boda-fiesta-premium") {
+        // Keep the existing player alive if this local preview is rendered again.
+        const widget = document.getElementById("audioWidget");
+        if (widget && getApp().contains(widget)) document.body.insertBefore(widget, getApp());
+    }
     getApp().innerHTML = html;
     document.querySelectorAll(".wedding-section").forEach((page, index) => {
         const section = renderableSections[index];
@@ -242,15 +302,180 @@ function renderInvitation(event, templateConfig) {
         page.style.setProperty("--content-scale", config.contentScale === "small" ? "0.88" : config.contentScale === "large" ? "1.08" : "1");
         page.classList.add(`layout-align-${config.align}`, `layout-scale-${config.contentScale}`);
     });
-    setupMusic(event.multimedia.audios, event.multimedia.audioPlayMode);
+    if (templateConfig.slug === "boda-fiesta-premium") {
+        getApp().querySelectorAll(".wedding-section").forEach((page, index) => {
+            page.dataset.demoSection = renderableSections[index]?.id || "";
+            const content = page.querySelector(".wedding-content");
+            if (page.dataset.demoSection !== "portada" && renderableSections[index]?.type !== "media-closing") {
+                for (const corner of ["top", "bottom"]) {
+                    const ornament = document.createElement("span");
+                    ornament.className = `demo-floral-corner demo-floral-corner--${corner}`;
+                    ornament.setAttribute("aria-hidden", "true");
+                    page.append(ornament);
+                }
+            }
+            const pendingActions = {
+                fiesta: ["Cómo llegar", "Falta el enlace exacto del mapa autorizado"],
+                confirmacion: ["Confirmar asistencia", "Falta el número de WhatsApp autorizado"],
+                "regalos-pendientes": ["Ver información de regalos", "Falta la información de regalos autorizada"],
+                "album-pendiente": ["Subir Aquí", "Falta el enlace del álbum autorizado"]
+            };
+            const pendingAction = pendingActions[page.dataset.demoSection];
+            if (content && pendingAction && !content.querySelector("a, button")) {
+                if (page.dataset.demoSection === "fiesta" && event.googleMapsUrl) {
+                    const link = document.createElement("a");
+                    link.className = "demo-local-action";
+                    link.href = event.googleMapsUrl;
+                    link.target = "_blank";
+                    link.rel = "noopener noreferrer";
+                    link.textContent = pendingAction[0];
+                    content.append(link);
+                } else {
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.className = "demo-pending-action";
+                    button.disabled = true;
+                    button.textContent = pendingAction[0];
+                    button.setAttribute("aria-label", `${pendingAction[0]}: ${pendingAction[1]}`);
+                    const note = document.createElement("small");
+                    note.className = "demo-pending-note";
+                    note.textContent = "Pendiente de datos autorizados";
+                    content.append(button, note);
+                }
+            }
+            if (content && ["fotografia-pareja", "cierre"].includes(page.dataset.demoSection) && !page.querySelector("img")) {
+                const placeholder = document.createElement("div");
+                placeholder.className = "demo-photo-pending";
+                placeholder.textContent = "Fotografía original pendiente";
+                content.prepend(placeholder);
+            }
+            if (content && page.dataset.demoSection === "cuenta-regresiva" && !page.querySelector("[data-countdown-target]")) {
+                const note = document.createElement("p");
+                note.className = "demo-countdown-pending";
+                note.textContent = "Cuenta regresiva pendiente de confirmar horario y zona horaria";
+                content.append(note);
+            }
+            if (page.dataset.demoSection === "fiesta") {
+                const title = document.createElement("h2");
+                title.textContent = event.location.name;
+                page.querySelector(".wedding-content")?.prepend(title);
+            }
+            if (page.dataset.demoSection === "confirmacion" && content && !content.querySelector("h2")) {
+                const title = document.createElement("h2");
+                title.textContent = "Confirmación de asistencia";
+                content.prepend(title);
+            }
+            if (page.dataset.demoSection === "portada" && content) {
+                const cover = document.createElement("img");
+                cover.className = "demo-original-cover";
+                cover.src = "/assets/templates/boda-fiesta-premium/portada-original.webp";
+                cover.width = 1024;
+                cover.height = 1536;
+                cover.alt = "Nuestra Boda. Kaly y Joha. Sábado 5 de diciembre de 2026, 18:00 hs. En este día muy especial estaremos junto a nuestros seres queridos.";
+                cover.decoding = "async";
+                cover.setAttribute("fetchpriority", "high");
+                content.replaceChildren(cover);
+                // This cover uses the existing player below the image, not the
+                // generic hero's additional music shortcut.
+                page.querySelectorAll("[data-audio-trigger]").forEach(trigger => trigger.remove());
+                if (event.multimedia.audios.length) {
+                    const widget = document.getElementById("audioWidget");
+                    if (widget) content.append(widget);
+                }
+                page.classList.add("demo-cover-original");
+            }
+            if (page.dataset.demoSection === "vestimenta") {
+                const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                icon.setAttribute("viewBox", "0 0 100 76");
+                icon.setAttribute("class", "demo-dress-icon");
+                icon.setAttribute("aria-hidden", "true");
+                icon.innerHTML = '<path d="M17 5h7v14h12V5h7l-2 24 14 36H5l14-36Z M17 43h27 M66 7h26L84 24l9 40-12 8-12-8 9-40Z M72 7l9 17 9-17 M74 43l15-9 M72 55l19-12"/>';
+                page.querySelector(".wedding-content")?.prepend(icon);
+                page.classList.add("demo-dress-study");
+                const colors = renderableSections[index]?.data?.reserved_colors;
+                const list = content?.querySelector("ul");
+                if (list && Array.isArray(colors) && colors.length === 2) {
+                    const note = document.createElement("p");
+                    note.textContent = `Se reserva el color ${colors[0].color.toLocaleLowerCase("es-AR")} para ${colors[0].reserved_for} y el ${colors[1].color.toLocaleLowerCase("es-AR")} para ${colors[1].reserved_for}.`;
+                    list.replaceWith(note);
+                }
+            }
+        });
+    }
+    setupMusic(event.multimedia.audios, event.multimedia.audioPlayMode, templateConfig.slug === "boda-fiesta-premium");
+    if (templateConfig.slug === "boda-fiesta-premium" && !event.multimedia.audios.length) {
+        const pending = document.createElement("button");
+        pending.type = "button";
+        pending.className = "demo-music-pending";
+        pending.disabled = true;
+        pending.setAttribute("aria-label", "Música pendiente: falta el archivo autorizado");
+        pending.innerHTML = '<span aria-hidden="true">▶</span><small>Música pendiente</small>';
+        getApp().querySelector("[data-demo-section=\"portada\"] .wedding-content")?.append(pending);
+    }
     applyAudioButtonPosition(event.layoutConfig.audioButton);
     setupBrochureNavigation();
     setupLocationActions();
     Rsvp.setupConfirmation();
+    if (templateConfig.slug === "boda-fiesta-premium") setupLocalPremiumGifts();
     setupBranding();
     Countdown.clearTimers();
     Countdown.setupSections();
     Countdown.startLegacy(event.fechaEvento);
+}
+
+function setupLocalPremiumGifts() {
+    getApp().querySelectorAll(".premium-gifts").forEach(section => {
+        const content = section.querySelector(".wedding-content");
+        const details = content?.querySelector("dl");
+        const status = content?.querySelector(".premium-gift-status");
+        if (!details || !status) return;
+        const message = content.querySelector("p");
+        const separator = message?.textContent.indexOf(", ") ?? -1;
+        if (separator >= 0) {
+            const text = message.textContent;
+            message.replaceChildren(document.createTextNode(text.slice(0, separator + 1)),
+                document.createElement("br"), document.createTextNode(text.slice(separator + 2)));
+        }
+        const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        icon.setAttribute("viewBox", "0 0 64 64");
+        icon.setAttribute("class", "demo-gift-icon");
+        icon.setAttribute("aria-hidden", "true");
+        icon.innerHTML = '<path d="M8 25h48v12H8z M12 37v22h40V37 M32 25v34 M32 25C12 25 13 4 23 8c8 3 9 17 9 17Zm0 0c20 0 19-21 9-17-8 3-9 17-9 17Z"/>';
+        content.prepend(icon);
+        const dialog = document.createElement("dialog");
+        dialog.className = "demo-gift-dialog";
+        const title = document.createElement("h3");
+        title.id = `${section.dataset.demoSection}-datos-title`;
+        title.textContent = "Datos para regalos";
+        dialog.setAttribute("aria-labelledby", title.id);
+        const close = document.createElement("button");
+        close.type = "button";
+        close.className = "demo-local-action";
+        close.textContent = "Cerrar";
+        close.onclick = () => dialog.close();
+        dialog.append(title, details, status, close);
+        const open = document.createElement("button");
+        open.type = "button";
+        open.className = "demo-local-action demo-gift-open";
+        open.textContent = "Datos aquí";
+        open.setAttribute("aria-haspopup", "dialog");
+        open.onclick = () => { status.textContent = ""; dialog.showModal(); };
+        content.append(open);
+        // Place the native dialog outside the decorative card's clipping area.
+        getApp().append(dialog);
+        details.querySelectorAll(".premium-gift-copy").forEach(button => {
+            button.onclick = async () => {
+                const value = button.parentElement.querySelector(".premium-gift-value")?.textContent;
+                if (!/^\d{22}$/.test(value || "")) return;
+                try {
+                    await navigator.clipboard.writeText(value);
+                    status.textContent = "CBU copiado.";
+                } catch (_) {
+                    status.textContent = "No se pudo copiar. Seleccioná el CBU y copialo manualmente.";
+                }
+            };
+        });
+    });
 }
 
 function getSectionImage(event, section, pageIndex) {
@@ -791,7 +1016,7 @@ function normalizeWhatsAppPhone(value) {
     return phone;
 }
 
-function setupMusic(tracks, playMode) {
+function setupMusic(tracks, playMode, manualOnly = false) {
     const widget = document.getElementById("audioWidget");
     const button = document.getElementById("btnMusic");
     const audio = document.getElementById("bgMusic");
@@ -866,7 +1091,7 @@ function setupMusic(tracks, playMode) {
         }
         loadTrack(currentTrack + 1, true);
     };
-    requestAudioPlay(audio, armFirstInteractionActivation);
+    if (!manualOnly) requestAudioPlay(audio, armFirstInteractionActivation);
 }
 
 function toggleMusic(audio) {

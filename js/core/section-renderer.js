@@ -14,7 +14,11 @@
         rsvp: "rsvp",
         closing: "closing",
         countdown: "countdown",
-        "media-closing": "mediaClosing"
+        "media-closing": "mediaClosing",
+        gallery: "gallery",
+        "dress-code": "dressCode",
+        gifts: "gifts",
+        "collaborative-album": "collaborativeAlbum"
     };
 
     function getRenderableSections(sections, context = {}) {
@@ -22,6 +26,7 @@
 
         return sections.filter((section) => {
             if (!section || section.enabled === false) return false;
+            if (isPremium(section.type) && context.templateConfig?.slug !== "boda-fiesta-premium") return false;
             if (SECTION_RENDERER_REGISTRY[section.type]) return true;
 
             warn(context, `Section type desconocido ignorado: ${section.type || "(sin tipo)"}`);
@@ -40,6 +45,7 @@
     }
 
     function renderSection(section, context = {}) {
+        if (isPremium(section?.type) && context.templateConfig?.slug !== "boda-fiesta-premium") return "";
         const rendererKey = SECTION_RENDERER_REGISTRY[section?.type];
         if (!rendererKey) {
             warn(context, `Section type desconocido ignorado: ${section?.type || "(sin tipo)"}`);
@@ -59,6 +65,10 @@
         if (typeof context.warn === "function") {
             context.warn(message);
         }
+    }
+
+    function isPremium(type) {
+        return ["gallery", "dress-code", "gifts", "collaborative-album"].includes(type);
     }
 
     return {

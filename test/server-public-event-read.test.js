@@ -138,7 +138,7 @@ function reset() {
         queries[0].columns,
         "id, datos, published_version_id, current_working_version_id, event_status"
     );
-    assert.strictEqual(queries[1].columns, "id, event_id, content");
+    assert.strictEqual(queries[1].columns, "id, event_id, content, workflow_status, published_at");
 
     reset();
     rows.eventos.set("legacy-", {

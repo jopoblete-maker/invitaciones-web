@@ -1,0 +1,331 @@
+/* Local-only wedding presentation. Content and controls remain semantic HTML. */
+body[data-template="boda-fiesta-premium"] {
+    margin: 0;
+    background: #efeddf;
+    color: #faf7e9;
+    font-family: 'Lato', Arial, sans-serif;
+    --primary-color: #596448;
+    --text-color: #faf7e9;
+    --muted-color: #e2ddc8;
+    --button-gradient: linear-gradient(#7e8a65, #596448);
+    --bg-image: none;
+    --canvas-background: #efeddf;
+    --title-shadow-color: transparent;
+}
+body[data-template="boda-fiesta-premium"] * { box-sizing: border-box; }
+.template-boda-fiesta-premium {
+    width: min(100%, 458px);
+    margin: 0 auto;
+    padding: 28px 14px 44px;
+}
+.template-boda-fiesta-premium .wedding-section {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: 300px;
+    margin: 0 0 22px;
+    padding: 60px 44px;
+    border: 1px solid #a39460;
+    border-radius: 22px;
+    background: #596448;
+    overflow: hidden;
+    text-align: center;
+    box-shadow: 0 7px 22px #37402c18;
+}
+.template-boda-fiesta-premium .wedding-section::before {
+    content: '';
+    position: absolute;
+    inset: 15px;
+    border: 1px solid #b8aa76;
+    border-radius: 12px;
+    pointer-events: none;
+}
+.template-boda-fiesta-premium .wedding-section::after { display: none; }
+.template-boda-fiesta-premium .demo-floral-corner {
+    position: absolute;
+    z-index: 0;
+    width: 64px;
+    height: 58px;
+    background: url('/assets/templates/boda-fiesta-premium/rosas-blancas-esquina.png') center / contain no-repeat;
+    pointer-events: none;
+}
+.template-boda-fiesta-premium .demo-floral-corner--top { top: 3px; right: 3px; transform: rotate(180deg); }
+.template-boda-fiesta-premium .demo-floral-corner--bottom { bottom: 3px; left: 3px; }
+.template-boda-fiesta-premium .wedding-content {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    overflow-wrap: anywhere;
+}
+.template-boda-fiesta-premium .bg-overlay,
+.template-boda-fiesta-premium .bg-image-wrapper,
+.template-boda-fiesta-premium .hero-footer { display: none; }
+.template-boda-fiesta-premium h1,
+.template-boda-fiesta-premium h2,
+.template-boda-fiesta-premium .page-title {
+    color: inherit;
+    text-shadow: none;
+    font-weight: 400;
+    font-family: 'Great Vibes', 'Segoe Script', cursive;
+}
+.template-boda-fiesta-premium h1 { font-size: 54px; line-height: 1.12; }
+.template-boda-fiesta-premium h2,
+.template-boda-fiesta-premium .page-title { font-size: 42px; line-height: 1.18; margin: 0 0 20px; }
+.template-boda-fiesta-premium p { font-size: 15px; line-height: 1.75; color: inherit; margin: 12px 0; }
+.template-boda-fiesta-premium ul { list-style: none; padding: 0; line-height: 1.8; }
+.template-boda-fiesta-premium .detail-row { display: grid; gap: 7px; margin: 20px 0; }
+.template-boda-fiesta-premium .detail-icon { margin: auto; color: #d6c594; width: 30px; height: 30px; }
+.template-boda-fiesta-premium .detail-icon svg { width: 30px; height: 30px; }
+.template-boda-fiesta-premium .detail-label,
+.template-boda-fiesta-premium .detail-value { color: inherit; }
+.template-boda-fiesta-premium figure { margin: 0; }
+.template-boda-fiesta-premium img { display: block; max-width: 100%; height: auto; }
+.template-boda-fiesta-premium .wedding-section[data-demo-section="fotografia-pareja"],
+.template-boda-fiesta-premium .wedding-section[data-demo-section="cierre"] {
+    min-height: 0;
+    padding: 8px;
+    border: 1px solid #b8aa76;
+    border-radius: 16px;
+    background: #596448;
+}
+.template-boda-fiesta-premium [data-demo-section="fotografia-pareja"]::before,
+.template-boda-fiesta-premium [data-demo-section="cierre"]::before { display: none; }
+.template-boda-fiesta-premium [data-demo-section="fotografia-pareja"] .media-closing-media,
+.template-boda-fiesta-premium [data-demo-section="cierre"] .media-closing-media { width: 100%; aspect-ratio: 1122 / 1402; }
+.template-boda-fiesta-premium [data-demo-section="fotografia-pareja"] img,
+.template-boda-fiesta-premium [data-demo-section="cierre"] img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1122 / 1402;
+    object-fit: contain;
+    border-radius: 8px;
+}
+.template-boda-fiesta-premium .premium-gallery-items { display: grid; gap: 16px; }
+.template-boda-fiesta-premium .demo-pending-action {
+    display: block;
+    width: 100%;
+    max-width: 285px;
+    min-height: 46px;
+    margin: 24px auto 7px;
+    padding: 12px 18px;
+    border: 1px solid #d2c497;
+    border-radius: 999px;
+    background: #f3efdf;
+    color: #465037;
+    font: 600 14px/1.4 'Lato', Arial, sans-serif;
+    opacity: 1;
+    cursor: not-allowed;
+}
+.template-boda-fiesta-premium .demo-pending-note { display: block; font-size: 11px; line-height: 1.5; color: #e5dfcc; }
+.template-boda-fiesta-premium .demo-countdown-pending {
+    padding: 16px;
+    border: 1px solid #b8aa76;
+    border-radius: 12px;
+    font-size: 12px;
+}
+.template-boda-fiesta-premium [data-demo-section="cuenta-regresiva"] .countdown-eyebrow {
+    font: 39px/1.2 'Great Vibes', 'Segoe Script', cursive;
+    margin: 0 0 24px;
+}
+.template-boda-fiesta-premium [data-demo-section="cuenta-regresiva"] .countdown-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+}
+.template-boda-fiesta-premium [data-demo-section="cuenta-regresiva"] .countdown-item {
+    display: grid;
+    gap: 8px;
+    padding: 14px 3px;
+    border: 1px solid #b8aa76;
+    border-radius: 12px;
+    background: #465137;
+}
+.template-boda-fiesta-premium [data-demo-section="cuenta-regresiva"] .countdown-item span { font-size: 23px; font-variant-numeric: tabular-nums; }
+.template-boda-fiesta-premium [data-demo-section="cuenta-regresiva"] .countdown-item label { font-size: 10px; letter-spacing: .03em; }
+.template-boda-fiesta-premium [data-demo-section="cuenta-regresiva"] .countdown-footer { font-size: 12px; margin-top: 22px; }
+.template-boda-fiesta-premium [data-demo-section="cuenta-regresiva"] .is-complete .countdown-grid { display: none; }
+.template-boda-fiesta-premium .demo-photo-pending {
+    display: grid;
+    place-items: center;
+    min-height: 190px;
+    margin: 0 0 24px;
+    padding: 24px;
+    border: 1px dashed #bdb391;
+    border-radius: 10px;
+    color: #e7e1ce;
+    font: italic 14px/1.5 Georgia, serif;
+}
+.template-boda-fiesta-premium a:focus-visible,
+.template-boda-fiesta-premium button:focus-visible { outline: 3px solid #e5cf8d; outline-offset: 4px; }
+.template-boda-fiesta-premium .demo-local-action,
+.template-boda-fiesta-premium .rsvp-button,
+.template-boda-fiesta-premium .premium-collaborative-album a,
+.template-boda-fiesta-premium .premium-gift-copy {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+    min-height: 46px;
+    margin-top: 18px;
+    padding: 12px 22px;
+    border: 1px solid #b8aa76;
+    border-radius: 999px;
+    background: #596448;
+    color: #fff9ed;
+    text-decoration: none;
+    font: 600 14px/1.5 'Lato', Arial, sans-serif;
+    cursor: pointer;
+}
+.template-boda-fiesta-premium .rsvp-button,
+.template-boda-fiesta-premium .premium-collaborative-album a,
+.template-boda-fiesta-premium [data-demo-section="fiesta"] .demo-local-action { background: #f3efdf; color: #465037; }
+.template-boda-fiesta-premium .premium-collaborative-album a span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+.template-boda-fiesta-premium .button-icon { width: 22px; height: 22px; flex-shrink: 0; }
+.template-boda-fiesta-premium .premium-gifts { background: #fff9ed; color: #465037; }
+.template-boda-fiesta-premium .demo-gift-icon { display: block; width: 64px; height: 64px; margin: 0 auto 12px; fill: none; stroke: #a58b4c; stroke-width: 2; }
+.template-boda-fiesta-premium .demo-gift-dialog {
+    width: min(90vw, 420px);
+    max-height: 85vh;
+    padding: 30px 24px;
+    border: 1px solid #b8aa76;
+    border-radius: 18px;
+    background: #fff9ed;
+    color: #465037;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+.template-boda-fiesta-premium .demo-gift-dialog::backdrop { background: #28332399; }
+.template-boda-fiesta-premium .demo-gift-dialog h3 { font: 30px/1.2 'Great Vibes', cursive; margin-top: 0; }
+.template-boda-fiesta-premium .demo-gift-dialog dd { margin: 8px 0; }
+.template-boda-fiesta-premium .premium-gift-value { display: block; font: 16px/1.6 'Lato', Arial, sans-serif; user-select: text; }
+.template-boda-fiesta-premium .premium-gift-status { font-size: 13px; }
+body[data-template="boda-fiesta-premium"] .private-preview-badge { position: relative; text-align: center; color: #fff9ed; }
+body[data-template="boda-fiesta-premium"] #audioWidget.is-hidden { display: none; }
+@media (max-width: 480px) {
+    .template-boda-fiesta-premium { padding: 18px 10px 32px; }
+    .template-boda-fiesta-premium .wedding-section { padding: 58px 38px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    body[data-template="boda-fiesta-premium"] * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+/* Approved cover: preserve the entire original image, without HTML overlays. */
+.template-boda-fiesta-premium .demo-cover-original {
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: #fffefa;
+    overflow: visible;
+}
+.template-boda-fiesta-premium .demo-cover-original::before,
+.template-boda-fiesta-premium .demo-cover-original::after { display: none; }
+.template-boda-fiesta-premium .demo-original-cover {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    object-fit: contain;
+}
+.template-boda-fiesta-premium #audioWidget {
+    position: static;
+    display: flex;
+    justify-content: center;
+    padding: 16px;
+    width: 100%;
+    max-width: 100%;
+}
+.template-boda-fiesta-premium .music-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 48px;
+    padding: 12px 22px;
+    border: 1px solid #9e915d;
+    border-radius: 999px;
+    background: #596448;
+    color: #fff9ed;
+    font: 600 14px/1.4 'Lato', Arial, sans-serif;
+    cursor: pointer;
+}
+.template-boda-fiesta-premium .music-button.is-paused { background: #f3efdf; color: #465037; }
+.template-boda-fiesta-premium .music-icon { width: 24px; height: 24px; }
+.template-boda-fiesta-premium .demo-music-pending {
+    display: grid;
+    justify-items: center;
+    gap: 7px;
+    border: 0;
+    padding: 0;
+    margin: 16px auto;
+    background: transparent;
+    color: #54624b;
+    opacity: 1;
+    cursor: not-allowed;
+}
+.template-boda-fiesta-premium .demo-music-pending span {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    padding-left: 4px;
+    border: 3px solid #bacdb3;
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 25%, #b0c6a4, #657f5d 65%, #486046);
+    color: #fff;
+    font-size: 26px;
+    box-shadow: inset 0 0 0 2px #93aa89, 0 2px 2px #52654933;
+}
+.template-boda-fiesta-premium .demo-music-pending small { font: 10px 'Lato', Arial, sans-serif; }
+.template-boda-fiesta-premium .demo-dress-study {
+    width: 100%;
+    margin-inline: 0;
+    min-height: 290px;
+    padding: 35px 35px 32px;
+    border: 0;
+    border-radius: 27px;
+    background: #596448;
+}
+.template-boda-fiesta-premium .demo-dress-study::before {
+    display: block;
+    content: '';
+    inset: 23px;
+    width: auto;
+    height: auto;
+    border: 1px solid #d5dec9;
+    background: none;
+    opacity: 1;
+}
+.template-boda-fiesta-premium .demo-dress-study h2 {
+    font: 45px/1.05 'Great Vibes', 'Segoe Script', cursive;
+    margin: 0 0 10px;
+}
+.template-boda-fiesta-premium .demo-dress-study p,
+.template-boda-fiesta-premium .demo-dress-study li {
+    font: 14px/1.6 'Lato', Arial, sans-serif;
+    color: #f8f9ef;
+}
+.template-boda-fiesta-premium .demo-dress-study p { margin: 0 0 7px; }
+.template-boda-fiesta-premium .demo-dress-study ul { margin: 0; }
+.template-boda-fiesta-premium .demo-dress-icon {
+    display: block;
+    width: 78px;
+    height: 58px;
+    margin: 0 auto 8px;
+    fill: none;
+    stroke: #eff4e6;
+    stroke-width: 1.6;
+    stroke-linejoin: round;
+}
+@media (max-width: 480px) {
+    .template-boda-fiesta-premium .demo-dress-study { width: 100%; margin-inline: 0; padding: 36px 30px 32px; }
+}
