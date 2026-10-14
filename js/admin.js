@@ -727,6 +727,8 @@ function renderDetailPresentation(state) {
     adminEventDetail.render(AdminEventDetail.buildViewModel({
         state,
         summary: description?.summary || AdminEventSummary.project(),
+        snapshotFacts: description?.snapshotFacts,
+        editorModel: currentEditorialEditorModel,
         action,
         actionDisabled: blocked || editorialActionKey(action) === blockedEditorialActionKey,
         contentMessage: detailContentMessage || (!state.currentWorkingVersionId
@@ -760,7 +762,15 @@ async function loadDetailDescription(state, revision) {
         } catch (_) { failed = true; }
     }
     if (revision !== detailRevision || currentEditorialState !== state) return;
-    detailDescription = { key, summary: AdminEventSummary.project(snapshots), schemaVersion };
+    const summary = AdminEventSummary.project(snapshots);
+    const selectedContent = snapshots[summary.source];
+    const selectedVersionId = summary.source === "working" ? state.currentWorkingVersionId : state.publishedVersionId;
+    const snapshotFacts = selectedContent?.id === state.eventId ? {
+        eventId: state.eventId, versionId: selectedVersionId, schemaVersion: selectedContent.schema_version,
+        templateSlug: selectedContent.template?.slug,
+        premium: Array.isArray(selectedContent.sections) && selectedContent.sections.some(section => ["gallery", "dress-code", "gifts", "collaborative-album"].includes(section?.type))
+    } : null;
+    detailDescription = { key, summary, schemaVersion, snapshotFacts };
     if (failed && detailDescription.summary.source === "none") {
         document.getElementById("eventDetailDescriptionStatus").textContent = "No se pudo cargar la descripción. El estado y las versiones siguen disponibles.";
     }
