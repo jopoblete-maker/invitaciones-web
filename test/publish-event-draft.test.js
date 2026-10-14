@@ -359,12 +359,24 @@ function clientFactoryFor(state, calls, createResult = {
         /--legacy/
     );
 
+    for (const origin of [undefined, "*", "null", "https://admin.example.test/path"]) {
+        let attempts = 0;
+        await assert.rejects(withDraft("publisher-test", validDraft, () => publishDraft(
+            options({ legacy: true }), {
+                env: { YCOR_API_BASE_URL: "https://legacy.example.test", ADMIN_PASSWORD: "synthetic",
+                    YCOR_ADMIN_ORIGIN: origin },
+                fetchImpl: async () => { attempts++; throw Error("Unexpected network"); }
+            }
+        )), /YCOR_ADMIN_ORIGIN/);
+        assert.strictEqual(attempts, 0);
+    }
     let legacyRequest;
     const legacyResult = await withDraft("publisher-test", validDraft, () => publishDraft(
         options({ legacy: true, overwrite: true }),
         {
             env: {
                 YCOR_API_BASE_URL: "https://legacy.example.test/",
+                YCOR_ADMIN_ORIGIN: "https://admin.example.test",
                 ADMIN_PASSWORD: "legacy-secret"
             },
             fetchImpl: async (url, requestOptions) => {
@@ -379,6 +391,8 @@ function clientFactoryFor(state, calls, createResult = {
     ));
     assert.strictEqual(legacyResult.mode, "legacy");
     assert.strictEqual(legacyRequest.url, "https://legacy.example.test/api/eventos");
+    assert.strictEqual(legacyRequest.options.headers.Origin, "https://admin.example.test");
+    assert.strictEqual(legacyRequest.options.redirect, "error");
     const legacyPayload = JSON.parse(legacyRequest.options.body);
     assert.strictEqual(legacyPayload.password, "legacy-secret");
     assert.strictEqual(legacyPayload.overwrite, true);

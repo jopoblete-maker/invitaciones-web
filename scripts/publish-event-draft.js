@@ -139,6 +139,9 @@ async function publishDraft(options, dependencies = {}) {
     }
 
     if (options.legacy) {
+        const { normalizeOrigin } = require('../js/core/admin-origin-policy');
+        const origin = normalizeOrigin(env.YCOR_ADMIN_ORIGIN);
+        if (!origin) throw new Error('YCOR_ADMIN_ORIGIN debe contener un origen administrativo permitido explicito.');
         const payload = buildPayload({
             draft,
             id: options.id,
@@ -147,7 +150,8 @@ async function publishDraft(options, dependencies = {}) {
         });
         const response = await (deps.fetchImpl || globalThis.fetch)(`${target}/api/eventos`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Origin: origin },
+            redirect: "error",
             body: JSON.stringify(payload)
         });
         const data = await parseResponseJson(response);

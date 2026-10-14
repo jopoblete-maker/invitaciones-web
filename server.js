@@ -17,6 +17,7 @@ const { createAdminRateLimiter } = require('./js/core/admin-rate-limiter');
 const { signPreviewToken, verifyPreviewToken, DEFAULT_TTL_SECONDS } = require('./js/core/private-preview-token');
 
 const { createAdminAccess } = require('./backend/http/admin-access');
+const { createAdminLegacyAccess } = require('./backend/http/admin-legacy-access');
 const { createStaticPolicy } = require('./backend/http/static-policy');
 const { createRsvpRpcAdapter } = require('./backend/rsvp/rpc-adapter');
 const { createRsvpContext } = require('./backend/rsvp/context');
@@ -87,6 +88,7 @@ const adminAccess = createAdminAccess({
     rateLimiter: adminRateLimiter
 });
 const rsvpAdminHttp = createRsvpAdminHttp({ service: rsvpService, adminAccess, express });
+const authorizeLegacy = createAdminLegacyAccess(adminAccess);
 app.use('/api/admin/eventos/:eventId/rsvp', rsvpAdminHttp.handle, rsvpAdminHttp.fallback);
 app.use(rsvpAdminHttp.errorHandler);
 
@@ -190,9 +192,9 @@ app.use((err, req, res, next) => {
                 ? err.status
                 : 500;
 
-    console.error('Error al procesar la solicitud:', err);
+    console.error('REQUEST_PARSE_FAILED', { status });
     res.status(status).json({
-        error: err.message || 'Error al procesar la solicitud.'
+        error: status === 413 ? 'Solicitud demasiado grande.' : status === 400 ? 'Solicitud invalida.' : 'Error al procesar la solicitud.'
     });
 });
 
@@ -213,12 +215,8 @@ app.get('/', (req, res) => {
 // Endpoint para guardar o actualizar la invitación
 async function guardarEvento(req, res) {
     try {
+        if (!await authorizeLegacy(req, res)) return;
         const { password, overwrite, ...evento } = req.body;
-
-        // 1. Validar clave de acceso
-        if (password !== ADMIN_PASSWORD) {
-            return res.status(401).json({ error: 'Clave de acceso incorrecta. Verifica el código entregado.' });
-        }
 
         if (!evento.id) {
             return res.status(400).json({ error: 'Debes ingresar un ID para el evento.' });
@@ -275,7 +273,7 @@ async function guardarEvento(req, res) {
         res.json({ success: true, id: evento.id });
 
     } catch (err) {
-        console.error('Error al guardar:', err);
+        console.error('LEGACY_SAVE_FAILED');
         const isTimeout = err.code === 'SUPABASE_TIMEOUT' || /statement timeout|timeout/i.test(err.message || '');
         const status = err.status === 413 || err.code === 'PAYLOAD_TOO_LARGE'
             ? 413
@@ -287,7 +285,7 @@ async function guardarEvento(req, res) {
         res.status(status).json({
             error: isTimeout
                 ? 'Supabase tardó demasiado en guardar la invitación. Reduce el peso de las imágenes o utiliza URLs externas para archivos multimedia pesados.'
-                : err.message || 'Ocurrió un error interno al guardar los datos.'
+                : 'Ocurrió un error interno al guardar los datos.'
         });
     }
 }

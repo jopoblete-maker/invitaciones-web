@@ -33,6 +33,7 @@ createExpressStub.urlencoded = () => (_req, _res, next) => next();
 createExpressStub.static = () => (_req, _res, next) => next();
 
 const supabase = {
+    rpc() { return Promise.resolve({ data: [{ allowed: true }] }); },
     from() {
         database.calls += 1;
         return {
@@ -61,12 +62,18 @@ const originalLoad = Module._load;
 const previousEnvironment = {
     ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
     SUPABASE_URL: process.env.SUPABASE_URL,
-    SUPABASE_KEY: process.env.SUPABASE_KEY
+    SUPABASE_KEY: process.env.SUPABASE_KEY,
+    ADMIN_ALLOWED_ORIGINS: process.env.ADMIN_ALLOWED_ORIGINS,
+    ADMIN_RATE_LIMIT_WINDOW_SECONDS: process.env.ADMIN_RATE_LIMIT_WINDOW_SECONDS,
+    ADMIN_RATE_LIMIT_MAX_REQUESTS: process.env.ADMIN_RATE_LIMIT_MAX_REQUESTS
 };
 
 process.env.ADMIN_PASSWORD = ADMIN_PASSWORD;
 process.env.SUPABASE_URL = "https://example.supabase.co";
 process.env.SUPABASE_KEY = "test-key";
+process.env.ADMIN_ALLOWED_ORIGINS = "https://admin.example.test";
+process.env.ADMIN_RATE_LIMIT_WINDOW_SECONDS = "60";
+process.env.ADMIN_RATE_LIMIT_MAX_REQUESTS = "100";
 
 Module._load = function loadWithServerDoubles(request, parent, isMain) {
     if (request === "express") return createExpressStub;
@@ -120,7 +127,7 @@ function createResponse() {
 
 async function request(payload) {
     const response = createResponse();
-    await saveEvent({ body: payload }, response);
+    await saveEvent({ body: payload, headers: { origin: "https://admin.example.test" } }, response);
     return response;
 }
 
