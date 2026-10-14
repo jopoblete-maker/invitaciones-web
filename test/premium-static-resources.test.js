@@ -15,6 +15,9 @@ const resources = [
     ["/js/core/premium-section-renderers.js", "javascript"],
     ["/js/core/external-link-policy.js", "javascript"],
     ...["portada-original.webp", "nuestra-boda-fotografia.webp", "cierre-puente.webp"].map(name => [prefix + name, "image/webp"]),
+    ...["fiesta-decorativa.webp", "asistencia-decorativa.webp", "carpeta-decorativa.webp",
+        "pareja-premium.webp", "cierre-decorativo-b17-e1.webp",
+        "fiesta-decorativa-b17-e4.webp", "asistencia-decorativa-b17-e4.webp"].map(name => [prefix + name, "image/webp"]),
     [prefix + "rosas-blancas-esquina.png", "image/png"],
     [prefix + "musica-boda.mp3", "audio/mpeg"]
 ];
@@ -62,6 +65,10 @@ const hash = buffer => createHash("sha256").update(buffer).digest("hex");
 
     const blocked = [
         prefix, prefix + "ornamento-floral.svg", prefix + "missing.webp", prefix + "musica-original.mpeg",
+        // Unused historical art stays private even after the B17 static approval.
+        prefix + "cierre-premium.webp",
+        "/.dev/premium/kaly-joha-nuestra-boda.b17-f1-production.authorization.json",
+        "/.dev/premium/kaly-joha-nuestra-boda.b17-f1-final.event.json",
         prefix + "authorization.json", prefix + "nuestra-boda-fotografia-anterior.webp",
         "/.dev/premium/kaly-joha-boda-fiesta-demo.authorization.json",
         "/.dev/drafts/kaly-joha-boda-fiesta-demo.event.json",

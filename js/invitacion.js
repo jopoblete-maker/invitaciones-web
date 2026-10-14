@@ -227,6 +227,8 @@ function loadLocalPremiumRenderers() {
 }
 
 function renderInvitation(event, templateConfig, localPresentation = null) {
+    const approvedPremiumPresentation = templateConfig.slug === "boda-fiesta-premium"
+        && ["kaly-joha-nuestra-boda", "kaly-joha-boda-fiesta-demo"].includes(event.id);
     document.title = event.nombre ? `Invitación de ${event.nombre}` : "Invitación Digital";
     if (event.id === "kaly-joha-boda-fiesta-demo" && templateConfig.slug === "boda-fiesta-premium") {
         document.title = `${event.nombre} — ${event.identity.subtitle}`;
@@ -291,6 +293,9 @@ function renderInvitation(event, templateConfig, localPresentation = null) {
         if (widget && getApp().contains(widget)) document.body.insertBefore(widget, getApp());
     }
     getApp().innerHTML = html;
+    getApp().classList.toggle("premium-b17", approvedPremiumPresentation);
+    const commercialPremiumPresentation = approvedPremiumPresentation && event.branding.enabled === true;
+    getApp().classList.toggle("premium-b17-e4", commercialPremiumPresentation);
     document.querySelectorAll(".wedding-section").forEach((page, index) => {
         const section = renderableSections[index];
         const config = getSectionLayoutConfig(event, section, index);
@@ -306,6 +311,17 @@ function renderInvitation(event, templateConfig, localPresentation = null) {
         getApp().querySelectorAll(".wedding-section").forEach((page, index) => {
             page.dataset.demoSection = renderableSections[index]?.id || "";
             const content = page.querySelector(".wedding-content");
+            if (approvedPremiumPresentation && page.dataset.demoSection === "cierre"
+                && renderableSections[index]?.type === "gallery") {
+                const sizes = {
+                    "/assets/templates/boda-fiesta-premium/pareja-premium.webp": [1122, 1402],
+                    "/assets/templates/boda-fiesta-premium/cierre-premium.webp": [1024, 1536]
+                };
+                page.querySelectorAll("img").forEach(image => {
+                    const size = sizes[image.getAttribute("src")];
+                    if (size) { image.width = size[0]; image.height = size[1]; }
+                });
+            }
             if (page.dataset.demoSection !== "portada" && renderableSections[index]?.type !== "media-closing") {
                 for (const corner of ["top", "bottom"]) {
                     const ornament = document.createElement("span");
@@ -359,11 +375,46 @@ function renderInvitation(event, templateConfig, localPresentation = null) {
                 const title = document.createElement("h2");
                 title.textContent = event.location.name;
                 page.querySelector(".wedding-content")?.prepend(title);
+                if (approvedPremiumPresentation && content) {
+                    const label = content.querySelector(".page-message");
+                    if (label) content.insertBefore(label, title);
+                }
+                if (commercialPremiumPresentation && content) {
+                    const divider = document.createElement("span");
+                    divider.className = "premium-fiesta-divider";
+                    divider.setAttribute("aria-hidden", "true");
+                    divider.textContent = "♡";
+                    title.before(divider);
+                    const rows = Array.from(content.querySelectorAll(".detail-row"));
+                    const address = content.querySelector(".detail-row--address");
+                    if (address && rows[1]) rows[1].before(address);
+                    rows[0]?.classList.add("premium-fiesta-date");
+                    rows[1]?.classList.add("premium-fiesta-time");
+                    const action = content.querySelector(".demo-local-action");
+                    if (action) action.insertAdjacentHTML("afterbegin", ICONS.map);
+                }
             }
             if (page.dataset.demoSection === "confirmacion" && content && !content.querySelector("h2")) {
                 const title = document.createElement("h2");
                 title.textContent = "Confirmación de asistencia";
                 content.prepend(title);
+            }
+            if (page.dataset.demoSection === "confirmacion" && content
+                && ["kaly-joha-nuestra-boda", "kaly-joha-boda-fiesta-demo"].includes(event.id)) {
+                const message = document.createElement("p");
+                message.className = "premium-attendance-message";
+                message.textContent = "Por favor avisa si vendrás a la fiesta.";
+                if (commercialPremiumPresentation) {
+                    message.replaceChildren(document.createTextNode("Por favor avisa"), document.createElement("br"),
+                        document.createTextNode("si vendrás a la fiesta."));
+                }
+                content.querySelector("h2")?.after(message);
+                content.querySelector("h2").textContent = "Asistencia";
+                content.querySelectorAll(".rsvp-button").forEach(button => {
+                    // Keep the same anchor, data-phone, icon and RSVP listener.
+                    Array.from(button.childNodes).filter(node => node.nodeType === 3).forEach(node => node.remove());
+                    button.append(document.createTextNode("Confirmar aquí"));
+                });
             }
             if (page.dataset.demoSection === "portada" && content) {
                 const cover = document.createElement("img");
@@ -380,7 +431,12 @@ function renderInvitation(event, templateConfig, localPresentation = null) {
                 page.querySelectorAll("[data-audio-trigger]").forEach(trigger => trigger.remove());
                 if (event.multimedia.audios.length) {
                     const widget = document.getElementById("audioWidget");
-                    if (widget) content.append(widget);
+                    if (widget) {
+                        if (approvedPremiumPresentation) {
+                            widget.dataset.premiumFloating = "true";
+                            document.body.append(widget);
+                        } else content.append(widget);
+                    }
                 }
                 page.classList.add("demo-cover-original");
             }
@@ -389,7 +445,7 @@ function renderInvitation(event, templateConfig, localPresentation = null) {
                 icon.setAttribute("viewBox", "0 0 100 76");
                 icon.setAttribute("class", "demo-dress-icon");
                 icon.setAttribute("aria-hidden", "true");
-                icon.innerHTML = '<path d="M17 5h7v14h12V5h7l-2 24 14 36H5l14-36Z M17 43h27 M66 7h26L84 24l9 40-12 8-12-8 9-40Z M72 7l9 17 9-17 M74 43l15-9 M72 55l19-12"/>';
+                icon.innerHTML = '<path class="premium-dress-gown" d="M17 5h7v14h12V5h7l-2 24 14 36H5l14-36Z M17 43h27"/><path class="premium-dress-tie" d="M66 7h26L84 24l9 40-12 8-12-8 9-40Z M72 7l9 17 9-17 M74 43l15-9 M72 55l19-12"/>';
                 page.querySelector(".wedding-content")?.prepend(icon);
                 page.classList.add("demo-dress-study");
                 const colors = renderableSections[index]?.data?.reserved_colors;
@@ -421,6 +477,59 @@ function renderInvitation(event, templateConfig, localPresentation = null) {
     Countdown.clearTimers();
     Countdown.setupSections();
     Countdown.startLegacy(event.fechaEvento);
+    setupPremiumEntryAnimations();
+}
+
+function setupPremiumEntryAnimations() {
+    setupPremiumEntryAnimations.dispose?.();
+    const closing = getApp().querySelector("[data-premium-closing]");
+    const dress = getApp().querySelector(".premium-b17-e4 .demo-dress-study");
+    const elements = [closing, dress].filter(Boolean);
+    if (!elements.length) return;
+    const pending = new Set(elements);
+    const writing = closing?.querySelector("[data-premium-writing]");
+    const fullText = writing?.textContent || "";
+    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let timer = null, observer = null;
+    const showComplete = () => {
+        clearTimeout(timer);
+        observer?.disconnect();
+        if (writing) writing.textContent = fullText;
+        pending.clear();
+        elements.forEach(element => {
+            element.classList.remove("is-animation-ready");
+            element.classList.add("is-visible");
+        });
+    };
+    const onPreference = () => { if (preference.matches) showComplete(); };
+    setupPremiumEntryAnimations.dispose = () => {
+        showComplete();
+        preference.removeEventListener("change", onPreference);
+    };
+    if (preference.matches || typeof IntersectionObserver !== "function") { showComplete(); return; }
+    preference.addEventListener("change", onPreference);
+    const letters = typeof Intl.Segmenter === "function"
+        ? Array.from(new Intl.Segmenter("es", { granularity: "grapheme" }).segment(fullText), entry => entry.segment)
+        : Array.from(fullText);
+    elements.forEach(element => element.classList.add("is-animation-ready"));
+    if (writing) writing.textContent = "";
+    observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting || !pending.delete(entry.target)) return;
+            observer.unobserve(entry.target);
+            entry.target.classList.add("is-visible");
+            if (entry.target === closing && writing) {
+                let count = 0;
+                const advance = () => {
+                    writing.textContent = letters.slice(0, ++count).join("");
+                    if (count < letters.length) timer = setTimeout(advance, 75);
+                };
+                timer = setTimeout(advance, 400);
+            }
+        });
+        if (!pending.size) observer.disconnect();
+    }, { threshold: 0.15 });
+    elements.forEach(element => observer.observe(element));
 }
 
 function setupLocalPremiumGifts() {
@@ -641,13 +750,19 @@ function renderConfirmationPage(section, context) {
 function renderClosingPage(section, context) {
     const data = section?.data || {};
     const image = context.getSectionImage(section, context.pageIndex);
-    const inlineMedia = shouldRenderContainedMedia(section);
-    const content = [
-        image && inlineMedia ? renderSectionMedia(section, image, context) : "",
+    const premiumClosing = context.templateConfig?.slug === "boda-fiesta-premium"
+        && context.event?.id === "kaly-joha-nuestra-boda" && section.id === "cierre";
+    const inlineMedia = premiumClosing || shouldRenderContainedMedia(section);
+    const copy = [
         data.title ? `<h2 class="section-title">${escapeHtml(data.title)}</h2>` : "",
         data.message ? `<p class="page-message">${escapeHtml(data.message)}</p>` : "",
-        data.names ? `<p class="hero-date closing-names">${escapeHtml(data.names)}</p>` : ""
+        data.names ? premiumClosing
+            ? `<p class="closing-names"><span class="premium-accessible-text">${escapeHtml(data.names)}</span><span aria-hidden="true" data-premium-writing>${escapeHtml(data.names)}</span></p>`
+            : `<p class="hero-date closing-names">${escapeHtml(data.names)}</p>` : ""
     ].filter(Boolean).join("");
+    const animatedCopy = premiumClosing
+        ? `<div class="premium-closing-copy" data-premium-closing>${copy}</div>` : copy;
+    const content = (image && inlineMedia ? renderSectionMedia(section, image, context) : "") + animatedCopy;
 
     return `
         <section class="wedding-section wedding-section--confirmation${inlineMedia ? " wedding-section--media-contained" : ""}" data-section-type="${escapeAttr(section.type)}">
@@ -733,6 +848,7 @@ function setupBranding() {
         toggle.setAttribute("aria-expanded", String(open));
         widget.classList.toggle("is-open", open);
         if (open) close.focus();
+        else if (widget.closest(".premium-b17-e4")) toggle.focus();
     };
 
     toggle.addEventListener("click", () => setOpen(panel.hidden));

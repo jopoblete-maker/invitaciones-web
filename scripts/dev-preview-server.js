@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { validateEventForPersistence } = require("../js/core/event-validator");
 const { createPrivatePreviewBridge } = require("./private-preview-bridge");
-const { EVENT_ID, preparePremiumLocalPreview } = require("./premium-local-preview");
+const { EVENT_ID, CANDIDATE_EVENT_ID, preparePremiumLocalPreview } = require("./premium-local-preview");
 
 const ROOT = path.resolve(__dirname, "..");
 const HOST = process.env.PREVIEW_HOST || "127.0.0.1";
@@ -73,6 +73,17 @@ function createPreviewRequestHandler(options = {}) {
         return { content: JSON.parse(fs.readFileSync(draftPath, "utf8")),
             configuration: JSON.parse(fs.readFileSync(approvalPath, "utf8")) };
     });
+    // Fixed local candidate files, independent of the published reference and approval.
+    function loadCandidateFiles(suffix) {
+        const contentPath = path.join(ROOT, ".dev", "premium", `${CANDIDATE_EVENT_ID}.${suffix}.event.json`);
+        const approvalPath = path.join(ROOT, ".dev", "premium", `${CANDIDATE_EVENT_ID}.${suffix}.authorization.json`);
+        if (fs.statSync(contentPath).size > 12 * 1024 * 1024 || fs.statSync(approvalPath).size > 12 * 1024 * 1024) throw new Error();
+        return { content: JSON.parse(fs.readFileSync(contentPath, "utf8")),
+            configuration: JSON.parse(fs.readFileSync(approvalPath, "utf8")) };
+    }
+    const loadPremiumCandidateInput = options.loadPremiumCandidateInput || (() => loadCandidateFiles("b17-candidate"));
+    const loadPremiumE2CandidateInput = options.loadPremiumE2CandidateInput || (() => loadCandidateFiles("b17-e2-candidate"));
+    const loadPremiumE4CandidateInput = options.loadPremiumE4CandidateInput || (() => loadCandidateFiles("b17-e4-candidate"));
     const privatePreviewBridge = createPrivatePreviewBridge({
         apiBaseUrl: options.apiBaseUrl ?? process.env.YCOR_API_BASE_URL,
         adminPassword: options.adminPassword ?? process.env.YCOR_ADMIN_PASSWORD,
@@ -88,17 +99,23 @@ function createPreviewRequestHandler(options = {}) {
             res.writeHead(400); res.end("Invalid request"); return;
         }
 
-        if (pathname === `/__premium-local-preview/${EVENT_ID}`) {
+        if ([`/__premium-local-preview/${EVENT_ID}`, `/__premium-local-preview/${CANDIDATE_EVENT_ID}`,
+            `/__premium-local-preview/${CANDIDATE_EVENT_ID}/b17-e2`,
+            `/__premium-local-preview/${CANDIDATE_EVENT_ID}/b17-e4`].includes(pathname)) {
             const address = req.socket?.remoteAddress;
             if (address && !["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(address)) {
                 sendJson(res, 403, { error: "Local preview only." }); return;
             }
             if ((req.method || "GET") !== "GET") { sendJson(res, 405, { error: "Method not allowed." }); return; }
             try {
-                const input = loadPremiumPreviewInput();
+                const candidate = pathname !== `/__premium-local-preview/${EVENT_ID}`;
+                const input = pathname.endsWith("/b17-e4") ? loadPremiumE4CandidateInput()
+                    : pathname.endsWith("/b17-e2") ? loadPremiumE2CandidateInput()
+                    : candidate ? loadPremiumCandidateInput() : loadPremiumPreviewInput();
                 // Every loader, including synthetic tests, uses the same budget,
                 // private authorization and full event validation composition.
-                const result = preparePremiumLocalPreview(input.content, input.configuration);
+                const result = preparePremiumLocalPreview(input.content, input.configuration,
+                    { eventId: candidate ? CANDIDATE_EVENT_ID : EVENT_ID });
                 sendJson(res, result.accepted ? 200 : 422, result.accepted
                     ? { content: result.content, presentation: result.presentation }
                     : { error: "Premium preview unavailable." });

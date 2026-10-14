@@ -9,27 +9,40 @@ const { normalizeEvent } = require("../js/core/event-normalizer");
 const { createPolicy } = require("../js/core/external-link-policy");
 
 const EVENT_ID = "kaly-joha-boda-fiesta-demo";
+const CANDIDATE_EVENT_ID = "kaly-joha-nuestra-boda";
 const TEMPLATE_SLUG = "boda-fiesta-premium";
 
 // Private Node composition. configuration comes from a fixed local file, never
 // an HTTP request. This demo approves dress-code, explicit gifts and the exact album destination: other capabilities
 // remain inert until their materials and exact destinations receive approval.
-function preparePremiumLocalPreview(content, configuration) {
+function preparePremiumLocalPreview(content, configuration, { eventId = EVENT_ID } = {}) {
     try {
+        if (![EVENT_ID, CANDIDATE_EVENT_ID].includes(eventId)) return { accepted: false };
         inspectSnapshotBudget(content);
         inspectSnapshotBudget(configuration);
         const privateCopy = JSON.parse(canonicalSerialize(configuration));
         const provider = createAuthorizationProvider(privateCopy);
         const boundary = createPremiumWriteBoundary({
-            getAuthorizationState: () => ({ provider, revision: 1 })
+            getAuthorizationState: identity => {
+                const revisions = (privateCopy.entries || []).filter(entry => entry.manifest?.eventId === identity.eventId
+                    && entry.manifest.templateSlug === identity.templateSlug
+                    && entry.manifest.canonicalDigest === identity.canonicalDigest).map(entry => entry.revision);
+                const revision = Math.max(0, ...revisions);
+                return revision > 0 ? { provider, revision } : null;
+            }
         });
-        const result = boundary.validateForWrite({ eventId: EVENT_ID, content });
+        const result = boundary.validateForWrite({ eventId, content });
         if (!result.accepted || result.content.template.slug !== TEMPLATE_SLUG
-            || result.content.metadata?.demo !== true || result.content.metadata?.purpose !== "local-only-preview") return { accepted: false };
+            || (eventId === EVENT_ID && (result.content.metadata?.demo !== true
+                || result.content.metadata?.purpose !== "local-only-preview"))
+            || (eventId === CANDIDATE_EVENT_ID && (Object.hasOwn(result.content.metadata || {}, "demo")
+                || Object.hasOwn(result.content.metadata || {}, "purpose")))) return { accepted: false };
         const premium = result.content.sections.filter(section => ["gallery", "dress-code", "gifts", "collaborative-album"].includes(section.type));
-        if (premium.some(section => !["dress-code", "gifts", "collaborative-album"].includes(section.type))) return { accepted: false };
         const bySectionId = Object.fromEntries(premium.map(section => [section.id,
-            section.type === "gifts" ? { authorizedGiftData: section.data }
+            section.type === "gallery" ? { authorizedMediaIds: section.data.items.map(item => item.media_id),
+                mediaItems: result.content.media.items, imagePolicy: createPolicy({ allowedUrls: section.data.items
+                    .map(item => result.content.media.items[item.media_id].src).filter(src => !src.startsWith("/assets/")) }) }
+                : section.type === "gifts" ? { authorizedGiftData: section.data }
                 : section.type === "collaborative-album" ? { albumUrl: section.data.url,
                     albumPolicy: createPolicy({ allowedUrls: [section.data.url] }) } : {}]));
         if (!validateV2Event(result.content, { bySectionId }).valid) return { accepted: false };
@@ -42,10 +55,12 @@ function preparePremiumLocalPreview(content, configuration) {
         const giftFields = Object.fromEntries(premium.filter(section => section.type === "gifts")
             .map(section => [section.id, Object.keys(section.data)]));
         const albumSections = premium.filter(section => section.type === "collaborative-album").map(section => section.id);
-        return { accepted: true, content: result.content, presentation: { giftFields, albumSections } };
+        const gallerySections = Object.fromEntries(premium.filter(section => section.type === "gallery")
+            .map(section => [section.id, section.data.items.map(item => item.media_id)]));
+        return { accepted: true, content: result.content, presentation: { giftFields, albumSections, gallerySections } };
     } catch (_) {
         return { accepted: false };
     }
 }
 
-module.exports = { EVENT_ID, TEMPLATE_SLUG, preparePremiumLocalPreview };
+module.exports = { EVENT_ID, CANDIDATE_EVENT_ID, TEMPLATE_SLUG, preparePremiumLocalPreview };

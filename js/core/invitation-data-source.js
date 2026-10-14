@@ -65,9 +65,12 @@
 
         const devDraft = params.get("devDraft");
         if (devDraft) {
-            if (devDraft === "kaly-joha-boda-fiesta-demo") {
+            if (["kaly-joha-boda-fiesta-demo", "kaly-joha-nuestra-boda"].includes(devDraft)) {
+                const candidate = params.get("candidate");
+                if (candidate && (devDraft !== "kaly-joha-nuestra-boda" || !["b17-e2", "b17-e4"].includes(candidate))) return { mode: "invalid-preview" };
                 return isLoopbackHost(hostname)
-                    ? { mode: "local-premium", eventId: devDraft, privatePreview: true, url: "/__premium-local-preview/kaly-joha-boda-fiesta-demo" }
+                    ? { mode: "local-premium", eventId: devDraft, privatePreview: true,
+                        url: `/__premium-local-preview/${devDraft}${candidate ? "/" + candidate : ""}` }
                     : { mode: "invalid-preview" };
             }
             return isLocalPreviewHost(hostname) && ALLOWED_DRAFTS.has(devDraft)
