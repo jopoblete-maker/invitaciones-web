@@ -67,7 +67,7 @@
         if (devDraft) {
             if (["kaly-joha-boda-fiesta-demo", "kaly-joha-nuestra-boda"].includes(devDraft)) {
                 const candidate = params.get("candidate");
-                if (candidate && (devDraft !== "kaly-joha-nuestra-boda" || !["b17-e2", "b17-e4"].includes(candidate))) return { mode: "invalid-preview" };
+                if (candidate && (devDraft !== "kaly-joha-nuestra-boda" || !["b17-e2", "b17-e4", "b18"].includes(candidate))) return { mode: "invalid-preview" };
                 return isLoopbackHost(hostname)
                     ? { mode: "local-premium", eventId: devDraft, privatePreview: true,
                         url: `/__premium-local-preview/${devDraft}${candidate ? "/" + candidate : ""}` }

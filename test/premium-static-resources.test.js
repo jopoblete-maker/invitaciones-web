@@ -19,6 +19,7 @@ const resources = [
         "pareja-premium.webp", "cierre-decorativo-b17-e1.webp",
         "fiesta-decorativa-b17-e4.webp", "asistencia-decorativa-b17-e4.webp"].map(name => [prefix + name, "image/webp"]),
     [prefix + "rosas-blancas-esquina.png", "image/png"],
+    [prefix + "foto3-b18.jpeg", "image/jpeg"],
     [prefix + "musica-boda.mp3", "audio/mpeg"]
 ];
 const app = express(), policy = createStaticPolicy({ root, express });
@@ -64,6 +65,10 @@ const hash = buffer => createHash("sha256").update(buffer).digest("hex");
     for (const media of Object.values(fixture.media.items)) assert(resources.some(([url]) => url === media.src));
 
     const blocked = [
+        prefix + "foto3-b18.jpg", prefix + "foto3-b18.webp", prefix + "foto3-b18.jpeg.bak",
+        prefix + "foto3-b18.jpeg/", prefix + "foto3-b18.jpeg/extra",
+        "/.dev/premium/kaly-joha-nuestra-boda.b18-candidate.event.json",
+        "/.dev/premium/kaly-joha-nuestra-boda.b18-candidate.authorization.json",
         prefix, prefix + "ornamento-floral.svg", prefix + "missing.webp", prefix + "musica-original.mpeg",
         // Unused historical art stays private even after the B17 static approval.
         prefix + "cierre-premium.webp",

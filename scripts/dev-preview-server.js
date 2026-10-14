@@ -84,6 +84,7 @@ function createPreviewRequestHandler(options = {}) {
     const loadPremiumCandidateInput = options.loadPremiumCandidateInput || (() => loadCandidateFiles("b17-candidate"));
     const loadPremiumE2CandidateInput = options.loadPremiumE2CandidateInput || (() => loadCandidateFiles("b17-e2-candidate"));
     const loadPremiumE4CandidateInput = options.loadPremiumE4CandidateInput || (() => loadCandidateFiles("b17-e4-candidate"));
+    const loadPremiumB18CandidateInput = options.loadPremiumB18CandidateInput || (() => loadCandidateFiles("b18-candidate"));
     const privatePreviewBridge = createPrivatePreviewBridge({
         apiBaseUrl: options.apiBaseUrl ?? process.env.YCOR_API_BASE_URL,
         adminPassword: options.adminPassword ?? process.env.YCOR_ADMIN_PASSWORD,
@@ -101,7 +102,8 @@ function createPreviewRequestHandler(options = {}) {
 
         if ([`/__premium-local-preview/${EVENT_ID}`, `/__premium-local-preview/${CANDIDATE_EVENT_ID}`,
             `/__premium-local-preview/${CANDIDATE_EVENT_ID}/b17-e2`,
-            `/__premium-local-preview/${CANDIDATE_EVENT_ID}/b17-e4`].includes(pathname)) {
+            `/__premium-local-preview/${CANDIDATE_EVENT_ID}/b17-e4`,
+            `/__premium-local-preview/${CANDIDATE_EVENT_ID}/b18`].includes(pathname)) {
             const address = req.socket?.remoteAddress;
             if (address && !["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(address)) {
                 sendJson(res, 403, { error: "Local preview only." }); return;
@@ -109,7 +111,8 @@ function createPreviewRequestHandler(options = {}) {
             if ((req.method || "GET") !== "GET") { sendJson(res, 405, { error: "Method not allowed." }); return; }
             try {
                 const candidate = pathname !== `/__premium-local-preview/${EVENT_ID}`;
-                const input = pathname.endsWith("/b17-e4") ? loadPremiumE4CandidateInput()
+                const input = pathname.endsWith("/b18") ? loadPremiumB18CandidateInput()
+                    : pathname.endsWith("/b17-e4") ? loadPremiumE4CandidateInput()
                     : pathname.endsWith("/b17-e2") ? loadPremiumE2CandidateInput()
                     : candidate ? loadPremiumCandidateInput() : loadPremiumPreviewInput();
                 // Every loader, including synthetic tests, uses the same budget,

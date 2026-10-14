@@ -35,6 +35,7 @@ const PUBLIC_FILES = new Set([
     "assets/templates/boda-fiesta-premium/portada-original.webp",
     "assets/templates/boda-fiesta-premium/nuestra-boda-fotografia.webp",
     "assets/templates/boda-fiesta-premium/cierre-puente.webp",
+    "assets/templates/boda-fiesta-premium/foto3-b18.jpeg",
     "assets/templates/boda-fiesta-premium/rosas-blancas-esquina.png",
     "assets/templates/boda-fiesta-premium/musica-boda.mp3",
     "assets/templates/boda-fiesta-premium/fiesta-decorativa.webp",

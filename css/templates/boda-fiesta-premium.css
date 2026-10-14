@@ -767,3 +767,83 @@ body[data-template="boda-fiesta-premium"] #audioWidget[data-premium-floating="tr
         pointer-events: none;
     }
 }
+
+/* Editorial opt-in: B17 has no template.variant and never receives this class. */
+.template-boda-fiesta-premium.premium-b18 [data-demo-section="cuenta-regresiva"] {
+    min-height: 0;
+    padding: 34px 24px 42px;
+    background: #748d72;
+    border: 0;
+    border-radius: 28px;
+}
+.template-boda-fiesta-premium.premium-b18 [data-demo-section="cuenta-regresiva"]::before {
+    inset: 24px;
+    border: 1px solid #edf1dfb3;
+    border-radius: 0;
+}
+.template-boda-fiesta-premium.premium-b18 [data-demo-section="cuenta-regresiva"] .wedding-content { width: 100%; }
+.template-boda-fiesta-premium.premium-b18 .countdown-panel { display: grid; justify-items: center; gap: 24px; }
+.template-boda-fiesta-premium.premium-b18 .premium-countdown-quote {
+    display: block;
+    margin: -31px 0 8px;
+    font: 96px/.85 Georgia, serif;
+    color: #fff;
+}
+.template-boda-fiesta-premium.premium-b18 [data-demo-section="cuenta-regresiva"] .countdown-footer {
+    max-width: 205px;
+    margin: 0;
+    font: 600 clamp(15px, 4.1vw, 18px)/1.55 'Lato', Arial, sans-serif;
+    color: #f5f6e9;
+    text-wrap: balance;
+}
+.template-boda-fiesta-premium.premium-b18 [data-demo-section="cuenta-regresiva"] .countdown-eyebrow {
+    margin: 8px 0 -18px;
+    font: 600 18px/1.4 'Lato', Arial, sans-serif;
+    animation: none;
+}
+.template-boda-fiesta-premium.premium-b18 [data-demo-section="cuenta-regresiva"].is-animation-ready:not(.is-visible) :is(.premium-countdown-quote, .countdown-footer, .countdown-eyebrow, .countdown-grid) { opacity: 0; }
+.template-boda-fiesta-premium.premium-b18 [data-demo-section="cuenta-regresiva"].is-animation-ready.is-visible :is(.premium-countdown-quote, .countdown-footer, .countdown-eyebrow, .countdown-grid) {
+    animation: premium-message-appear .8s ease-out both;
+}
+.template-boda-fiesta-premium.premium-b18 [data-demo-section="cuenta-regresiva"].is-animation-ready.is-visible .countdown-footer { animation-delay: .18s; }
+.template-boda-fiesta-premium.premium-b18 [data-demo-section="cuenta-regresiva"].is-animation-ready.is-visible .countdown-eyebrow { animation-delay: .36s; }
+.template-boda-fiesta-premium.premium-b18 [data-demo-section="cuenta-regresiva"].is-animation-ready.is-visible .countdown-grid { animation-delay: .54s; }
+.template-boda-fiesta-premium.premium-b18 [data-demo-section="cuenta-regresiva"] .countdown-grid {
+    width: min(100%, 252px);
+    gap: 0;
+    padding: 9px 12px;
+    border-radius: 36px;
+    border: 1px solid #f2f4e255;
+    background: linear-gradient(#a9bca366, #6b876b99);
+    box-shadow: inset 0 2px 5px #f1f4e440, 0 3px 5px #344b3440;
+}
+.template-boda-fiesta-premium.premium-b18 [data-demo-section="cuenta-regresiva"] .countdown-item {
+    position: relative;
+    border: 0;
+    border-radius: 0;
+    padding: 0 2px;
+    background: none;
+    gap: 4px;
+}
+.template-boda-fiesta-premium.premium-b18 [data-demo-section="cuenta-regresiva"] .countdown-item:not(:last-child)::after {
+    content: ':';
+    position: absolute;
+    top: 0;
+    right: -3px;
+    color: #f5f6e9;
+}
+.template-boda-fiesta-premium.premium-b18 [data-demo-section="cuenta-regresiva"] .countdown-item span { font-size: 20px; }
+.template-boda-fiesta-premium.premium-b18 [data-demo-section="cuenta-regresiva"] .countdown-item label { font-size: 8px; }
+.template-boda-fiesta-premium.premium-b18 [data-demo-section="fotografia-pareja"] .media-closing-media,
+.template-boda-fiesta-premium.premium-b18 [data-demo-section="fotografia-pareja"] img {
+    aspect-ratio: 4 / 3;
+    height: auto;
+    object-fit: contain;
+}
+@media (prefers-reduced-motion: reduce) {
+    .template-boda-fiesta-premium.premium-b18 [data-demo-section="cuenta-regresiva"] :is(.premium-countdown-quote, .countdown-footer, .countdown-eyebrow, .countdown-grid) {
+        opacity: 1;
+        transform: none;
+        animation: none;
+    }
+}

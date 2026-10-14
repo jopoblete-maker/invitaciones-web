@@ -229,6 +229,7 @@ function loadLocalPremiumRenderers() {
 function renderInvitation(event, templateConfig, localPresentation = null) {
     const approvedPremiumPresentation = templateConfig.slug === "boda-fiesta-premium"
         && ["kaly-joha-nuestra-boda", "kaly-joha-boda-fiesta-demo"].includes(event.id);
+    const b18Presentation = isB18Presentation(event, templateConfig);
     document.title = event.nombre ? `Invitación de ${event.nombre}` : "Invitación Digital";
     if (event.id === "kaly-joha-boda-fiesta-demo" && templateConfig.slug === "boda-fiesta-premium") {
         document.title = `${event.nombre} — ${event.identity.subtitle}`;
@@ -296,6 +297,7 @@ function renderInvitation(event, templateConfig, localPresentation = null) {
     getApp().classList.toggle("premium-b17", approvedPremiumPresentation);
     const commercialPremiumPresentation = approvedPremiumPresentation && event.branding.enabled === true;
     getApp().classList.toggle("premium-b17-e4", commercialPremiumPresentation);
+    getApp().classList.toggle("premium-b18", b18Presentation);
     document.querySelectorAll(".wedding-section").forEach((page, index) => {
         const section = renderableSections[index];
         const config = getSectionLayoutConfig(event, section, index);
@@ -311,6 +313,17 @@ function renderInvitation(event, templateConfig, localPresentation = null) {
         getApp().querySelectorAll(".wedding-section").forEach((page, index) => {
             page.dataset.demoSection = renderableSections[index]?.id || "";
             const content = page.querySelector(".wedding-content");
+            if (b18Presentation && page.dataset.demoSection === "cuenta-regresiva" && content) {
+                const panel = content.querySelector(".countdown-panel");
+                const message = panel?.querySelector(".countdown-footer");
+                if (panel && message) {
+                    const quote = document.createElement("span");
+                    quote.className = "premium-countdown-quote";
+                    quote.setAttribute("aria-hidden", "true");
+                    quote.textContent = "❞";
+                    panel.prepend(quote, message);
+                }
+            }
             if (approvedPremiumPresentation && page.dataset.demoSection === "cierre"
                 && renderableSections[index]?.type === "gallery") {
                 const sizes = {
@@ -480,20 +493,40 @@ function renderInvitation(event, templateConfig, localPresentation = null) {
     setupPremiumEntryAnimations();
 }
 
+function isB18Presentation(event, templateConfig) {
+    return event?.id === "kaly-joha-nuestra-boda" && templateConfig?.slug === "boda-fiesta-premium"
+        && event?.template?.variant === "b18-client-corrections";
+}
+
 function setupPremiumEntryAnimations() {
     setupPremiumEntryAnimations.dispose?.();
     const closing = getApp().querySelector("[data-premium-closing]");
     const dress = getApp().querySelector(".premium-b17-e4 .demo-dress-study");
-    const elements = [closing, dress].filter(Boolean);
+    const repeat = getApp().classList?.contains("premium-b18") === true;
+    const countdown = repeat ? getApp().querySelector('[data-demo-section="cuenta-regresiva"]') : null;
+    const elements = [closing, dress, countdown].filter(Boolean);
     if (!elements.length) return;
     const pending = new Set(elements);
     const writing = closing?.querySelector("[data-premium-writing]");
     const fullText = writing?.textContent || "";
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
     let timer = null, observer = null;
+    const cycles = new Map(elements.map(element => [element, { visible: false, generation: 0, timer: null }]));
+    const cancelCycle = element => {
+        const cycle = cycles.get(element);
+        cycle.generation++;
+        clearTimeout(cycle.timer);
+        cycle.timer = null;
+        cycle.finishWriting?.();
+        cycle.finishWriting = null;
+        if (element === closing) { clearTimeout(timer); if (writing) writing.textContent = fullText; }
+        element.classList.remove("is-animation-ready");
+        element.classList.add("is-visible");
+    };
     const showComplete = () => {
         clearTimeout(timer);
         observer?.disconnect();
+        if (repeat) elements.forEach(cancelCycle);
         if (writing) writing.textContent = fullText;
         pending.clear();
         elements.forEach(element => {
@@ -505,16 +538,69 @@ function setupPremiumEntryAnimations() {
     setupPremiumEntryAnimations.dispose = () => {
         showComplete();
         preference.removeEventListener("change", onPreference);
+        if (repeat) document.removeEventListener("visibilitychange", onVisibility);
     };
     if (preference.matches || typeof IntersectionObserver !== "function") { showComplete(); return; }
     preference.addEventListener("change", onPreference);
     const letters = typeof Intl.Segmenter === "function"
         ? Array.from(new Intl.Segmenter("es", { granularity: "grapheme" }).segment(fullText), entry => entry.segment)
         : Array.from(fullText);
+    const play = element => {
+        const cycle = cycles.get(element);
+        if (!cycle.visible || preference.matches || document.hidden) return;
+        const generation = ++cycle.generation;
+        element.classList.add("is-animation-ready");
+        element.classList.remove("is-visible");
+        if (element === closing && writing) writing.textContent = "";
+        // Reuse the same CSS animations/transitions; flush their reset once.
+        void element.offsetWidth;
+        element.classList.add("is-visible");
+        const current = () => cycle.generation === generation && cycle.visible && !preference.matches && !document.hidden;
+        const afterComplete = () => {
+            if (current()) cycle.timer = setTimeout(() => { cycle.timer = null; play(element); }, 2000);
+        };
+        const targets = element === closing ? element.querySelectorAll(".section-title")
+            : element === dress ? element.querySelectorAll(".demo-dress-icon path, h2, p")
+            : element.querySelectorAll(".premium-countdown-quote, .countdown-footer, .countdown-eyebrow, .countdown-grid");
+        // Await actual completion, including CSS delays, without inventing a
+        // second timing model. Only existing animated targets are considered.
+        const animations = Array.from(targets).flatMap(target => typeof target.getAnimations === "function" ? target.getAnimations() : []);
+        const visualComplete = Promise.all(animations.map(animation => animation.finished.catch(() => {})));
+        let writingComplete = Promise.resolve();
+        if (element === closing && writing) {
+            writingComplete = new Promise(resolve => {
+                cycle.finishWriting = resolve;
+                let count = 0;
+                const advance = () => {
+                    if (!current()) { resolve(); return; }
+                    writing.textContent = letters.slice(0, ++count).join("");
+                    if (count < letters.length) timer = setTimeout(advance, 75);
+                    else { timer = null; cycle.finishWriting = null; resolve(); }
+                };
+                timer = setTimeout(advance, 400);
+            });
+        }
+        Promise.all([visualComplete, writingComplete]).then(afterComplete);
+    };
+    function onVisibility() {
+        elements.forEach(element => {
+            cancelCycle(element);
+            if (!document.hidden && cycles.get(element).visible) play(element);
+        });
+    }
+    if (repeat) document.addEventListener("visibilitychange", onVisibility);
     elements.forEach(element => element.classList.add("is-animation-ready"));
     if (writing) writing.textContent = "";
     observer = new IntersectionObserver(entries => {
         entries.forEach(entry => {
+            if (repeat) {
+                const cycle = cycles.get(entry.target);
+                const visible = entry.isIntersecting;
+                if (cycle.visible === visible) return;
+                cycle.visible = visible;
+                if (visible) play(entry.target); else cancelCycle(entry.target);
+                return;
+            }
             if (!entry.isIntersecting || !pending.delete(entry.target)) return;
             observer.unobserve(entry.target);
             entry.target.classList.add("is-visible");
@@ -527,7 +613,7 @@ function setupPremiumEntryAnimations() {
                 timer = setTimeout(advance, 400);
             }
         });
-        if (!pending.size) observer.disconnect();
+        if (!repeat && !pending.size) observer.disconnect();
     }, { threshold: 0.15 });
     elements.forEach(element => observer.observe(element));
 }
