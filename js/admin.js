@@ -713,7 +713,7 @@ function clearEditorialState({ preserveRecovery = false } = {}) {
 }
 
 function detailStateKey(state) {
-    return JSON.stringify([state.eventId, state.currentWorkingVersionId, state.publishedVersionId]);
+    return AdminEventSummary.stateKey(state);
 }
 
 function renderDetailPresentation(state) {
@@ -742,6 +742,7 @@ function renderDetailPresentation(state) {
 async function loadDetailDescription(state, revision) {
     const key = detailStateKey(state);
     const snapshots = {};
+    const snapshotFactsByRole = {};
     let schemaVersion;
     let failed = false;
     for (const [role, versionId] of [["working", state.currentWorkingVersionId], ["published", state.publishedVersionId]]) {
@@ -755,21 +756,16 @@ async function loadDetailDescription(state, revision) {
         }
         try {
             const version = await detailSnapshots.get(snapshotKey);
-            if (revision !== detailRevision || currentEditorialState !== state) return;
+            if (revision !== detailRevision || currentEditorialState !== state || detailStateKey(state) !== key) return;
             snapshots[role] = version.content;
+            snapshotFactsByRole[role] = AdminEventSummary.describeSnapshot(state, version);
             const projection = AdminEventSummary.project(snapshots);
             if (projection.source !== "none") { schemaVersion = version.content.schema_version; break; }
         } catch (_) { failed = true; }
     }
-    if (revision !== detailRevision || currentEditorialState !== state) return;
+    if (revision !== detailRevision || currentEditorialState !== state || detailStateKey(state) !== key) return;
     const summary = AdminEventSummary.project(snapshots);
-    const selectedContent = snapshots[summary.source];
-    const selectedVersionId = summary.source === "working" ? state.currentWorkingVersionId : state.publishedVersionId;
-    const snapshotFacts = selectedContent?.id === state.eventId ? {
-        eventId: state.eventId, versionId: selectedVersionId, schemaVersion: selectedContent.schema_version,
-        templateSlug: selectedContent.template?.slug,
-        premium: Array.isArray(selectedContent.sections) && selectedContent.sections.some(section => ["gallery", "dress-code", "gifts", "collaborative-album"].includes(section?.type))
-    } : null;
+    const snapshotFacts = snapshotFactsByRole[summary.source] || null;
     detailDescription = { key, summary, schemaVersion, snapshotFacts };
     if (failed && detailDescription.summary.source === "none") {
         document.getElementById("eventDetailDescriptionStatus").textContent = "No se pudo cargar la descripción. El estado y las versiones siguen disponibles.";

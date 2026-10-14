@@ -1,8 +1,10 @@
 (function (root, factory) {
-    const api = factory(typeof module === "object" && module.exports ? require("./template-registry") : root.TemplateRegistry);
+    const node = typeof module === "object" && module.exports;
+    const api = factory(node ? require("./template-registry") : root.TemplateRegistry,
+        node ? require("./admin-event-summary") : root.AdminEventSummary);
     if (typeof module === "object" && module.exports) module.exports = api;
     root.AdminEventDetail = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function (Templates) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (Templates, Summary) {
     // Presentation only: these facts never grant access or enable controls.
     function capabilities({ state, summary, action, actionDisabled, snapshotFacts, editorModel }) {
         const sourceId = summary.source === "working" ? state.currentWorkingVersionId
@@ -50,6 +52,9 @@
             publication: state.publishedVersionId ? "Publicado: hay una versión publicada vigente" : "Sin publicación",
             contentMessage,
             capabilities: capabilities({ state, summary, action, actionDisabled, snapshotFacts, editorModel }),
+            editorialSummary: Summary.editorial({ state, summary, snapshotFacts,
+                premiumTemplate: Boolean(Templates?.getTemplate(snapshotFacts?.templateSlug)?.supportedSections?.includes("gifts")),
+                templateKnown: Boolean(snapshotFacts && Templates?.getTemplate(snapshotFacts.templateSlug)) }),
             action: action ? { eventId: action.eventId, versionId: action.versionId, versionNumber: action.versionNumber,
                 kind: action.kind, expectedStatus: action.expectedStatus, targetStatus: action.targetStatus,
                 label: action.kind === "submit" ? "Enviar a revisión" : action.label } : null,
@@ -112,11 +117,26 @@
                 capabilityList.replaceChildren();
                 (model.capabilities || []).forEach(item => capabilityList.append(element("li", `${item.label}: ${item.status}`)));
             }
+            const editorial = document.getElementById("eventDetailEditorialSummary");
+            if (editorial) {
+                editorial.replaceChildren();
+                const info = model.editorialSummary;
+                [["Evento", info.event], ["Plantilla", info.template], ["Candidata", info.candidate],
+                    ["Contenido de la candidata", info.candidateContent], ["Publicada vigente", info.published],
+                    ["Versión de trabajo", info.working], ["Publicada que sería reemplazada", info.replaced],
+                    ["Secciones de la candidata", info.sectionCount]].forEach(([label, value]) => editorial.append(element("p", `${label}: ${value}`)));
+                const order = element("ul");
+                info.sectionOrder.forEach(value => order.append(element("li", value)));
+                const warnings = element("ul");
+                info.warnings.forEach(value => warnings.append(element("li", value)));
+                editorial.append(order, warnings);
+            }
         }
         return { render, clear() {
             ["eventDetailSummary", "eventDetailVersions", "eventDetailWorkflow"].forEach((id) => document.getElementById(id).replaceChildren());
             document.getElementById("eventDetailContentStatus").textContent = "";
             document.getElementById("eventDetailCapabilities")?.replaceChildren();
+            document.getElementById("eventDetailEditorialSummary")?.replaceChildren();
         } };
     }
     return { buildViewModel, createDetail, workflowLabel };
