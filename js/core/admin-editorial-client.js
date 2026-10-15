@@ -42,9 +42,18 @@
     }
 
     function normalizeEditorialState(payload) {
+        const pointer = value => value === null || typeof value === "string" && value.length > 0;
         if (!payload || typeof payload !== "object" || Array.isArray(payload)
-            || typeof payload.eventId !== "string" || typeof payload.eventStatus !== "string"
-            || !Array.isArray(payload.versions)) {
+            || typeof payload.eventId !== "string" || !payload.eventId || !["active", "archived"].includes(payload.eventStatus)
+            || !pointer(payload.currentWorkingVersionId) || !pointer(payload.publishedVersionId)
+            || !Array.isArray(payload.versions)
+            || payload.versions.some(v => !isPlainObject(v) || typeof v.versionId !== "string" || !v.versionId
+                || !Number.isSafeInteger(v.versionNumber) || v.versionNumber < 1
+                || !["draft", "in_review", "approved"].includes(v.workflowStatus))
+            || new Set(payload.versions.map(v => v.versionId)).size !== payload.versions.length
+            || new Set(payload.versions.map(v => v.versionNumber)).size !== payload.versions.length
+            || [payload.currentWorkingVersionId, payload.publishedVersionId].some(id => id !== null && !payload.versions.some(v => v.versionId === id))
+            || payload.currentWorkingVersionId && payload.currentWorkingVersionId === payload.publishedVersionId) {
             throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
         }
 
@@ -95,9 +104,44 @@
         return new AdminEditorialApiError(code, message, status, { retryAfter });
     }
 
-    function createAdminEditorialClient({ fetchImpl = globalThis.fetch } = {}) {
+    function createAdminEditorialClient({ fetchImpl = globalThis.fetch, editorialTimeoutMs = 30000 } = {}) {
         if (typeof fetchImpl !== "function") {
             throw new TypeError("fetchImpl must be a function.");
+        }
+        if (!Number.isSafeInteger(editorialTimeoutMs) || editorialTimeoutMs < 1 || editorialTimeoutMs > 120000) {
+            throw new TypeError("Invalid editorial request timeout.");
+        }
+
+        // Covers transport AND JSON decoding. Aborting locally does not undo a remote mutation.
+        async function editorialRequest(url, options, validate) {
+            const controller = new AbortController();
+            let timer;
+            try {
+                return await Promise.race([
+                    new Promise((_, reject) => {
+                        timer = setTimeout(() => {
+                            reject(new AdminEditorialApiError("TIMEOUT", "No se pudo confirmar la operacion editorial."));
+                            controller.abort();
+                        }, editorialTimeoutMs);
+                    }),
+                    (async () => {
+                        let response;
+                        try { response = await fetchImpl(url, { ...options, redirect: "error", signal: controller.signal }); }
+                        catch { throw new AdminEditorialApiError("NETWORK_ERROR", "No se pudo completar la operacion editorial."); }
+                        if (!response || typeof response.ok !== "boolean" || !Number.isInteger(response.status)) {
+                            throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
+                        }
+                        let payload;
+                        try { payload = await response.json(); }
+                        catch { throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida."); }
+                        if (!response.ok) throw errorForStatus(response.status, payload, response);
+                        if (response.status !== 200 || !isPlainObject(payload) || !validate(payload)) {
+                            throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
+                        }
+                        return payload;
+                    })()
+                ]);
+            } finally { clearTimeout(timer); }
         }
 
         async function getEditorialState({ eventId, password } = {}) {
@@ -108,27 +152,14 @@
                 throw new AdminEditorialApiError("UNAUTHORIZED", "Credencial administrativa invalida.");
             }
 
-            let response;
-            try {
-                response = await fetchImpl(`/api/admin/eventos/${encodeURIComponent(eventId.trim())}`, {
+            const payload = await editorialRequest(`/api/admin/eventos/${encodeURIComponent(eventId.trim())}`, {
                     method: "GET",
                     headers: {
                         Accept: "application/json",
                         "X-Admin-Password": password
                     }
-                });
-            } catch {
-                throw new AdminEditorialApiError("NETWORK_ERROR", "No se pudo consultar el evento administrativo.");
-            }
-
-            if (!response || typeof response.ok !== "boolean") {
-                throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
-            }
-            if (!response.ok) {
-                const payload = await parseJson(response);
-                throw errorForStatus(response.status, payload, response);
-            }
-            return normalizeEditorialState(await parseJson(response));
+                }, value => value.eventId === eventId.trim());
+            return normalizeEditorialState(payload);
         }
 
         async function listEvents({ password, limit = 50, cursor } = {}) {
@@ -265,9 +296,7 @@
         async function sendWorkflowRequest({ eventId, versionId, password, pathSuffix, body } = {}) {
             if (!eventId || !versionId) throw new AdminEditorialApiError("INVALID_REQUEST", "Debe indicar evento y version.");
             if (typeof password !== "string" || password === "") throw new AdminEditorialApiError("UNAUTHORIZED", "Credencial administrativa invalida.");
-            let response;
-            try {
-                response = await fetchImpl(
+            return editorialRequest(
                     `/api/admin/eventos/${encodeURIComponent(eventId)}/versions/${encodeURIComponent(versionId)}/${pathSuffix}`,
                     {
                         method: "POST",
@@ -277,16 +306,11 @@
                             ...(body ? { "Content-Type": "application/json" } : {})
                         },
                         ...(body ? { body: JSON.stringify(body) } : {})
-                    }
+                    },
+                    value => value.eventId === eventId && (pathSuffix === "publish"
+                        ? value.publishedVersionId === versionId
+                        : value.versionId === versionId && value.workflowStatus === body.targetStatus)
                 );
-            } catch {
-                throw new AdminEditorialApiError("NETWORK_ERROR", "No se pudo completar la operacion editorial.");
-            }
-            if (!response || typeof response.ok !== "boolean") throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
-            const payload = await parseJson(response);
-            if (!response.ok) throw errorForStatus(response.status, payload, response);
-            if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
-            return payload;
         }
 
         function transitionWorkflow({ eventId, versionId, expectedStatus, targetStatus, password } = {}) {

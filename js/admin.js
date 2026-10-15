@@ -626,11 +626,13 @@ async function loadEditorialState() {
     const operation = adminEditorialViewGuard.begin(eventId);
     const recoveringDraftSave = adminDraftSaveRunner.requiresRefresh(eventId);
     const recoveringWorkingVersion = adminWorkingVersionRunner.requiresRefresh(eventId);
-    const recovering = recoveringDraftSave || recoveringWorkingVersion;
+    const recoveringWorkflow = adminEditorialWorkflowRunner.requiresRefresh(eventId);
+    const recovering = recoveringDraftSave || recoveringWorkingVersion || recoveringWorkflow;
     clearEditorialState({ preserveRecovery: recovering });
     status.textContent = "Verificando credencial y cargando evento...";
     try {
-        const recoveryRunner = recoveringDraftSave ? adminDraftSaveRunner : adminWorkingVersionRunner;
+        const recoveryRunner = recoveringWorkflow ? adminEditorialWorkflowRunner
+            : recoveringDraftSave ? adminDraftSaveRunner : adminWorkingVersionRunner;
         const state = recovering
             ? await recoveryRunner.refresh({
                 eventId,
@@ -642,6 +644,13 @@ async function loadEditorialState() {
         if (!adminEditorialViewGuard.acceptState(operation, state)) return;
         currentEditorialState = state;
         blockedEditorialActionKey = "";
+        if (adminEditorialWorkflowRunner.requiresRefresh(eventId)) {
+            adminEditorialViewGuard.requireRefresh(operation);
+            renderEditorialState(state);
+            status.classList.add("error");
+            status.textContent = "Resultado editorial no confirmado. Las escrituras siguen bloqueadas; consulta nuevamente el estado sin repetir la operacion.";
+            return false;
+        }
         renderEditorialState(state);
         const editorLoaded = await loadEditorialTextEditor(state, operation);
         if (!adminEditorialViewGuard.isCurrent(operation)) return;
@@ -665,7 +674,8 @@ async function loadEditorialState() {
         status.textContent = error.code === "SERVER_ERROR"
             ? "Error del servidor administrativo."
             : error.message;
-        if (adminWorkingVersionRunner.requiresRefresh(eventId) || adminDraftSaveRunner.requiresRefresh(eventId)) {
+        if (adminWorkingVersionRunner.requiresRefresh(eventId) || adminDraftSaveRunner.requiresRefresh(eventId)
+            || adminEditorialWorkflowRunner.requiresRefresh(eventId)) {
             document.getElementById("editorialReloadStateButton").hidden = false;
         }
         return false;
@@ -720,6 +730,7 @@ function renderDetailPresentation(state) {
     if (!adminEventDetail) return;
     const action = AdminEditorialWorkflow.getAvailableAction(state);
     const blocked = adminEditorialViewGuard.requiresRefresh()
+        || adminEditorialWorkflowRunner.requiresRefresh(state.eventId)
         || adminEditorialWorkflowRunner.isPending()
         || adminWorkingVersionRunner.isPending()
         || adminDraftSaveRunner.isPending();
@@ -786,12 +797,14 @@ function renderEditorialState(editorialState) {
     if (createButton) {
         createButton.hidden = !sourceVersionId;
         createButton.disabled = !sourceVersionId
+            || adminEditorialWorkflowRunner.requiresRefresh(editorialState.eventId)
             || adminEditorialViewGuard.requiresRefresh()
             || adminWorkingVersionRunner.isPending()
             || adminEditorialWorkflowRunner.isPending()
             || adminDraftSaveRunner.isPending();
     }
-    document.getElementById("editorialReloadStateButton").hidden = !adminEditorialViewGuard.requiresRefresh();
+    document.getElementById("editorialReloadStateButton").hidden = !adminEditorialViewGuard.requiresRefresh()
+        && !adminEditorialWorkflowRunner.requiresRefresh(editorialState.eventId);
     const previewButton = document.getElementById("editorialPreviewButton");
     if (previewButton) {
         previewButton.hidden = false;
@@ -964,6 +977,7 @@ async function saveEditorialTexts(event) {
     if (!observedState || !sourceVersion || !model
         || selectedEventId !== observedState.eventId
         || sourceVersion.versionId !== observedState.currentWorkingVersionId
+        || adminEditorialWorkflowRunner.requiresRefresh(observedState.eventId)
         || adminEditorialViewGuard.requiresRefresh()
         || adminWorkingVersionRunner.isPending()
         || adminEditorialWorkflowRunner.isPending()
@@ -1096,6 +1110,7 @@ async function createWorkingVersion() {
     const selectedEventId = document.getElementById("editorialEventId").value.trim();
     if (!observedState
         || selectedEventId !== observedState.eventId
+        || adminEditorialWorkflowRunner.requiresRefresh(observedState.eventId)
         || !AdminEditorialClient.workingVersionSource(observedState)
         || adminEditorialViewGuard.requiresRefresh()
         || adminWorkingVersionRunner.isPending()
@@ -1185,6 +1200,7 @@ async function createWorkingVersion() {
 async function executeEditorialAction(action, button) {
     const selectedEventId = document.getElementById("editorialEventId").value.trim();
     if (!action
+        || adminEditorialWorkflowRunner.requiresRefresh(action.eventId)
         || adminEditorialViewGuard.requiresRefresh()
         || adminEditorialWorkflowRunner.isPending()
         || adminWorkingVersionRunner.isPending()
@@ -1203,15 +1219,19 @@ async function executeEditorialAction(action, button) {
             versionId: action.versionId,
             password: administrativePassword,
             requestedKind: action.kind,
-            expectedStatus: action.expectedStatus
+            expectedStatus: action.expectedStatus,
+            observedState: currentEditorialState,
+            isCurrent: () => adminEditorialViewGuard.isCurrent(operation)
+                && document.getElementById("editorialEventId").value.trim() === action.eventId
         });
 
         if (result.state) {
             if (!adminEditorialViewGuard.acceptState(operation, result.state)) return;
             currentEditorialState = result.state;
             clearEditorialTextEditor();
+            if (adminEditorialWorkflowRunner.requiresRefresh(action.eventId)) adminEditorialViewGuard.requireRefresh(operation);
             renderEditorialState(result.state);
-            await loadEditorialTextEditor(result.state, operation);
+            if (!adminEditorialWorkflowRunner.requiresRefresh(action.eventId)) await loadEditorialTextEditor(result.state, operation);
         } else if (!adminEditorialViewGuard.isCurrent(operation)) {
             return;
         }
@@ -1231,12 +1251,12 @@ async function executeEditorialAction(action, button) {
             status.textContent = "El estado cambio en el servidor. Se recargo el evento y la accion anterior quedo bloqueada.";
             return;
         }
-        if (result.outcome === "accepted-refresh-failed") {
+        if (["mutation-unknown", "refresh-required", "accepted-refresh-failed"].includes(result.outcome)) {
             adminEditorialViewGuard.requireRefresh(operation);
             clearEditorialTextEditor();
             renderEditorialState(currentEditorialState);
             status.classList.add("error");
-            status.textContent = "La operacion fue aceptada, pero no se pudo actualizar la vista. Consulta nuevamente el evento antes de realizar otra accion.";
+            status.textContent = "No se pudo confirmar el resultado editorial. Las escrituras quedaron bloqueadas; consulta el estado antes de continuar y no repitas la operacion.";
             return;
         }
         if (result.outcome === "conflict-refresh-failed") {
@@ -1251,6 +1271,7 @@ async function executeEditorialAction(action, button) {
             status.textContent = "Publicacion cancelada. No se realizaron cambios.";
         }
     } catch (error) {
+        if (!adminEditorialViewGuard.isCurrent(operation)) return;
         if (error.code === "UNAUTHORIZED") {
             resetForAuthentication("Credencial administrativa invalida.");
             return;

@@ -133,7 +133,7 @@ function createDomHarness(runner) {
     context.__state = state;
     context.__source = source;
     context.__model = model;
-    context.__pendingRunner = { isPending: () => false };
+    context.__pendingRunner = { isPending: () => false, requiresRefresh: () => false };
     context.__renderState = () => {};
     vm.runInContext(`
         administrativePassword = "memory-only-secret";

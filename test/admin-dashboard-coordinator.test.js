@@ -237,5 +237,39 @@ const content = (title) => ({ schema_version: 1, event: { title, type: "wedding"
     await logoutLoad;
     await new Promise((resolve) => setImmediate(resolve));
     assert.strictEqual(h.document.getElementById("eventDetailSummary").children.length, 0);
+
+    // A mutation with unknown outcome blocks this event across selection changes and failed recovery.
+    const uncertainId = "synthetic-uncertain", otherId = "synthetic-other";
+    let completed = false, recoveryFails = false, posts = 0;
+    const safeState = id => ({ eventId: id, eventStatus: "active", currentWorkingVersionId: completed && id === uncertainId ? null : `${id}-work`,
+        publishedVersionId: completed && id === uncertainId ? `${id}-work` : null,
+        versions: [{ versionId: `${id}-work`, versionNumber: 1, workflowStatus: "approved",
+            publishedAt: completed && id === uncertainId ? "2026-01-01T00:00:00Z" : null }] });
+    const safeClient = { ...client,
+        async getEditorialState({ eventId }) { if (recoveryFails) throw Error("Synthetic offline"); return safeState(eventId); },
+        async getVersion({ eventId, versionId }) { return { eventId, versionId, versionNumber: 1, workflowStatus: "approved", content: content("Synthetic") }; },
+        async publishVersion() { posts++; throw Object.assign(Error("Synthetic uncertain result"), { code: "TIMEOUT" }); }
+    };
+    const recovery = harness(safeClient);
+    recovery.context.window.prompt = () => Workflow.publicationPhrase(uncertainId);
+    await recovery.context.manageDashboardEvent(uncertainId);
+    await recovery.context.executeEditorialAction(Workflow.getAvailableAction(safeState(uncertainId)), element("button"));
+    assert.strictEqual(posts, 1);
+    assert.strictEqual(recovery.document.getElementById("eventDetailWorkflow").children.at(-1).disabled, true);
+    assert.strictEqual(recovery.document.getElementById("editorialCreateVersionButton").disabled, true);
+    assert.strictEqual(recovery.document.getElementById("editorialTextEditor").hidden, true);
+    assert.strictEqual(recovery.document.getElementById("editorialReloadStateButton").hidden, false);
+    await recovery.context.executeEditorialAction(Workflow.getAvailableAction(safeState(uncertainId)), element("button"));
+    await recovery.context.createWorkingVersion(); assert.strictEqual(posts, 1);
+    await recovery.context.manageDashboardEvent(otherId);
+    assert.strictEqual(recovery.document.getElementById("eventDetailWorkflow").children.at(-1).disabled, false);
+    await recovery.context.manageDashboardEvent(uncertainId);
+    assert.strictEqual(recovery.document.getElementById("eventDetailWorkflow").children.at(-1).disabled, true);
+    recoveryFails = true; await recovery.context.loadEditorialState();
+    assert.strictEqual(recovery.document.getElementById("editorialReloadStateButton").hidden, false);
+    recoveryFails = false; completed = true; await recovery.context.loadEditorialState();
+    assert.strictEqual(recovery.read("adminEditorialWorkflowRunner.requiresRefresh('synthetic-uncertain')"), false);
+    assert.strictEqual(recovery.document.getElementById("editorialReloadStateButton").hidden, true);
+    assert.strictEqual(posts, 1);
     console.log("admin dashboard coordinator tests passed");
 })().catch((error) => { console.error(error); process.exitCode = 1; });

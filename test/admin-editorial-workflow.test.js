@@ -70,7 +70,9 @@ function clientHarness(initialState = state("draft")) {
         },
         async publishVersion(options) {
             calls.push(["publishVersion", options]);
-            currentState = state("approved", { currentWorkingVersionId: null, publishedVersionId: WORKING_ID });
+            currentState = state("approved", { currentWorkingVersionId: null, publishedVersionId: WORKING_ID,
+                versions: state("approved").versions.map(v => v.versionId === WORKING_ID
+                    ? { ...v, publishedAt: "2030-01-01T00:00:00Z" } : v) });
             return { eventId: EVENT_ID, publishedVersionId: WORKING_ID };
         }
     };
@@ -116,6 +118,7 @@ function deferred() {
     });
     assert.strictEqual(transitioned.outcome, "success");
     assert.deepStrictEqual(transition.calls, [
+        ["getEditorialState", { eventId: EVENT_ID, password: SECRET }],
         ["getEditorialState", { eventId: EVENT_ID, password: SECRET }],
         ["transitionWorkflow", {
             eventId: EVENT_ID,
@@ -170,7 +173,7 @@ function deferred() {
     });
     assert.strictEqual(published.outcome, "success");
     assert.strictEqual(publication.calls.filter(([name]) => name === "publishVersion").length, 1);
-    assert.deepStrictEqual(publication.calls[1], ["publishVersion", {
+    assert.deepStrictEqual(publication.calls[2], ["publishVersion", {
         eventId: EVENT_ID,
         versionId: WORKING_ID,
         password: SECRET
@@ -247,8 +250,8 @@ function deferred() {
     const refreshClient = {
         async getEditorialState() {
             refreshReads += 1;
-            if (refreshReads === 1) return state("draft");
-            if (refreshReads === 2) throw new Error("refresh unavailable");
+            if (refreshReads <= 2) return state("draft");
+            if (refreshReads === 3) throw new Error("refresh unavailable");
             return state("in_review");
         },
         async transitionWorkflow() {
@@ -271,14 +274,14 @@ function deferred() {
     assert.strictEqual(refreshGuard.acceptState(retryOperation, recoveredState), true);
     assert.strictEqual(refreshGuard.requiresRefresh(), false);
     assert.strictEqual(acceptedMutations, 1);
-    assert.strictEqual(refreshReads, 3);
+    assert.strictEqual(refreshReads, 4);
 
     let publicationReads = 0;
     let acceptedPublications = 0;
     const publicationRefreshClient = {
         async getEditorialState() {
             publicationReads += 1;
-            if (publicationReads === 1) return state("approved");
+            if (publicationReads <= 2) return state("approved");
             throw new Error("publication refresh unavailable");
         },
         async transitionWorkflow() { throw new Error("unexpected transition"); },
@@ -300,7 +303,7 @@ function deferred() {
     });
     assert.strictEqual(publicationRefreshResult.outcome, "accepted-refresh-failed");
     assert.strictEqual(acceptedPublications, 1);
-    assert.strictEqual(publicationReads, 2);
+    assert.strictEqual(publicationReads, 3);
 
     console.log("admin editorial workflow tests passed");
 })().catch((error) => {

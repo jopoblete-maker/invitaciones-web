@@ -56,12 +56,14 @@ assert.throws(
         url: `/api/admin/eventos/${EVENT_ID}`,
         options: {
             method: "GET",
+            redirect: "error", signal: calls[0].options.signal,
             headers: {
                 Accept: "application/json",
                 "X-Admin-Password": SECRET
             }
         }
     }]);
+    assert(calls[0].options.signal instanceof AbortSignal);
     assert.strictEqual(calls[0].options.body, undefined);
 
     const mutationCalls = [];
@@ -85,6 +87,7 @@ assert.throws(
         url: `/api/admin/eventos/${EVENT_ID}/versions/${VERSION_ID}/workflow`,
         options: {
             method: "POST",
+            redirect: "error", signal: mutationCalls[0].options.signal,
             headers: {
                 Accept: "application/json",
                 "X-Admin-Password": SECRET,
@@ -96,6 +99,7 @@ assert.throws(
         url: `/api/admin/eventos/${EVENT_ID}/versions/${VERSION_ID}/publish`,
         options: {
             method: "POST",
+            redirect: "error", signal: mutationCalls[1].options.signal,
             headers: { Accept: "application/json", "X-Admin-Password": SECRET }
         }
     }]);
