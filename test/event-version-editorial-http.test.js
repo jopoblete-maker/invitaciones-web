@@ -304,6 +304,40 @@ async function request(handler, { password, params = {}, body = {}, origin = "ht
     assert.strictEqual(publish.calls[0][1].origin, "http://localhost:3000");
     assert.strictEqual(publish.rateCalls[0].action, "PUBLISH_VERSION");
 
+    for (const [options, status, code] of [
+        [{}, 401, "UNAUTHORIZED"],
+        [{ password: "wrong" }, 401, "UNAUTHORIZED"],
+        [{ password: ADMIN_PASSWORD, origin: "https://evil.example" }, 403, "ORIGIN_FORBIDDEN"],
+        [{ password: ADMIN_PASSWORD, origin: null }, 403, "ORIGIN_FORBIDDEN"]
+    ]) {
+        const rejectedRollback = createHarness();
+        const response = await request(rejectedRollback.http.rollbackVersion, {
+            params: { eventId: EVENT_ID },
+            body: { versionId: VERSION_ID },
+            ...options
+        });
+        assert.strictEqual(response.statusCode, status);
+        assert.strictEqual(response.body.error.code, code);
+        assert.deepStrictEqual(rejectedRollback.calls, []);
+        assert.deepStrictEqual(rejectedRollback.rateCalls, []);
+    }
+
+    for (const [consume, status, code] of [
+        [async () => ({ allowed: false, retryAfterSeconds: 7 }), 429, "RATE_LIMITED"],
+        [async () => { throw codedError("RATE_LIMIT_UNAVAILABLE"); }, 503, "RATE_LIMIT_UNAVAILABLE"]
+    ]) {
+        const rejectedRollback = createHarness({ consume });
+        const response = await request(rejectedRollback.http.rollbackVersion, {
+            password: ADMIN_PASSWORD,
+            params: { eventId: EVENT_ID },
+            body: { versionId: VERSION_ID }
+        });
+        assert.strictEqual(response.statusCode, status);
+        assert.strictEqual(response.body.error.code, code);
+        if (status === 429) assert.strictEqual(response.headers["Retry-After"], "7");
+        assert.deepStrictEqual(rejectedRollback.calls, []);
+    }
+
     for (const code of ["INVALID_WORKFLOW", "VERSION_NOT_FOUND"]) {
         const rollback = createHarness();
         rollback.failures.rollbackVersion = codedError(code);
@@ -315,11 +349,19 @@ async function request(handler, { password, params = {}, body = {}, origin = "ht
         assert.strictEqual(response.statusCode, code === "VERSION_NOT_FOUND" ? 404 : 409);
     }
     const rollback = createHarness();
-    assert.strictEqual((await request(rollback.http.rollbackVersion, {
+    const rollbackResponse = await request(rollback.http.rollbackVersion, {
         password: ADMIN_PASSWORD,
         params: { eventId: EVENT_ID },
         body: { versionId: VERSION_ID }
-    })).statusCode, 200);
+    });
+    assert.strictEqual(rollbackResponse.statusCode, 200);
+    assert.deepStrictEqual(rollbackResponse.body, { eventId: EVENT_ID, publishedVersionId: VERSION_ID });
+    assert.deepStrictEqual(rollback.calls, [["rollbackVersion", { eventId: EVENT_ID, versionId: VERSION_ID }]]);
+    assert.deepStrictEqual(rollback.rateCalls, [{
+        origin: "http://localhost:3000",
+        endpoint: "POST /api/admin/eventos/:eventId/rollback",
+        action: "ROLLBACK_VERSION"
+    }]);
 
     const versionRead = createHarness();
     const privateWithoutAuth = await request(versionRead.http.getVersion, {

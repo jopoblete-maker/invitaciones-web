@@ -177,7 +177,7 @@
                 versionId: req.body?.versionId
             });
             return res.status(200).json(result);
-        });
+        }, { mutate: true, endpoint: "POST /api/admin/eventos/:eventId/rollback", action: "ROLLBACK_VERSION" });
 
         return {
             createEvent,
