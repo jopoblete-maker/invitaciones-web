@@ -34,7 +34,11 @@ function createHarness() {
     }
     return {
         calls,
-        service: createEventVersionEditorialService(adapter)
+        service: createEventVersionEditorialService(adapter, {
+            readRepository: { async getVersion(eventId, versionId) {
+                return { eventId, versionId, content: validContent() };
+            } }
+        })
     };
 }
 

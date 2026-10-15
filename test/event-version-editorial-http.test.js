@@ -87,7 +87,11 @@ function createHarness(rateLimiterOverride) {
             return { eventId, versionId, content: { private: true } };
         }
     };
-    const service = createEventVersionEditorialService(adapter);
+    const service = createEventVersionEditorialService(adapter, {
+        readRepository: { async getVersion(eventId, versionId) {
+            return { eventId, versionId, content: validContent() };
+        } }
+    });
     const rateLimiter = rateLimiterOverride || {
         async consume(options) {
             rateCalls.push(options);

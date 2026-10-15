@@ -156,7 +156,8 @@ if (premiumStartupCheck !== 'DISABLED') {
 // non-premium. Install a corrected configuration with a subsequent deployment.
 const getAuthorizationState = premiumStartupCheck === 'FAIL' ? () => null : privateAuthorizationState;
 const eventVersionEditorialService = createEventVersionEditorialService(eventVersionRpcAdapter, {
-    getAuthorizationState
+    getAuthorizationState,
+    readRepository: eventVersionReadRepository
 });
 const eventVersionEditorialHttp = createEventVersionEditorialHttp({
     service: eventVersionEditorialService,

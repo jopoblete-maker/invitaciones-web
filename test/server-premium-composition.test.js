@@ -44,6 +44,10 @@ function server(configurationText, rows, startupEnvironment = {}) {
             if (name === "consume_admin_rate_limit") return { data: [{ allowed: true,
                 retry_after_seconds: 0, current_count: 1 }], error: null };
             writes.push({ name, parameters });
+            if (["publish_event_version_audited", "rollback_event_version"].includes(name)) {
+                return { data: [{ event_id: parameters.p_event_id,
+                    published_version_id: parameters.p_version_id }], error: null };
+            }
             return { data: [{ event_id: parameters.p_event_id,
                 version_id: "11111111-1111-4111-8111-111111111111", version_number: 1, workflow_status: "draft" }], error: null };
         } };
@@ -97,6 +101,28 @@ async function request(h, value, extra = {}, eventId = value.id) {
     const rows = { eventos: { [value.id]: { id: value.id, event_status: "active", published_version_id: versionId } },
         event_versions: { [versionId]: { id: versionId, event_id: value.id, content: value,
             workflow_status: "approved", published_at: "2026-10-12T12:00:00Z" } } };
+
+    for (const operation of ["publish", "rollback"]) {
+        const route = operation === "publish"
+            ? "POST /api/admin/eventos/:eventId/versions/:versionId/publish"
+            : "POST /api/admin/eventos/:eventId/rollback";
+        const deniedConfig = structuredClone(cfg);
+        deniedConfig.entries.push({ revision: 2, manifest: { ...deniedConfig.entries[0].manifest, status: "revoked" } });
+        for (const [config, permitted] of [[text, true], [undefined, false], [JSON.stringify(deniedConfig), false]]) {
+            const instance = server(config, rows), res = response();
+            await instance.routes[route]({
+                headers: { origin: "http://localhost:3000", "x-admin-password": "synthetic-password" },
+                params: { eventId: value.id, versionId }, body: { versionId, manifest: cfg,
+                    content: value, PREMIUM_AUTHORIZATION_CONFIG: text }
+            }, res);
+            assert.equal(res.statusCode, permitted ? 200 : 500);
+            assert.equal(instance.writes.length, permitted ? 1 : 0);
+            if (permitted) assert.deepEqual(res.body, { eventId: value.id, publishedVersionId: versionId });
+            else assert.equal(res.body.error.code, "INTERNAL_ERROR");
+            assert(!JSON.stringify(res.body).includes("canonicalDigest"));
+            assert(!JSON.stringify(instance.logs).includes(cfg.entries[0].manifest.canonicalDigest));
+        }
+    }
     const published = server(text, rows), publicResponse = response();
     await published.routes["GET /api/eventos/:id"]({ params: { id: value.id } }, publicResponse);
     assert.equal(publicResponse.statusCode, 200);

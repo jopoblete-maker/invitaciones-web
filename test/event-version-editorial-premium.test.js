@@ -38,12 +38,13 @@ function approval(content) {
     } }] };
 }
 
-function harness(configuration, stateOverride) {
+function harness(configuration, stateOverride, readRepository) {
     const calls = [];
     const adapter = Object.fromEntries(["createEvent", "createVersion", "transitionWorkflow", "publishVersion", "rollbackVersion"]
         .map(method => [method, async args => { calls.push({ method, args }); return { ok: true }; }]));
     const provider = configuration && createAuthorizationProvider(configuration);
     const dependencies = configuration ? { getAuthorizationState: stateOverride || (() => ({ provider, revision: 1 })) } : {};
+    if (readRepository) dependencies.readRepository = readRepository;
     return { calls, service: createEventVersionEditorialService(adapter, dependencies), provider };
 }
 
@@ -135,6 +136,82 @@ async function rejected(h, content, eventId = content.id, extra = {}) {
     }
     const downgraded = snapshot(); downgraded.schema_version = 1;
     await rejected(harness(configuration), downgraded);
+
+    // Publishing/restoring must authorize the exact stored snapshot, never request data.
+    const versionId = "11111111-1111-4111-8111-111111111111";
+    for (const method of ["publishVersion", "rollbackVersion"]) {
+        const stored = snapshot(), cfg = approval(stored), storedBefore = JSON.stringify(stored);
+        const reads = [];
+        const reader = { async getVersion(eventId, requestedVersionId) {
+            reads.push({ eventId, versionId: requestedVersionId });
+            return { eventId, versionId: requestedVersionId, content: stored };
+        } };
+        const options = { eventId: stored.id, versionId };
+        const allowed = harness(cfg, undefined, reader);
+        const result = await allowed.service[method](options);
+        assert.deepEqual(result, { ok: true });
+        assert.deepEqual(reads, [options]);
+        assert.deepEqual(allowed.calls, [{ method, args: options }]);
+        assert.equal(JSON.stringify(stored), storedBefore);
+
+        const revoked = structuredClone(cfg);
+        revoked.entries.push({ revision: 2, manifest: { ...revoked.entries[0].manifest, status: "revoked" } });
+        const stale = structuredClone(cfg); stale.entries[0].manifest.canonicalDigest = "b".repeat(64);
+        const cases = [
+            harness(undefined, undefined, reader),
+            harness({ entries: [] }, undefined, reader),
+            harness(revoked, () => ({ provider: createAuthorizationProvider(revoked), revision: 2 }), reader),
+            harness(revoked, undefined, reader), // Older approval cannot bypass a higher revocation.
+            harness(stale, undefined, reader),
+            harness(cfg, () => null, reader),
+            harness(cfg, () => { throw new Error("Sensitive provider failure"); }, reader),
+            harness(cfg, () => ({ provider: {}, revision: 1 }), reader)
+        ];
+        for (const denied of cases) {
+            await assert.rejects(() => denied.service[method]({ ...options, content: stored,
+                getAuthorizationState: () => ({ provider: allowed.provider, revision: 1 }),
+                readRepository: reader, manifest: cfg.entries[0].manifest }), error => {
+                assert.equal(error.code, "PREMIUM_AUTHORIZATION_DENIED");
+                assert(!JSON.stringify({ message: error.message, details: error.details }).includes("Sensitive"));
+                return true;
+            });
+            assert.equal(denied.calls.length, 0);
+        }
+
+        // A previously accepted creation grants no lasting right to publish or restore.
+        let current = { provider: allowed.provider, revision: 1 };
+        const changing = harness(cfg, () => current, reader);
+        await changing.service.createEvent({ eventId: stored.id, content: stored });
+        current = { provider: createAuthorizationProvider(revoked), revision: 2 };
+        await assert.rejects(() => changing.service[method](options), { code: "PREMIUM_AUTHORIZATION_DENIED" });
+        assert.deepEqual(changing.calls.map(call => call.method), ["createEvent"]);
+
+        // Scope/read failures fail closed before the mutation adapter is reached.
+        for (const [customReader, code] of [
+            [undefined, "INVALID_REQUEST"],
+            [{ async getVersion() { return null; } }, "VERSION_NOT_FOUND"],
+            [{ async getVersion() { throw Object.assign(new Error("Read unavailable"), { code: "READ_FAILED" }); } }, "READ_FAILED"],
+            [{ async getVersion() { return { eventId: "other-event", versionId, content: stored }; } }, "VERSION_EVENT_MISMATCH"],
+            [{ async getVersion() { return { eventId: stored.id, versionId: "other-version", content: stored }; } }, "VERSION_EVENT_MISMATCH"],
+            [{ async getVersion() { return { ...options, content: null }; } }, "INVALID_EVENT"],
+            [{ async getVersion() { const changed = snapshot(); changed.identity.title = "Unapproved";
+                return { ...options, content: changed }; } }, "PREMIUM_AUTHORIZATION_DENIED"]
+        ]) {
+            const denied = harness(cfg, undefined, customReader);
+            await assert.rejects(() => denied.service[method](options), { code });
+            assert.equal(denied.calls.length, 0);
+        }
+
+        for (const standard of [civil, v1, { nombre: "Synthetic legacy" }]) {
+            const standardOptions = { eventId: standard.id || "synthetic-standard", versionId };
+            const standardReader = { async getVersion() { return { ...standardOptions, content: standard }; } };
+            const ordinaryPublish = harness(cfg, () => { throw new Error("Must not consult premium provider"); }, standardReader);
+            const beforeStandard = JSON.stringify(standard);
+            await ordinaryPublish.service[method](standardOptions);
+            assert.deepEqual(ordinaryPublish.calls, [{ method, args: standardOptions }]);
+            assert.equal(JSON.stringify(standard), beforeStandard);
+        }
+    }
 
     // Portable/browser factory cannot activate the private Node integration.
     const sandbox = { EventValidator: validator };

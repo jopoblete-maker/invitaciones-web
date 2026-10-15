@@ -56,6 +56,11 @@
             ? privatePremium.createBoundary({ getAuthorizationState: dependencies.getAuthorizationState }) : null;
         const premiumTypes = ["gallery", "dress-code", "gifts", "collaborative-album"];
 
+        function isPremiumContent(content) {
+            return Array.isArray(content?.sections)
+                && content.sections.some(section => premiumTypes.includes(section?.type));
+        }
+
         function prepareContent(eventId, content) {
             // Inspect JSON before reading content fields or calculating any digest.
             // Ordinary JSON V1/V2/legacy retains its existing persistence path.
@@ -63,9 +68,7 @@
                 try { privatePremium.inspectBudget(content); }
                 catch (_) { throw editorialError("INVALID_EVENT", "Event content is invalid."); }
             }
-            const premium = Array.isArray(content?.sections)
-                && content.sections.some(section => premiumTypes.includes(section?.type));
-            if (!premium) {
+            if (!isPremiumContent(content)) {
                 const validation = validator.validateEventForPersistence(content);
                 if (!validation.valid) {
                     throw editorialError("INVALID_EVENT", "Event content is invalid.", validation.errors);
@@ -98,7 +101,7 @@
                     }));
                 if (!validator.validateV2Event(canonical, { bySectionId }).valid) throw new Error();
                 // Recheck current private state after full structural validation.
-                // No asynchronous gap or consumer callback occurs before the write.
+                // This synchronous check cannot make the subsequent RPC transactional.
                 if (!boundary.validateForWrite({ eventId, content: canonical }).accepted) throw new Error();
                 return canonical;
             } catch (_) {
@@ -178,9 +181,34 @@
             });
         }
 
-        function publishVersion(options = {}) {
+        async function readStoredContent(eventId, versionId) {
+            // The reader is trusted server composition, never an HTTP option.
+            // Without a snapshot we cannot safely distinguish ordinary from premium.
+            const reader = dependencies.readRepository;
+            if (!reader || typeof reader.getVersion !== "function") {
+                throw editorialError("INVALID_REQUEST", "Stored version reader is unavailable.");
+            }
+            const version = await reader.getVersion(eventId, versionId);
+            if (!version) throw editorialError("VERSION_NOT_FOUND", "Version not found.");
+            if (version.eventId !== eventId || version.versionId !== versionId) {
+                throw editorialError("VERSION_EVENT_MISMATCH", "Version does not match the requested event and version.");
+            }
+            if (!isPlainObject(version.content)) throw editorialError("INVALID_EVENT", "Event content is invalid.");
+            return version.content;
+        }
+
+        function validateStoredPremiumContent(eventId, content) {
+            // Preserve historical standard snapshots without imposing new validation.
+            // The trusted reader returns stored JSON. Premium uses the same budget,
+            // private scope and full validator as creation.
+            if (isPremiumContent(content)) prepareContent(eventId, content);
+        }
+
+        async function publishVersion(options = {}) {
             requireString(options.eventId, "eventId");
             requireString(options.versionId, "versionId");
+            const content = await readStoredContent(options.eventId, options.versionId);
+            validateStoredPremiumContent(options.eventId, content);
             return adapter.publishVersion({
                 eventId: options.eventId,
                 versionId: options.versionId,
@@ -189,9 +217,11 @@
             });
         }
 
-        function rollbackVersion(options = {}) {
+        async function rollbackVersion(options = {}) {
             requireString(options.eventId, "eventId");
             requireString(options.versionId, "versionId");
+            const content = await readStoredContent(options.eventId, options.versionId);
+            validateStoredPremiumContent(options.eventId, content);
             return adapter.rollbackVersion({
                 eventId: options.eventId,
                 versionId: options.versionId
