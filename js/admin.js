@@ -911,6 +911,8 @@ function requestPublicationConfirmation(action) {
     return window.prompt(
         [
             "Esta accion cambiara la invitacion publica.",
+            "Publicacion que se reemplaza: " + (action.expectedPublishedVersionId === null ? "Ninguna" : action.expectedPublishedVersionId),
+            "Revision de publicacion confirmada: " + action.expectedPublicationRevision,
             "",
             `Evento: ${action.eventId}`,
             `Version UUID: ${action.versionId}`,

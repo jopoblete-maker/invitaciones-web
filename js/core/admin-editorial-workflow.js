@@ -1,12 +1,13 @@
 (function (root, factory) {
-    const workflow = factory();
+    const workflow = factory(typeof module === "object" && module.exports
+        ? require("./editorial-preconditions") : root.EditorialPreconditions);
 
     if (typeof module === "object" && module.exports) {
         module.exports = workflow;
     }
 
     root.AdminEditorialWorkflow = workflow;
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (preconditions) {
     const ACTIONS = Object.freeze({
         draft: Object.freeze({ kind: "submit", label: "Enviar a revision", expectedStatus: "draft", targetStatus: "in_review" }),
         in_review: Object.freeze({ kind: "approve", label: "Aprobar", expectedStatus: "in_review", targetStatus: "approved" }),
@@ -14,6 +15,7 @@
     });
 
     function getWorkingVersion(editorialState) {
+        editorialState = preconditions.normalizeState(editorialState);
         if (!editorialState || editorialState.eventStatus !== "active"
             || typeof editorialState.currentWorkingVersionId !== "string"
             || !Array.isArray(editorialState.versions)) {
@@ -28,6 +30,9 @@
         const version = getWorkingVersion(editorialState);
         const definition = version && ACTIONS[version.workflowStatus];
         if (!definition) return null;
+        // Workflow transitions retain expectedStatus; only publication changes
+        // the published pointer and therefore requires a publication revision.
+        if (definition.kind === "publish" && !preconditions.revision(editorialState.publicationRevision)) return null;
         return Object.freeze({
             ...definition,
             eventId: editorialState.eventId,
@@ -106,6 +111,7 @@
         function validState(state, eventId) {
             const pointer = value => value === null || typeof value === "string" && value.length > 0;
             return Boolean(state && state.eventId === eventId && ["active", "archived"].includes(state.eventStatus)
+                && (!Object.prototype.hasOwnProperty.call(state, "publicationRevision") || preconditions.revision(state.publicationRevision))
                 && pointer(state.currentWorkingVersionId) && pointer(state.publishedVersionId)
                 && !(state.currentWorkingVersionId && state.currentWorkingVersionId === state.publishedVersionId)
                 && Array.isArray(state.versions) && state.versions.every(v => v && typeof v.versionId === "string"
@@ -121,7 +127,7 @@
         }
 
         async function readState(eventId, password) {
-            const state = await client.getEditorialState({ eventId, password });
+            const state = preconditions.normalizeState(await client.getEditorialState({ eventId, password }));
             if (!validState(state, eventId)) throw invalidResponse();
             return state;
         }
@@ -129,6 +135,7 @@
         function sameOperationState(left, right) {
             const version = state => getWorkingVersion(state);
             return left.eventId === right.eventId && left.eventStatus === right.eventStatus
+                && left.publicationRevision === right.publicationRevision
                 && left.currentWorkingVersionId === right.currentWorkingVersionId && left.publishedVersionId === right.publishedVersionId
                 && version(left)?.versionId === version(right)?.versionId
                 && version(left)?.versionNumber === version(right)?.versionNumber
@@ -140,26 +147,33 @@
             const version = state.versions.find(v => v.versionId === action.versionId);
             if (!version || version.versionNumber !== action.versionNumber) return false;
             if (action.kind === "publish") {
-                return state.publishedVersionId === action.versionId && state.currentWorkingVersionId === null
+                return state.publicationRevision === preconditions.resultingRevision({ expectedPublicationRevision: before.publicationRevision,
+                    expectedPublishedVersionId: before.publishedVersionId }, action.versionId)
+                    && state.publishedVersionId === action.versionId && state.currentWorkingVersionId === null
                     && version.workflowStatus === "approved" && typeof version.publishedAt === "string"
                     && Number.isFinite(Date.parse(version.publishedAt));
             }
-            return state.currentWorkingVersionId === action.versionId && state.publishedVersionId === before.publishedVersionId
+            return state.publicationRevision === before.publicationRevision
+                && state.currentWorkingVersionId === action.versionId && state.publishedVersionId === before.publishedVersionId
                 && version.workflowStatus === action.targetStatus;
         }
 
-        function validReceipt(receipt, action) {
+        function validReceipt(receipt, action, before) {
             return Boolean(receipt && receipt.eventId === action.eventId && (action.kind === "publish"
-                ? receipt.publishedVersionId === action.versionId
+                ? preconditions.receipt(receipt, action.eventId, action.versionId, {
+                    expectedPublishedVersionId: before.publishedVersionId, expectedPublicationRevision: before.publicationRevision })
                 : receipt.versionId === action.versionId && receipt.workflowStatus === action.targetStatus));
         }
 
         async function run({ eventId, versionId, password, requestedKind, expectedStatus, observedState, isCurrent = () => true } = {}) {
+            versionId = preconditions.normalizeVersionId(versionId);
+            observedState = preconditions.normalizeState(observedState);
             if (pending) return { outcome: "busy" };
             if (recovery.has(eventId)) return { outcome: "refresh-required" };
             pending = true;
             try {
                 const freshState = await readState(eventId, password);
+                if (requestedKind === "publish" && !preconditions.revision(freshState.publicationRevision)) throw invalidResponse();
                 if (!isCurrent()) return { outcome: "stale-view" };
                 const action = getAvailableAction(freshState);
                 if (freshState.eventId !== eventId
@@ -174,10 +188,12 @@
                 if (observedState && (!validState(observedState, eventId) || !sameOperationState(observedState, freshState))) {
                     return { outcome: "stale", state: freshState };
                 }
-                const confirmedState = { ...freshState, versions: freshState.versions.map(v => ({ ...v })) };
+                const confirmedState = Object.freeze({ ...freshState, versions: Object.freeze(freshState.versions.map(v => Object.freeze({ ...v }))) });
 
                 if (action.kind === "publish") {
-                    const confirmation = await confirmPublication(action);
+                    const confirmation = await confirmPublication(Object.freeze({ ...action,
+                        expectedPublishedVersionId: confirmedState.publishedVersionId,
+                        expectedPublicationRevision: confirmedState.publicationRevision }));
                     if (!isPublicationConfirmed(action, confirmation)) {
                         return { outcome: "cancelled", state: freshState };
                     }
@@ -188,10 +204,12 @@
                 if (!sameOperationState(confirmedState, beforePost)) return { outcome: "stale", state: beforePost };
 
                 // Retain uncertainty before sending; no subsequent attempt may bypass reconciliation.
-                recovery.set(eventId, { action, before: beforePost, conflict: false });
+                recovery.set(eventId, { action, before: confirmedState, conflict: false });
                 try {
                     const receipt = action.kind === "publish"
-                        ? await client.publishVersion({ eventId: action.eventId, versionId: action.versionId, password })
+                        ? await client.publishVersion({ eventId: action.eventId, versionId: action.versionId, password,
+                            expectedPublishedVersionId: confirmedState.publishedVersionId,
+                            expectedPublicationRevision: confirmedState.publicationRevision })
                         : await client.transitionWorkflow({
                             eventId: action.eventId,
                             versionId: action.versionId,
@@ -199,16 +217,16 @@
                             targetStatus: action.targetStatus,
                             password
                         });
-                    if (!validReceipt(receipt, action)) throw invalidResponse();
+                    if (!validReceipt(receipt, action, confirmedState)) throw invalidResponse();
                 } catch (error) {
-                    if (error?.status === 409) {
+                    if (error?.rejectionConfirmed === true && error.status === 409) {
                         recovery.get(eventId).conflict = true;
                         try {
                             const state = await reconcile(eventId, password, () => true);
                             return { outcome: "conflict", state, error };
                         } catch (refreshError) { return { outcome: "conflict-refresh-failed", error, refreshError }; }
                     }
-                    if ([400, 401, 403, 404, 413, 415, 422, 429].includes(error?.status)) {
+                    if (error?.rejectionConfirmed === true && [400, 401, 403, 404, 413, 415, 422, 428, 429].includes(error.status)) {
                         recovery.delete(eventId);
                         throw error;
                     }
@@ -217,7 +235,7 @@
 
                 try {
                     const state = await readState(eventId, password);
-                    if (!completed(state, action, beforePost)) return { outcome: "mutation-unknown", action, state };
+                    if (!completed(state, action, confirmedState)) return { outcome: "mutation-unknown", action, state };
                     recovery.delete(eventId);
                     return { outcome: "success", state, action };
                 } catch (refreshError) {

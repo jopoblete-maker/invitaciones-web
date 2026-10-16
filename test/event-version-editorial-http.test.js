@@ -295,14 +295,16 @@ async function request(handler, { password, params = {}, body = {}, origin = "ht
         publish.failures.publishVersion = codedError(code);
         const response = await request(publish.http.publishVersion, {
             password: ADMIN_PASSWORD,
-            params: { eventId: EVENT_ID, versionId: VERSION_ID }
+            params: { eventId: EVENT_ID, versionId: VERSION_ID },
+            body: { expectedPublishedVersionId: null, expectedPublicationRevision: "0" }
         });
         assert.strictEqual(response.statusCode, code === "VERSION_NOT_FOUND" ? 404 : 409);
     }
     const publish = createHarness();
     assert.strictEqual((await request(publish.http.publishVersion, {
         password: ADMIN_PASSWORD,
-        params: { eventId: EVENT_ID, versionId: VERSION_ID }
+        params: { eventId: EVENT_ID, versionId: VERSION_ID },
+        body: { expectedPublishedVersionId: null, expectedPublicationRevision: "0" }
     })).statusCode, 200);
     assert.strictEqual(publish.calls[0][1].adminIdentity, "shared-admin-credential");
     assert.strictEqual(publish.calls[0][1].origin, "http://localhost:3000");
@@ -317,7 +319,7 @@ async function request(handler, { password, params = {}, body = {}, origin = "ht
         const rejectedRollback = createHarness();
         const response = await request(rejectedRollback.http.rollbackVersion, {
             params: { eventId: EVENT_ID },
-            body: { versionId: VERSION_ID },
+            body: { versionId: VERSION_ID, expectedPublishedVersionId: null, expectedPublicationRevision: "0", expectedWorkingVersionId: null },
             ...options
         });
         assert.strictEqual(response.statusCode, status);
@@ -334,7 +336,7 @@ async function request(handler, { password, params = {}, body = {}, origin = "ht
         const response = await request(rejectedRollback.http.rollbackVersion, {
             password: ADMIN_PASSWORD,
             params: { eventId: EVENT_ID },
-            body: { versionId: VERSION_ID }
+            body: { versionId: VERSION_ID, expectedPublishedVersionId: null, expectedPublicationRevision: "0", expectedWorkingVersionId: null }
         });
         assert.strictEqual(response.statusCode, status);
         assert.strictEqual(response.body.error.code, code);
@@ -348,7 +350,7 @@ async function request(handler, { password, params = {}, body = {}, origin = "ht
         const response = await request(rollback.http.rollbackVersion, {
             password: ADMIN_PASSWORD,
             params: { eventId: EVENT_ID },
-            body: { versionId: VERSION_ID }
+            body: { versionId: VERSION_ID, expectedPublishedVersionId: null, expectedPublicationRevision: "0", expectedWorkingVersionId: null }
         });
         assert.strictEqual(response.statusCode, code === "VERSION_NOT_FOUND" ? 404 : 409);
     }
@@ -356,11 +358,11 @@ async function request(handler, { password, params = {}, body = {}, origin = "ht
     const rollbackResponse = await request(rollback.http.rollbackVersion, {
         password: ADMIN_PASSWORD,
         params: { eventId: EVENT_ID },
-        body: { versionId: VERSION_ID }
+        body: { versionId: VERSION_ID, expectedPublishedVersionId: null, expectedPublicationRevision: "0", expectedWorkingVersionId: null }
     });
     assert.strictEqual(rollbackResponse.statusCode, 200);
     assert.deepStrictEqual(rollbackResponse.body, { eventId: EVENT_ID, publishedVersionId: VERSION_ID });
-    assert.deepStrictEqual(rollback.calls, [["rollbackVersion", { eventId: EVENT_ID, versionId: VERSION_ID }]]);
+    assert.deepStrictEqual(rollback.calls, [["rollbackVersion", { eventId: EVENT_ID, versionId: VERSION_ID, expectedPublishedVersionId: null, expectedPublicationRevision: "0", expectedWorkingVersionId: null }]]);
     assert.deepStrictEqual(rollback.rateCalls, [{
         origin: "http://localhost:3000",
         endpoint: "POST /api/admin/eventos/:eventId/rollback",

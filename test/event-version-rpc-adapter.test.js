@@ -142,14 +142,16 @@ async function expectCode(expectedCode, action) {
 
     const publish = createHarness(success({
         event_id: EVENT_ID,
-        published_version_id: VERSION_ID
+        published_version_id: VERSION_ID,
+        publication_revision: "1"
     }));
-    assert.deepStrictEqual(await publish.adapter.publishVersion({
+    assert.deepStrictEqual(await publish.adapter.publishVersion({ expectedPublishedVersionId: null, expectedPublicationRevision: "0", expectedWorkingVersionId: null,
         eventId: EVENT_ID,
         versionId: VERSION_ID
     }), {
         eventId: EVENT_ID,
-        publishedVersionId: VERSION_ID
+        publishedVersionId: VERSION_ID,
+        publicationRevision: "1"
     });
     assert.deepStrictEqual(publish.calls, [{
          name: "publish_event_version_audited",
@@ -159,24 +161,28 @@ async function expectCode(expectedCode, action) {
              p_admin_identity: "shared-admin-credential",
              p_ip: null,
              p_origin: null,
-             p_action: "PUBLISH_VERSION"
+             p_action: "PUBLISH_VERSION",
+             p_expected_published_version_id: null,
+             p_expected_publication_revision: "0"
          }
     }]);
 
     const rollback = createHarness(success({
         event_id: EVENT_ID,
-        published_version_id: SOURCE_ID
+        published_version_id: SOURCE_ID,
+        publication_revision: "1"
     }));
-    assert.deepStrictEqual(await rollback.adapter.rollbackVersion({
+    assert.deepStrictEqual(await rollback.adapter.rollbackVersion({ expectedPublishedVersionId: null, expectedPublicationRevision: "0", expectedWorkingVersionId: null,
         eventId: EVENT_ID,
         versionId: SOURCE_ID
     }), {
         eventId: EVENT_ID,
-        publishedVersionId: SOURCE_ID
+        publishedVersionId: SOURCE_ID,
+        publicationRevision: "1"
     });
     assert.deepStrictEqual(rollback.calls, [{
         name: "rollback_event_version",
-        parameters: { p_event_id: EVENT_ID, p_version_id: SOURCE_ID }
+        parameters: { p_event_id: EVENT_ID, p_version_id: SOURCE_ID, p_expected_published_version_id: null, p_expected_publication_revision: "0", p_expected_working_version_id: null }
     }]);
 
     const transitions = createHarness([
@@ -271,19 +277,19 @@ async function expectCode(expectedCode, action) {
 
     // SQL reports these three domain scenarios using its existing generic codes.
     const notWorking = createHarness(failure("VERSION_CONFLICT"));
-    await expectCode("VERSION_CONFLICT", () => notWorking.adapter.publishVersion({
+    await expectCode("VERSION_CONFLICT", () => notWorking.adapter.publishVersion({ expectedPublishedVersionId: null, expectedPublicationRevision: "0", expectedWorkingVersionId: null,
         eventId: EVENT_ID,
         versionId: VERSION_ID
     }));
 
     const notApproved = createHarness(failure("INVALID_WORKFLOW"));
-    await expectCode("INVALID_WORKFLOW", () => notApproved.adapter.publishVersion({
+    await expectCode("INVALID_WORKFLOW", () => notApproved.adapter.publishVersion({ expectedPublishedVersionId: null, expectedPublicationRevision: "0", expectedWorkingVersionId: null,
         eventId: EVENT_ID,
         versionId: VERSION_ID
     }));
 
     const rollbackNotAllowed = createHarness(failure("INVALID_WORKFLOW"));
-    await expectCode("INVALID_WORKFLOW", () => rollbackNotAllowed.adapter.rollbackVersion({
+    await expectCode("INVALID_WORKFLOW", () => rollbackNotAllowed.adapter.rollbackVersion({ expectedPublishedVersionId: null, expectedPublicationRevision: "0", expectedWorkingVersionId: null,
         eventId: EVENT_ID,
         versionId: VERSION_ID
     }));

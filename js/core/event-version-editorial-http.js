@@ -2,16 +2,18 @@
     const access = typeof module === "object" && module.exports
         ? require("../../backend/http/admin-access")
         : root.AdminAccess;
-    const http = factory(access);
+    const http = factory(access, typeof module === "object" && module.exports
+        ? require("./editorial-preconditions") : root.EditorialPreconditions);
 
     if (typeof module === "object" && module.exports) {
         module.exports = http;
     }
 
     root.EventVersionEditorialHttp = http;
-})(typeof globalThis !== "undefined" ? globalThis : this, function ({ createAdminAccess, sendAccessFailure }) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function ({ createAdminAccess, sendAccessFailure }, preconditions) {
     const STATUS_BY_CODE = Object.freeze({
         INVALID_REQUEST: 400,
+        PRECONDITION_REQUIRED: 428,
         PAYLOAD_TOO_LARGE: 413,
         UNSUPPORTED_MEDIA_TYPE: 415,
         INVALID_EVENT_ID: 400,
@@ -32,6 +34,7 @@
 
     const MESSAGE_BY_CODE = Object.freeze({
         INVALID_REQUEST: "Invalid request.",
+        PRECONDITION_REQUIRED: "Explicit editorial preconditions are required.",
         PAYLOAD_TOO_LARGE: "Request body is too large.",
         UNSUPPORTED_MEDIA_TYPE: "Content-Type must be application/json.",
         INVALID_EVENT_ID: "Event id is invalid.",
@@ -39,7 +42,7 @@
         EVENT_NOT_FOUND: "Event not found.",
         VERSION_NOT_FOUND: "Version not found.",
         VERSION_EVENT_MISMATCH: "Version not found.",
-        VERSION_CONFLICT: "The working version changed.",
+        VERSION_CONFLICT: "The editorial state changed.",
         INVALID_WORKFLOW: "The workflow operation is not allowed.",
         EVENT_ARCHIVED: "Event is archived.",
         INVALID_EVENT: "Event content is invalid.",
@@ -162,9 +165,12 @@
         });
 
         const publishVersion = protect(async (req, res, origin) => {
+            const expected = preconditions.expectations(req.body);
+            const versionId = preconditions.canonicalUuid(req.params.versionId);
             const result = await service.publishVersion({
                 eventId: req.params.eventId,
-                versionId: req.params.versionId,
+                versionId,
+                ...expected,
                 adminIdentity: "shared-admin-credential",
                 origin
             });
@@ -172,9 +178,12 @@
         }, { mutate: true, endpoint: "POST /api/admin/eventos/:eventId/versions/:versionId/publish", action: "PUBLISH_VERSION" });
 
         const rollbackVersion = protect(async (req, res) => {
+            const expected = preconditions.expectations(req.body, true);
+            const versionId = preconditions.canonicalUuid(req.body?.versionId);
             const result = await service.rollbackVersion({
                 eventId: req.params.eventId,
-                versionId: req.body?.versionId
+                versionId,
+                ...expected
             });
             return res.status(200).json(result);
         }, { mutate: true, endpoint: "POST /api/admin/eventos/:eventId/rollback", action: "ROLLBACK_VERSION" });

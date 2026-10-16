@@ -1,12 +1,13 @@
 (function (root, factory) {
-    const client = factory();
+    const client = factory(typeof module === "object" && module.exports
+        ? require("./editorial-preconditions") : root.EditorialPreconditions);
 
     if (typeof module === "object" && module.exports) {
         module.exports = client;
     }
 
     root.AdminEditorialClient = client;
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (preconditions) {
     class AdminEditorialApiError extends Error {
         constructor(code, message, status, options = {}) {
             super(message);
@@ -14,6 +15,7 @@
             this.code = code;
             if (status !== undefined) this.status = status;
             if (options.retryAfter !== undefined) this.retryAfter = options.retryAfter;
+            this.rejectionConfirmed = options.rejectionConfirmed === true;
         }
     }
 
@@ -42,6 +44,7 @@
     }
 
     function normalizeEditorialState(payload) {
+        payload = preconditions.normalizeState(payload);
         const pointer = value => value === null || typeof value === "string" && value.length > 0;
         if (!payload || typeof payload !== "object" || Array.isArray(payload)
             || typeof payload.eventId !== "string" || !payload.eventId || !["active", "archived"].includes(payload.eventStatus)
@@ -57,7 +60,11 @@
             throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
         }
 
+        if (Object.prototype.hasOwnProperty.call(payload, "publicationRevision") && !preconditions.revision(payload.publicationRevision)) {
+            throw new AdminEditorialApiError("INVALID_RESPONSE", "Revision editorial invalida.");
+        }
         return {
+            ...(Object.prototype.hasOwnProperty.call(payload, "publicationRevision") ? { publicationRevision: payload.publicationRevision } : {}),
             eventId: payload.eventId,
             eventStatus: payload.eventStatus,
             currentWorkingVersionId: payload.currentWorkingVersionId ?? null,
@@ -80,8 +87,28 @@
         };
     }
 
-    function errorForStatus(status, payload, response) {
+    function errorForStatus(status, payload, response, strict = false) {
+        const recognized = {
+            400: ["INVALID_REQUEST", "INVALID_EVENT_ID"],
+            428: ["PRECONDITION_REQUIRED"],
+            409: ["VERSION_CONFLICT", "INVALID_WORKFLOW", "EVENT_ARCHIVED"],
+            401: ["UNAUTHORIZED"], 403: ["ORIGIN_FORBIDDEN"],
+            404: ["EVENT_NOT_FOUND", "VERSION_NOT_FOUND", "VERSION_EVENT_MISMATCH"],
+            413: ["PAYLOAD_TOO_LARGE"], 415: ["UNSUPPORTED_MEDIA_TYPE"],
+            422: ["INVALID_EVENT"], 429: ["RATE_LIMITED"],
+            500: ["INTERNAL_ERROR", "SERVER_ERROR"], 503: ["RATE_LIMIT_UNAVAILABLE", "PREVIEW_NOT_CONFIGURED"]
+        };
+        if (strict && (!isPlainObject(payload) || !isPlainObject(payload.error)
+            || !Object.prototype.hasOwnProperty.call(payload.error, "code")
+            || !recognized[status]?.includes(payload.error.code)
+            || Object.prototype.hasOwnProperty.call(payload.error, "message")
+                && (typeof payload.error.message !== "string" || !payload.error.message.trim()))) {
+            // A status alone does not prove that the server rejected a mutation.
+            throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta editorial no verificable.");
+        }
         const messages = {
+            400: ["INVALID_REQUEST", "Precondiciones editoriales invalidas."],
+            428: ["PRECONDITION_REQUIRED", "Faltan precondiciones editoriales. Actualiza el estado."],
             401: ["UNAUTHORIZED", "Credencial administrativa invalida."],
             403: ["FORBIDDEN", "Acceso administrativo rechazado."],
             404: ["EVENT_NOT_FOUND", "Evento no encontrado."],
@@ -101,7 +128,8 @@
         const retryAfter = status === 429 && response?.headers?.get
             ? response.headers.get("Retry-After") || undefined
             : undefined;
-        return new AdminEditorialApiError(code, message, status, { retryAfter });
+        return new AdminEditorialApiError(code, message, status, { retryAfter,
+            rejectionConfirmed: strict && status >= 400 && status < 500 });
     }
 
     function createAdminEditorialClient({ fetchImpl = globalThis.fetch, editorialTimeoutMs = 30000 } = {}) {
@@ -128,13 +156,15 @@
                         let response;
                         try { response = await fetchImpl(url, { ...options, redirect: "error", signal: controller.signal }); }
                         catch { throw new AdminEditorialApiError("NETWORK_ERROR", "No se pudo completar la operacion editorial."); }
-                        if (!response || typeof response.ok !== "boolean" || !Number.isInteger(response.status)) {
+                        if (!response || typeof response.ok !== "boolean" || !Number.isInteger(response.status)
+                            || response.status < 100 || response.status > 599
+                            || response.ok !== (response.status >= 200 && response.status < 300)) {
                             throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
                         }
                         let payload;
                         try { payload = await response.json(); }
                         catch { throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida."); }
-                        if (!response.ok) throw errorForStatus(response.status, payload, response);
+                        if (!response.ok) throw errorForStatus(response.status, payload, response, options.method === "POST");
                         if (response.status !== 200 || !isPlainObject(payload) || !validate(payload)) {
                             throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
                         }
@@ -180,6 +210,7 @@
         }
 
         async function getVersion({ eventId, versionId, password } = {}) {
+            versionId = preconditions.normalizeVersionId(versionId);
             if (!eventId || !versionId) throw new AdminEditorialApiError("INVALID_REQUEST", "Debe indicar evento y version.");
             if (typeof password !== "string" || password === "") throw new AdminEditorialApiError("UNAUTHORIZED", "Credencial administrativa invalida.");
             let response;
@@ -195,8 +226,9 @@
                 throw new AdminEditorialApiError("NETWORK_ERROR", "No se pudo obtener el snapshot de la version.");
             }
             if (!response || typeof response.ok !== "boolean") throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta administrativa invalida.");
-            const payload = await parseJson(response);
-            if (!response.ok) throw errorForStatus(response.status, payload, response);
+            const raw = await parseJson(response);
+            if (!response.ok) throw errorForStatus(response.status, raw, response);
+            const payload = raw && { ...raw, versionId: preconditions.normalizeVersionId(raw.versionId) };
             if (!payload || payload.eventId !== eventId || payload.versionId !== versionId || !isPlainObject(payload.content)) {
                 throw new AdminEditorialApiError("INVALID_RESPONSE", "Respuesta de version invalida.");
             }
@@ -308,7 +340,7 @@
                         ...(body ? { body: JSON.stringify(body) } : {})
                     },
                     value => value.eventId === eventId && (pathSuffix === "publish"
-                        ? value.publishedVersionId === versionId
+                        ? preconditions.receipt(value, eventId, versionId, body)
                         : value.versionId === versionId && value.workflowStatus === body.targetStatus)
                 );
         }
@@ -324,8 +356,12 @@
             });
         }
 
-        function publishVersion({ eventId, versionId, password } = {}) {
-            return sendWorkflowRequest({ eventId, versionId, password, pathSuffix: "publish" });
+        async function publishVersion(options = {}) {
+            const { eventId, password } = options;
+            const body = preconditions.expectations(options);
+            const versionId = preconditions.canonicalUuid(options.versionId);
+            const result = await sendWorkflowRequest({ eventId, versionId, password, pathSuffix: "publish", body });
+            return { ...result, publishedVersionId: preconditions.canonicalUuid(result.publishedVersionId) };
         }
 
         return { getEditorialState, listEvents, getVersion, createEvent, createVersion, requestPreview, transitionWorkflow, publishVersion };
@@ -345,6 +381,9 @@
     }
 
     function createWorkingVersionRunner({ client, confirmCreation } = {}) {
+        // Creation does not modify published_version_id. Its existing SQL contract
+        // locks the event and compares expectedWorkingVersionId, independently of
+        // publicationRevision. It must not acquire a publication precondition.
         if (!client || typeof client.getVersion !== "function"
             || typeof client.getEditorialState !== "function"
             || typeof client.createVersion !== "function") {

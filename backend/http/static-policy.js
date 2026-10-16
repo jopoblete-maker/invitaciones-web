@@ -8,7 +8,7 @@ const path = require("path");
 const PUBLIC_FILES = new Set([
     "index.html", "admin.html", "catalogo.html", "invitacion.html",
     "js/main.js", "js/admin.js", "js/catalogo.js", "js/invitacion.js",
-    "js/core/admin-editorial-client.js", "js/core/admin-event-editor.js",
+    "js/core/editorial-preconditions.js", "js/core/admin-editorial-client.js", "js/core/admin-event-editor.js",
     "js/core/admin-editorial-workflow.js", "js/core/event-schema.js",
     "js/core/admin-event-summary.js", "js/core/admin-dashboard.js", "css/admin.css",
     "js/core/admin-event-detail.js",

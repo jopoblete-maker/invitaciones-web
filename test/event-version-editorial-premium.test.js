@@ -146,11 +146,12 @@ async function rejected(h, content, eventId = content.id, extra = {}) {
             reads.push({ eventId, versionId: requestedVersionId });
             return { eventId, versionId: requestedVersionId, content: stored };
         } };
-        const options = { eventId: stored.id, versionId };
+        const expected = { expectedPublishedVersionId: null, expectedPublicationRevision: "0", ...(method === "rollbackVersion" ? { expectedWorkingVersionId: null } : {}) };
+        const options = { eventId: stored.id, versionId, ...expected };
         const allowed = harness(cfg, undefined, reader);
         const result = await allowed.service[method](options);
         assert.deepEqual(result, { ok: true });
-        assert.deepEqual(reads, [options]);
+        assert.deepEqual(reads, [{ eventId: stored.id, versionId }]);
         assert.deepEqual(allowed.calls, [{ method, args: options }]);
         assert.equal(JSON.stringify(stored), storedBefore);
 
@@ -203,7 +204,7 @@ async function rejected(h, content, eventId = content.id, extra = {}) {
         }
 
         for (const standard of [civil, v1, { nombre: "Synthetic legacy" }]) {
-            const standardOptions = { eventId: standard.id || "synthetic-standard", versionId };
+            const standardOptions = { eventId: standard.id || "synthetic-standard", versionId, ...expected };
             const standardReader = { async getVersion() { return { ...standardOptions, content: standard }; } };
             const ordinaryPublish = harness(cfg, () => { throw new Error("Must not consult premium provider"); }, standardReader);
             const beforeStandard = JSON.stringify(standard);

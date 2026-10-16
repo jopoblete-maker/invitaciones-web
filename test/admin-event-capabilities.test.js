@@ -4,7 +4,7 @@ const Detail = require("../js/core/admin-event-detail");
 const Workflow = require("../js/core/admin-editorial-workflow");
 
 function input(id, template, premium = false) {
-    const state = { eventId: id, eventStatus: "active", currentWorkingVersionId: `${id}-v1`, publishedVersionId: null,
+    const state = { eventId: id, eventStatus: "active", publicationRevision: "0", currentWorkingVersionId: `${id}-v1`, publishedVersionId: null,
         versions: [{ versionId: `${id}-v1`, versionNumber: 1, workflowStatus: "draft" }] };
     return { state, summary: { title: id, source: "working", template }, action: Workflow.getAvailableAction(state),
         snapshotFacts: { eventId: id, versionId: `${id}-v1`, templateSlug: template, schemaVersion: 2, premium },

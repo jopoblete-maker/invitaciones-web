@@ -26,7 +26,7 @@ function createClient({ event = null, versions = [], version = null } = {}) {
                     return this;
                 },
                 maybeSingle() {
-                    const data = table === "eventos" ? event : version;
+                    const data = table === "admin_event_publication_state" ? event : version;
                     return Promise.resolve({ data, error: null });
                 },
                 then(resolve, reject) {

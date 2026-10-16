@@ -19,6 +19,7 @@ function state(status = "draft", overrides = {}) {
     return {
         eventId: EVENT_ID,
         eventStatus: "active",
+        publicationRevision: "0",
         publishedVersionId: HISTORICAL_ID,
         currentWorkingVersionId: WORKING_ID,
         versions: [
@@ -70,10 +71,10 @@ function clientHarness(initialState = state("draft")) {
         },
         async publishVersion(options) {
             calls.push(["publishVersion", options]);
-            currentState = state("approved", { currentWorkingVersionId: null, publishedVersionId: WORKING_ID,
+            currentState = state("approved", { currentWorkingVersionId: null, publishedVersionId: WORKING_ID, publicationRevision: "1",
                 versions: state("approved").versions.map(v => v.versionId === WORKING_ID
                     ? { ...v, publishedAt: "2030-01-01T00:00:00Z" } : v) });
-            return { eventId: EVENT_ID, publishedVersionId: WORKING_ID };
+            return { eventId: EVENT_ID, publishedVersionId: WORKING_ID, publicationRevision: "1" };
         }
     };
     return { client, calls, setState: (value) => { currentState = value; } };
@@ -174,6 +175,8 @@ function deferred() {
     assert.strictEqual(published.outcome, "success");
     assert.strictEqual(publication.calls.filter(([name]) => name === "publishVersion").length, 1);
     assert.deepStrictEqual(publication.calls[2], ["publishVersion", {
+        expectedPublishedVersionId: HISTORICAL_ID,
+        expectedPublicationRevision: "0",
         eventId: EVENT_ID,
         versionId: WORKING_ID,
         password: SECRET
@@ -218,6 +221,7 @@ function deferred() {
         const error = new Error("conflict");
         error.code = "VERSION_CONFLICT";
         error.status = 409;
+        error.rejectionConfirmed = true;
         throw error;
     };
     const conflictRunner = createActionRunner({ client: conflict.client, confirmPublication: () => null });
@@ -287,7 +291,7 @@ function deferred() {
         async transitionWorkflow() { throw new Error("unexpected transition"); },
         async publishVersion() {
             acceptedPublications += 1;
-            return { eventId: EVENT_ID, publishedVersionId: WORKING_ID };
+            return { eventId: EVENT_ID, publishedVersionId: WORKING_ID, publicationRevision: "1" };
         }
     };
     const publicationRefreshRunner = createActionRunner({

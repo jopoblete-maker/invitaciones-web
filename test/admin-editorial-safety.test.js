@@ -2,14 +2,14 @@
 const assert = require("node:assert/strict");
 const { createActionRunner, publicationPhrase } = require("../js/core/admin-editorial-workflow");
 const { createAdminEditorialClient } = require("../js/core/admin-editorial-client");
-const E = "synthetic-event", V = "synthetic-working", P = "synthetic-published";
-const state = (id = E, workflowStatus = "approved") => ({ eventId: id, eventStatus: "active", currentWorkingVersionId: V,
+const E = "synthetic-event", V = "22222222-2222-4222-8222-222222222222", P = "11111111-1111-4111-8111-111111111111";
+const state = (id = E, workflowStatus = "approved") => ({ eventId: id, eventStatus: "active", publicationRevision: "0", currentWorkingVersionId: V,
     publishedVersionId: P, versions: [{ versionId: P, versionNumber: 1, workflowStatus: "approved", publishedAt: "2026-01-01T00:00:00Z" },
         { versionId: V, versionNumber: 2, workflowStatus, publishedAt: null }] });
-const published = id => ({ ...state(id), currentWorkingVersionId: null, publishedVersionId: V,
+const published = id => ({ ...state(id), currentWorkingVersionId: null, publishedVersionId: V, publicationRevision: "1",
     versions: state(id).versions.map(v => ({ ...v, publishedAt: "2026-01-02T00:00:00Z" })) });
-const options = { eventId: E, versionId: V, password: "synthetic-only", requestedKind: "publish", expectedStatus: "approved" };
-const receipt = { eventId: E, publishedVersionId: V };
+const options = { expectedPublishedVersionId: P, expectedPublicationRevision: "0", eventId: E, versionId: V, password: "synthetic-only", requestedKind: "publish", expectedStatus: "approved" };
+const receipt = { eventId: E, publishedVersionId: V, publicationRevision: "1" };
 const response = (status, payload) => ({ status, ok: status >= 200 && status < 300, json: async () => payload });
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { resolve, promise }; };
 function harness() {
@@ -86,7 +86,7 @@ function harness() {
 
     const conflict = harness(); let failRecovery = true;
     conflict.client.publishVersion = async () => {
-        conflict.posts++; throw Object.assign(Error("Synthetic conflict"), { status: 409 });
+        conflict.posts++; throw Object.assign(Error("Synthetic conflict"), { status: 409, rejectionConfirmed: true });
     };
     const read = conflict.client.getEditorialState;
     conflict.client.getEditorialState = async () => {
@@ -97,7 +97,7 @@ function harness() {
     assert.equal((await conflictRunner.run(options)).outcome, "conflict-refresh-failed");
     assert.equal((await conflictRunner.run(options)).outcome, "refresh-required"); assert.equal(conflict.posts, 1);
     failRecovery = false; await conflictRunner.refresh(options); assert.equal(conflictRunner.requiresRefresh(E), false);
-    const auth = harness(); auth.client.publishVersion = async () => { auth.posts++; throw Object.assign(Error("Synthetic rejected"), { status: 401 }); };
+    const auth = harness(); auth.client.publishVersion = async () => { auth.posts++; throw Object.assign(Error("Synthetic rejected"), { status: 401, rejectionConfirmed: true }); };
     const authRunner = auth.make(); await assert.rejects(authRunner.run(options));
     assert.equal(auth.posts, 1); assert.equal(authRunner.requiresRefresh(E), false);
 

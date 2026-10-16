@@ -4,7 +4,7 @@ const fs = require("fs");
 const Detail = require("../js/core/admin-event-detail");
 const Summary = require("../js/core/admin-event-summary");
 const Workflow = require("../js/core/admin-editorial-workflow");
-const state = { eventId: "synthetic", eventStatus: "active", currentWorkingVersionId: "w", publishedVersionId: "p",
+const state = { eventId: "synthetic", eventStatus: "active", publicationRevision: "0", currentWorkingVersionId: "w", publishedVersionId: "p",
     versions: [{ versionId: "w", versionNumber: 3, workflowStatus: "draft", createdAt: "2028-01-01T12:00Z" },
         { versionId: "p", versionNumber: 2, workflowStatus: "approved", publishedAt: "2028-01-01T12:00Z" },
         { versionId: "h", versionNumber: 1, workflowStatus: "approved", publishedAt: "2027-01-01T12:00Z" }] };

@@ -139,8 +139,8 @@ async function expectCode(code, action) {
         expectedStatus: "in_review",
         targetStatus: "approved"
     });
-    await operations.service.publishVersion({ eventId: "event-one", versionId: VERSION_ID });
-    await operations.service.rollbackVersion({ eventId: "event-one", versionId: VERSION_ID });
+    await operations.service.publishVersion({ expectedPublishedVersionId: null, expectedPublicationRevision: "0", eventId: "event-one", versionId: VERSION_ID });
+    await operations.service.rollbackVersion({ expectedPublishedVersionId: null, expectedPublicationRevision: "0", expectedWorkingVersionId: null, eventId: "event-one", versionId: VERSION_ID });
     assert.deepStrictEqual(operations.calls.map((call) => call.method), [
         "transitionWorkflow",
         "transitionWorkflow",

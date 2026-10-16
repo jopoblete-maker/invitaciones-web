@@ -9,14 +9,15 @@
         inspectBudget: require("../../backend/premium/snapshot-budget").inspectSnapshotBudget,
         createPolicy: require("./external-link-policy").createPolicy
     } : null;
-    const service = factory(validator, privatePremium);
+    const service = factory(validator, privatePremium, typeof module === "object" && module.exports
+        ? require("./editorial-preconditions") : root.EditorialPreconditions);
 
     if (typeof module === "object" && module.exports) {
         module.exports = service;
     }
 
     root.EventVersionEditorialService = service;
-})(typeof globalThis !== "undefined" ? globalThis : this, function (validator, privatePremium) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (validator, privatePremium, preconditions) {
     function editorialError(code, message, details) {
         const error = new Error(message);
         error.code = code;
@@ -190,7 +191,7 @@
             }
             const version = await reader.getVersion(eventId, versionId);
             if (!version) throw editorialError("VERSION_NOT_FOUND", "Version not found.");
-            if (version.eventId !== eventId || version.versionId !== versionId) {
+            if (version.eventId !== eventId || preconditions.normalizeVersionId(version.versionId) !== versionId) {
                 throw editorialError("VERSION_EVENT_MISMATCH", "Version does not match the requested event and version.");
             }
             if (!isPlainObject(version.content)) throw editorialError("INVALID_EVENT", "Event content is invalid.");
@@ -207,11 +208,14 @@
         async function publishVersion(options = {}) {
             requireString(options.eventId, "eventId");
             requireString(options.versionId, "versionId");
-            const content = await readStoredContent(options.eventId, options.versionId);
-            validateStoredPremiumContent(options.eventId, content);
+            const expected = preconditions.expectations(options, false);
+            const eventId = options.eventId, versionId = preconditions.canonicalUuid(options.versionId);
+            const content = await readStoredContent(eventId, versionId);
+            validateStoredPremiumContent(eventId, content);
             return adapter.publishVersion({
-                eventId: options.eventId,
-                versionId: options.versionId,
+                eventId,
+                versionId,
+                ...expected,
                 ...(options.adminIdentity ? { adminIdentity: options.adminIdentity } : {}),
                 ...(options.origin ? { origin: options.origin } : {})
             });
@@ -220,11 +224,14 @@
         async function rollbackVersion(options = {}) {
             requireString(options.eventId, "eventId");
             requireString(options.versionId, "versionId");
-            const content = await readStoredContent(options.eventId, options.versionId);
-            validateStoredPremiumContent(options.eventId, content);
+            const expected = preconditions.expectations(options, true);
+            const eventId = options.eventId, versionId = preconditions.canonicalUuid(options.versionId);
+            const content = await readStoredContent(eventId, versionId);
+            validateStoredPremiumContent(eventId, content);
             return adapter.rollbackVersion({
-                eventId: options.eventId,
-                versionId: options.versionId
+                eventId,
+                versionId,
+                ...expected
             });
         }
 

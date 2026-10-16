@@ -46,7 +46,7 @@ function server(configurationText, rows, startupEnvironment = {}) {
             writes.push({ name, parameters });
             if (["publish_event_version_audited", "rollback_event_version"].includes(name)) {
                 return { data: [{ event_id: parameters.p_event_id,
-                    published_version_id: parameters.p_version_id }], error: null };
+                    published_version_id: parameters.p_version_id, publication_revision: "1" }], error: null };
             }
             return { data: [{ event_id: parameters.p_event_id,
                 version_id: "11111111-1111-4111-8111-111111111111", version_number: 1, workflow_status: "draft" }], error: null };
@@ -112,12 +112,12 @@ async function request(h, value, extra = {}, eventId = value.id) {
             const instance = server(config, rows), res = response();
             await instance.routes[route]({
                 headers: { origin: "http://localhost:3000", "x-admin-password": "synthetic-password" },
-                params: { eventId: value.id, versionId }, body: { versionId, manifest: cfg,
+                params: { eventId: value.id, versionId }, body: { versionId, expectedPublishedVersionId: null, expectedPublicationRevision: "0", expectedWorkingVersionId: null, manifest: cfg,
                     content: value, PREMIUM_AUTHORIZATION_CONFIG: text }
             }, res);
             assert.equal(res.statusCode, permitted ? 200 : 500);
             assert.equal(instance.writes.length, permitted ? 1 : 0);
-            if (permitted) assert.deepEqual(res.body, { eventId: value.id, publishedVersionId: versionId });
+            if (permitted) assert.deepEqual(res.body, { eventId: value.id, publishedVersionId: versionId, publicationRevision: "1" });
             else assert.equal(res.body.error.code, "INTERNAL_ERROR");
             assert(!JSON.stringify(res.body).includes("canonicalDigest"));
             assert(!JSON.stringify(instance.logs).includes(cfg.entries[0].manifest.canonicalDigest));

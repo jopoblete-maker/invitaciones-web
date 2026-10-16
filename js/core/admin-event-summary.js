@@ -43,7 +43,7 @@
         return summary.date > today;
     }
     function stateKey(state) {
-        return JSON.stringify([state.eventId, state.eventStatus, state.currentWorkingVersionId, state.publishedVersionId,
+        return JSON.stringify([state.eventId, state.eventStatus, state.publicationRevision, state.currentWorkingVersionId, state.publishedVersionId,
             (Array.isArray(state.versions) ? state.versions : []).map(v => [v.versionId, v.versionNumber, v.workflowStatus, v.publishedAt])]);
     }
     function describeSnapshot(state, version) {

@@ -14,6 +14,7 @@ const resources = [
     ["/css/templates/boda-fiesta-premium.css", "text/css"],
     ["/js/core/premium-section-renderers.js", "javascript"],
     ["/js/core/external-link-policy.js", "javascript"],
+    ["/js/core/editorial-preconditions.js", "javascript"],
     ...["portada-original.webp", "nuestra-boda-fotografia.webp", "cierre-puente.webp"].map(name => [prefix + name, "image/webp"]),
     ...["fiesta-decorativa.webp", "asistencia-decorativa.webp", "carpeta-decorativa.webp",
         "pareja-premium.webp", "cierre-decorativo-b17-e1.webp",

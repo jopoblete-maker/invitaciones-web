@@ -24,6 +24,7 @@ function response(status, payload, headers = {}) {
 const state = {
     eventId: EVENT_ID,
     eventStatus: "active",
+    publicationRevision: "0",
     currentWorkingVersionId: null,
     publishedVersionId: VERSION_ID,
     versions: [{
@@ -71,7 +72,7 @@ assert.throws(
         fetchImpl: async (url, options) => {
             mutationCalls.push({ url, options });
             return response(200, url.endsWith("/publish")
-                ? { eventId: EVENT_ID, publishedVersionId: VERSION_ID }
+                ? { eventId: EVENT_ID, publishedVersionId: VERSION_ID, publicationRevision: "1" }
                 : { eventId: EVENT_ID, versionId: VERSION_ID, workflowStatus: "in_review" });
         }
     });
@@ -82,7 +83,7 @@ assert.throws(
         targetStatus: "in_review",
         password: SECRET
     });
-    await mutationClient.publishVersion({ eventId: EVENT_ID, versionId: VERSION_ID, password: SECRET });
+    await mutationClient.publishVersion({ expectedPublishedVersionId: null, expectedPublicationRevision: "0", eventId: EVENT_ID, versionId: VERSION_ID, password: SECRET });
     assert.deepStrictEqual(mutationCalls, [{
         url: `/api/admin/eventos/${EVENT_ID}/versions/${VERSION_ID}/workflow`,
         options: {
@@ -100,7 +101,8 @@ assert.throws(
         options: {
             method: "POST",
             redirect: "error", signal: mutationCalls[1].options.signal,
-            headers: { Accept: "application/json", "X-Admin-Password": SECRET }
+            headers: { Accept: "application/json", "X-Admin-Password": SECRET, "Content-Type": "application/json" },
+            body: JSON.stringify({ expectedPublishedVersionId: null, expectedPublicationRevision: "0" })
         }
     }]);
     assert(mutationCalls.every((call) => !call.url.startsWith("/api/eventos")));
@@ -175,7 +177,7 @@ assert.throws(
             fetchImpl: async () => response(status, { error: { code: remoteCode } }, { "Retry-After": retryAfter })
         });
         await assert.rejects(
-            failingClient.publishVersion({ eventId: EVENT_ID, versionId: VERSION_ID, password: SECRET }),
+            failingClient.publishVersion({ expectedPublishedVersionId: null, expectedPublicationRevision: "0", eventId: EVENT_ID, versionId: VERSION_ID, password: SECRET }),
             (error) => error.code === remoteCode
                 && error.status === status
                 && (status !== 429 || error.retryAfter === "17")

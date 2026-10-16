@@ -38,7 +38,7 @@ function harness(client) {
     return { context, document, opened, login, read: (expression) => vm.runInContext(expression, context) };
 }
 const deferred = () => { let resolve; const promise = new Promise((done) => { resolve = done; }); return { promise, resolve }; };
-const summary = (id, working = `work-${id}`, published = `pub-${id}`) => ({ eventId: id, eventStatus: "active", currentWorkingVersionId: working, publishedVersionId: published,
+const summary = (id, working = `work-${id}`, published = `pub-${id}`) => ({ eventId: id, eventStatus: "active", publicationRevision: "0", currentWorkingVersionId: working, publishedVersionId: published,
     workingVersion: working ? { workflowStatus: "draft", versionNumber: 2 } : null, publishedVersion: published ? { workflowStatus: "published", versionNumber: 1 } : null });
 const content = (title) => ({ schema_version: 1, event: { title, type: "wedding", date: "2028-01-01" }, template: { slug: "boda-vertical" } });
 (async () => {
@@ -202,7 +202,7 @@ const content = (title) => ({ schema_version: 1, event: { title, type: "wedding"
     fresh = { ...fresh, eventStatus: "archived" };
     await h.context.loadEditorialState();
     assert.strictEqual(h.document.getElementById("editorialPreviewButton").disabled, true);
-    fresh = { ...fresh, eventStatus: "active", publishedVersionId: null };
+    fresh = { ...fresh, eventStatus: "active", publicationRevision: "0", publishedVersionId: null };
     await h.context.loadEditorialState();
     assert.strictEqual(h.document.getElementById("editorialPreviewButton").disabled, true);
     assert.strictEqual(h.document.getElementById("eventDetailSummary").children[0].textContent, "Sin título");
@@ -222,7 +222,7 @@ const content = (title) => ({ schema_version: 1, event: { title, type: "wedding"
     };
     const oldLoad = h.context.loadEditorialState();
     await began.promise;
-    fresh = { eventId: "second", eventStatus: "active", currentWorkingVersionId: null, publishedVersionId: "second-pub", versions: [] };
+    fresh = { eventId: "second", eventStatus: "active", publicationRevision: "0", currentWorkingVersionId: null, publishedVersionId: "second-pub", versions: [] };
     await h.context.manageDashboardEvent("second");
     await new Promise((resolve) => setImmediate(resolve));
     delayed.resolve({ eventId: "fresh", versionId: "missing", content: content("Late event") });
@@ -241,7 +241,7 @@ const content = (title) => ({ schema_version: 1, event: { title, type: "wedding"
     // A mutation with unknown outcome blocks this event across selection changes and failed recovery.
     const uncertainId = "synthetic-uncertain", otherId = "synthetic-other";
     let completed = false, recoveryFails = false, posts = 0;
-    const safeState = id => ({ eventId: id, eventStatus: "active", currentWorkingVersionId: completed && id === uncertainId ? null : `${id}-work`,
+    const safeState = id => ({ eventId: id, eventStatus: "active", publicationRevision: completed && id === uncertainId ? "1" : "0", currentWorkingVersionId: completed && id === uncertainId ? null : `${id}-work`,
         publishedVersionId: completed && id === uncertainId ? `${id}-work` : null,
         versions: [{ versionId: `${id}-work`, versionNumber: 1, workflowStatus: "approved",
             publishedAt: completed && id === uncertainId ? "2026-01-01T00:00:00Z" : null }] });

@@ -1,13 +1,16 @@
 (function (root, factory) {
-    const adapter = factory();
+    const adapter = factory(typeof module === "object" && module.exports
+        ? require("./editorial-preconditions") : root.EditorialPreconditions);
 
     if (typeof module === "object" && module.exports) {
         module.exports = adapter;
     }
 
     root.EventVersionRpcAdapter = adapter;
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (preconditions) {
     const ERROR_MESSAGES = Object.freeze({
+        PRECONDITION_REQUIRED: "Explicit editorial preconditions are required.",
+        INVALID_REQUEST: "Invalid editorial preconditions.",
         EVENT_NOT_FOUND: "Event not found.",
         EVENT_ALREADY_EXISTS: "Event already exists.",
         INVALID_EVENT_ID: "Event id is invalid.",
@@ -139,26 +142,29 @@
             }));
         }
 
-        function publishVersion({ eventId, versionId, adminIdentity, ip, origin }) {
-            return execute("publish_event_version_audited", {
+        function pointerMutation(options = {}, rollback) {
+            const { eventId, adminIdentity, ip, origin } = options;
+            const expected = preconditions.expectations(options, rollback);
+            const versionId = preconditions.canonicalUuid(options.versionId);
+            return execute(rollback ? "rollback_event_version" : "publish_event_version_audited", {
                 p_event_id: eventId,
                 p_version_id: versionId,
-                ...auditContext({ adminIdentity, ip, origin }, "PUBLISH_VERSION")
-            }, (row) => ({
-                eventId: row.event_id,
-                publishedVersionId: row.published_version_id
-            }));
+                p_expected_published_version_id: expected.expectedPublishedVersionId,
+                p_expected_publication_revision: expected.expectedPublicationRevision,
+                ...(rollback ? { p_expected_working_version_id: expected.expectedWorkingVersionId }
+                    : auditContext({ adminIdentity, ip, origin }, "PUBLISH_VERSION"))
+            }, row => {
+                const result = { eventId: row.event_id, publishedVersionId: preconditions.normalizeVersionId(row.published_version_id),
+                    publicationRevision: row.publication_revision };
+                if (!preconditions.receipt(result, eventId, versionId, expected)) {
+                    throw new EventVersionRpcError("Invalid editorial receipt.");
+                }
+                return result;
+            });
         }
 
-        function rollbackVersion({ eventId, versionId }) {
-            return execute("rollback_event_version", {
-                p_event_id: eventId,
-                p_version_id: versionId
-            }, (row) => ({
-                eventId: row.event_id,
-                publishedVersionId: row.published_version_id
-            }));
-        }
+        function publishVersion(options) { return pointerMutation(options, false); }
+        function rollbackVersion(options) { return pointerMutation(options, true); }
 
         function transitionWorkflow({
             eventId,
