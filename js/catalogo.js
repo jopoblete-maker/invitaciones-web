@@ -15,6 +15,8 @@
         image.alt = entry.thumbnail.alt;
         image.width = 720;
         image.height = 1280;
+        image.loading = "lazy";
+        image.decoding = "async";
 
         const body = element("div", "catalog-card__body");
         const category = element("p", "catalog-card__category", entry.categoryLabel);
@@ -29,6 +31,10 @@
                 body.append(link);
             }
         }
+        if (!previewAvailable) {
+            body.append(element("p", "catalog-preview-state", "Vista interactiva no disponible. La imagen muestra el diseño de referencia."));
+        }
+        body.append(CommercialUI.createRequestActions(document, CommercialContact.templateRequest(entry.slug, TemplateRegistry)));
         article.append(image, body);
         return article;
     }

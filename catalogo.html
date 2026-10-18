@@ -1,51 +1,47 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catálogo de invitaciones | YCOR Digital</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <meta name="description" content="Explorá las plantillas de YCOR y solicitá tu invitación digital personalizada por WhatsApp. Nuestro equipo se ocupa del diseño y la publicación.">
     <link rel="stylesheet" href="/css/catalogo.css">
+    <link rel="stylesheet" href="/css/comercial.css">
 </head>
-
-<body>
-    <header class="catalog-header">
-        <div class="catalog-header__inner">
-            <p class="catalog-brand">YCOR Digital</p>
-            <h1>Catálogo de invitaciones</h1>
-        </div>
+<body class="commercial-page">
+    <a class="skip-link" href="#contenido">Ir al contenido</a>
+    <header class="commercial-wrap commercial-nav">
+        <a class="commercial-brand" href="/" aria-label="YCOR, inicio">YCOR<span>Invitaciones digitales</span></a>
+        <nav aria-label="Navegación principal"><a href="/">Inicio</a><a href="/catalogo.html" aria-current="page">Catálogo</a><a href="#contacto">Contacto</a></nav>
     </header>
-
-    <main class="catalog-main">
+    <main class="catalog-main" id="contenido">
+        <div class="catalog-intro">
+            <p class="commercial-eyebrow">Un diseño para cada historia</p>
+            <h1>Elegí cómo empieza tu celebración.</h1>
+            <p>Explorá el diseño, elegí una plantilla y contanos sobre tu evento. El equipo YCOR se ocupa de crear, personalizar y publicar tu invitación.</p>
+        </div>
+        <p id="catalogSelection" class="catalog-selection" role="status" aria-live="polite"></p>
         <div id="catalogGrid" class="catalog-grid" aria-live="polite"></div>
         <p id="catalogStatus" class="catalog-status" role="status">Cargando diseños...</p>
-
         <section class="catalog-offers" aria-labelledby="catalogOffersTitle">
-            <div class="catalog-offers__heading">
-                <p class="catalog-offers__eyebrow">Alcances</p>
-                <h2 id="catalogOffersTitle">Una propuesta para cada evento</h2>
-                <p>Cada propuesta se define según el evento.</p>
-            </div>
+            <div class="catalog-offers__heading"><p class="catalog-offers__eyebrow">Alcances</p><h2 id="catalogOffersTitle">Una propuesta para cada evento</h2><p>Cada propuesta se define según el evento.</p></div>
             <div class="catalog-offers__options">
-                <article class="catalog-offer">
-                    <h3>Esencial</h3>
-                    <p>Adaptación de una plantilla existente con datos, imágenes y colores del cliente; funciones compatibles con la plantilla.</p>
-                </article>
-                <article class="catalog-offer">
-                    <h3>Premium</h3>
-                    <p>Mayor personalización visual y recursos gráficos preparados para el cliente, usando el motor existente.</p>
-                </article>
+                <article class="catalog-offer"><h3>Esencial</h3><p>Adaptación de una plantilla existente con datos, imágenes y colores del cliente; funciones compatibles con la plantilla.</p></article>
+                <article class="catalog-offer"><h3>Premium</h3><p>Mayor personalización visual y recursos gráficos preparados para el cliente, usando el motor existente.</p></article>
             </div>
         </section>
+        <section class="commercial-contact" id="contacto" aria-labelledby="contact-title">
+            <div><p class="commercial-eyebrow">Estamos para acompañarte</p><h2 id="contact-title">¿Necesitás ayuda para elegir?</h2><p>Elegís tu plantilla, nos enviás los datos y el equipo YCOR crea y personaliza tu invitación.</p></div>
+            <div data-commercial-general></div>
+        </section>
+        <noscript><p>Activá JavaScript para ver las plantillas y preparar tu consulta.</p></noscript>
     </main>
-
+    <footer class="commercial-wrap commercial-footer"><p>YCOR · Diseño y publicación a cargo de nuestro equipo.</p><p><a href="/">Volver al inicio</a></p></footer>
     <script src="/js/core/template-registry.js" defer></script>
     <script src="/js/core/theme-registry.js" defer></script>
     <script src="/js/core/template-catalog.js" defer></script>
+    <script src="/js/core/commercial-contact.js" defer></script>
+    <script src="/js/comercial.js" defer></script>
     <script src="/js/catalogo.js" defer></script>
 </body>
-
 </html>
