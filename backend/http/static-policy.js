@@ -7,6 +7,7 @@ const path = require("path");
 // and existing legacy data. Never expose whole source or asset directories.
 const PUBLIC_FILES = new Set([
     "index.html", "admin.html", "catalogo.html", "invitacion.html",
+    "invitacion-legacy.html", "js/core/commercial-contact.js", "js/comercial.js", "css/comercial.css",
     "js/main.js", "js/admin.js", "js/catalogo.js", "js/invitacion.js",
     "js/core/admin-editorial-client.js", "js/core/admin-event-editor.js",
     "js/core/admin-editorial-workflow.js", "js/core/event-schema.js",
