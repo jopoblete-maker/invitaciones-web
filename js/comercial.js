@@ -14,7 +14,7 @@
     }
     function createRequestActions(document, request) {
         const root = element(document, "div", "commercial-actions");
-        const link = element(document, "a", "commercial-button", request.templateSlug ? "Solicitar esta plantilla" : "Consultar por WhatsApp");
+        const link = element(document, "a", "commercial-button", request.actionLabel || (request.templateSlug ? "Solicitar esta plantilla" : "Consultar por WhatsApp"));
         link.href = request.href; link.target = "_blank"; link.rel = "noopener noreferrer";
         const status = element(document, "p", "commercial-copy-status");
         status.setAttribute("role", "status");
