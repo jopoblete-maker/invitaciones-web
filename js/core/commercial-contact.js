@@ -25,5 +25,15 @@
         const label = `${name} · ${catalog.variant.name}`;
         return request(`Hola, equipo YCOR. Quiero solicitar una invitación digital utilizando la plantilla ${name}, variante ${catalog.variant.name}, para mi evento. Me gustaría conocer cómo continuar. Referencia: ${template.slug}.`, label, template.slug);
     }
-    return Object.freeze({ CONTACT, generalRequest, templateRequest });
+    function sampleRequest(id, manifest) {
+        const sample = typeof id === "string" ? manifest?.getSample?.(id) : null;
+        if (!sample || sample.id !== id || id !== "muestra-" + sample.number
+            || !/^(0[1-9]|10|12|13|14|17|18|19|20|21|22|23|24|25)$/.test(sample.number)
+            || typeof sample.name !== "string" || !sample.name.trim()) throw new TypeError("Muestra no disponible.");
+        const label = "Invitación " + sample.number + " — " + sample.name;
+        return Object.freeze({ ...request("Hola, equipo YCOR. Quiero solicitar la invitación " + sample.number + " — " + sample.name
+            + ". Referencia: " + sample.id + ". Me gustaría conocer cómo continuar.", label),
+            sampleId: sample.id, actionLabel: "Solicitar esta invitación" });
+    }
+    return Object.freeze({ CONTACT, generalRequest, templateRequest, sampleRequest });
 });

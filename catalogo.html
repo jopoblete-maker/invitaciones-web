@@ -17,12 +17,26 @@
     <main class="catalog-main" id="contenido">
         <div class="catalog-intro">
             <p class="commercial-eyebrow">Un diseño para cada historia</p>
-            <h1>Elegí cómo empieza tu celebración.</h1>
-            <p>Explorá el diseño, elegí una plantilla y contanos sobre tu evento. El equipo YCOR se ocupa de crear, personalizar y publicar tu invitación.</p>
+            <h1>Elegí el diseño de tu próxima celebración</h1>
+            <p>Explorá nuestras propuestas y elegí tu favorita. En YCOR personalizamos y creamos tu invitación digital con las funciones que necesites</p>
         </div>
         <p id="catalogSelection" class="catalog-selection" role="status" aria-live="polite"></p>
+        <section class="catalog-samples" aria-labelledby="samplesTitle">
+            <div class="catalog-samples-intro">
+                <h2 id="samplesTitle">22 ideas para tu próximo momento</h2>
+                <p>Elegí una categoría, ampliá el diseño y encontrá tu favorito. Cada imagen es una muestra visual: sus botones y elementos ilustrados no son interactivos.</p>
+                <p>YCOR personaliza, programa y publica tu invitación después de acordar el servicio con vos.</p>
+            </div>
+            <div id="sampleFilters" class="catalog-filters" role="group" aria-label="Filtrar muestras por categoría"></div>
+            <p id="sampleStatus" class="catalog-sample-status" role="status" aria-live="polite">Cargando muestras…</p>
+            <div id="sampleGroups"></div>
+        </section>
+        <section class="catalog-existing" aria-labelledby="existingTitle">
+            <h2 id="existingTitle">Otros diseños y demos disponibles</h2>
+            <p>Estos tres diseños pertenecen al catálogo anterior. Las vistas interactivas se ofrecen únicamente cuando están disponibles.</p>
         <div id="catalogGrid" class="catalog-grid" aria-live="polite"></div>
         <p id="catalogStatus" class="catalog-status" role="status">Cargando diseños...</p>
+        </section>
         <section class="catalog-offers" aria-labelledby="catalogOffersTitle">
             <div class="catalog-offers__heading"><p class="catalog-offers__eyebrow">Alcances</p><h2 id="catalogOffersTitle">Una propuesta para cada evento</h2><p>Cada propuesta se define según el evento.</p></div>
             <div class="catalog-offers__options">
@@ -36,9 +50,25 @@
         </section>
         <noscript><p>Activá JavaScript para ver las plantillas y preparar tu consulta.</p></noscript>
     </main>
+    <dialog id="sampleViewer" class="catalog-viewer" aria-labelledby="sampleViewerTitle" aria-describedby="sampleViewerHelp">
+        <div class="catalog-viewer-header">
+            <h2 id="sampleViewerTitle">Muestra visual</h2>
+            <button type="button" class="catalog-viewer-close" data-viewer-close autofocus>Cerrar</button>
+        </div>
+        <div class="catalog-viewer-toolbar">
+            <button type="button" id="sampleViewerZoom" class="catalog-viewer-zoom" aria-pressed="false" aria-controls="sampleViewerScroll">Ver a tamaño original</button>
+            <p id="sampleViewerHelp">Referencia visual sin controles internos. Podés ampliar para leer los detalles y desplazarte por la imagen.</p>
+        </div>
+        <div id="sampleViewerScroll" class="catalog-viewer-scroll" tabindex="0" role="region" aria-label="Imagen de la muestra, desplazable"><img id="sampleViewerImage" alt=""></div>
+        <div class="catalog-viewer-footer">
+            <p id="sampleViewerStatus" class="catalog-viewer-status" role="status"></p>
+            <div id="sampleViewerActions"></div>
+        </div>
+    </dialog>
     <footer class="commercial-wrap commercial-footer"><p>YCOR · Diseño y publicación a cargo de nuestro equipo.</p><p><a href="/">Volver al inicio</a></p></footer>
     <script src="/js/core/template-registry.js" defer></script>
     <script src="/js/core/theme-registry.js" defer></script>
+    <script src="/js/core/catalog-samples.js" defer></script>
     <script src="/js/core/template-catalog.js" defer></script>
     <script src="/js/core/commercial-contact.js" defer></script>
     <script src="/js/comercial.js" defer></script>
