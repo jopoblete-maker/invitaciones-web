@@ -1,0 +1,182 @@
+{
+  "schema_version": 2,
+  "id": "angel-eli-boda",
+  "event_type": "wedding",
+  "plan": "premium",
+  "status": "ready_for_preview",
+  "template": {
+    "slug": "boda-fiesta-premium",
+    "variant": "angel-eli-local-v1"
+  },
+  "identity": {
+    "title": "Synthetic Pair",
+    "subtitle": "Synthetic wedding",
+    "message": "Synthetic story only."
+  },
+  "schedule": {
+    "date": "2035-06-15",
+    "time": "17:00",
+    "timezone": "America/Argentina/Buenos_Aires",
+    "date_text": "Synthetic date",
+    "time_text": "17:00"
+  },
+  "location": {
+    "name": "Synthetic venue",
+    "address": "Synthetic public location",
+    "maps_url": "https://maps.example.test/synthetic"
+  },
+  "sections": [
+    {
+      "id": "portada",
+      "type": "hero",
+      "enabled": true,
+      "order": 10,
+      "data": {
+        "title": "Synthetic Pair"
+      }
+    },
+    {
+      "id": "nuestra-historia",
+      "type": "media-closing",
+      "enabled": true,
+      "order": 20,
+      "data": {
+        "media_id": "nuestra-historia",
+        "alt": "Synthetic illustration"
+      }
+    },
+    {
+      "id": "fotografia-pareja",
+      "type": "media-closing",
+      "enabled": true,
+      "order": 30,
+      "data": {
+        "media_id": "fotografia-pareja",
+        "alt": "Synthetic illustration"
+      }
+    },
+    {
+      "id": "fiesta",
+      "type": "event-info",
+      "enabled": true,
+      "order": 40,
+      "data": {}
+    },
+    {
+      "id": "confirmacion",
+      "type": "rsvp",
+      "enabled": true,
+      "order": 50,
+      "data": {}
+    },
+    {
+      "id": "vestimenta",
+      "type": "dress-code",
+      "enabled": true,
+      "order": 60,
+      "data": {
+        "title": "Synthetic dress code",
+        "description": "Synthetic clothes"
+      }
+    },
+    {
+      "id": "regalos",
+      "type": "gifts",
+      "enabled": true,
+      "order": 70,
+      "data": {
+        "title": "Synthetic gift",
+        "message": "Synthetic holder",
+        "cbu": "1111111111111111111111"
+      },
+      "config": {
+        "allow_copy": true
+      }
+    },
+    {
+      "id": "carpeta-compartida",
+      "type": "media-closing",
+      "enabled": true,
+      "order": 80,
+      "data": {
+        "media_id": "carpeta-compartida",
+        "alt": "Synthetic illustration"
+      }
+    },
+    {
+      "id": "cierre",
+      "type": "media-closing",
+      "enabled": true,
+      "order": 90,
+      "data": {
+        "media_id": "cierre",
+        "alt": "Synthetic illustration"
+      }
+    }
+  ],
+  "modules": {
+    "music": {
+      "enabled": true,
+      "playMode": "selector",
+      "tracks": [
+        {
+          "media_id": "musica",
+          "name": "Synthetic audio"
+        }
+      ]
+    },
+    "rsvp": {
+      "enabled": true,
+      "mode": "whatsapp",
+      "contacts": [
+        {
+          "phone": "5491100000000"
+        }
+      ]
+    }
+  },
+  "media": {
+    "items": {
+      "portada": {
+        "type": "video",
+        "src": "/assets/events/angel-eli/portada.mp4"
+      },
+      "nuestra-historia": {
+        "type": "image",
+        "src": "/assets/events/angel-eli/historia.png"
+      },
+      "fotografia-pareja": {
+        "type": "image",
+        "src": "/assets/events/angel-eli/pareja.png"
+      },
+      "fiesta": {
+        "type": "image",
+        "src": "/assets/events/angel-eli/fiesta.png"
+      },
+      "confirmacion": {
+        "type": "image",
+        "src": "/assets/events/angel-eli/confirmacion.png"
+      },
+      "vestimenta": {
+        "type": "image",
+        "src": "/assets/events/angel-eli/vestimenta.png"
+      },
+      "regalos": {
+        "type": "image",
+        "src": "/assets/events/angel-eli/regalos.png"
+      },
+      "carpeta-compartida": {
+        "type": "image",
+        "src": "/assets/events/angel-eli/carpeta.png"
+      },
+      "cierre": {
+        "type": "image",
+        "src": "/assets/events/angel-eli/cierre.png"
+      },
+      "musica": {
+        "type": "audio",
+        "src": "/assets/events/angel-eli/musica.mp3"
+      }
+    }
+  }
+}

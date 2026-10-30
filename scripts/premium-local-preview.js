@@ -11,13 +11,14 @@ const { createPolicy } = require("../js/core/external-link-policy");
 const EVENT_ID = "kaly-joha-boda-fiesta-demo";
 const CANDIDATE_EVENT_ID = "kaly-joha-nuestra-boda";
 const TEMPLATE_SLUG = "boda-fiesta-premium";
+const localProfile = require("./angel-eli-preview-profile");
 
 // Private Node composition. configuration comes from a fixed local file, never
 // an HTTP request. This demo approves dress-code, explicit gifts and the exact album destination: other capabilities
 // remain inert until their materials and exact destinations receive approval.
 function preparePremiumLocalPreview(content, configuration, { eventId = EVENT_ID } = {}) {
     try {
-        if (![EVENT_ID, CANDIDATE_EVENT_ID].includes(eventId)) return { accepted: false };
+        if (![EVENT_ID, CANDIDATE_EVENT_ID, localProfile.ID].includes(eventId)) return { accepted: false };
         inspectSnapshotBudget(content);
         inspectSnapshotBudget(configuration);
         const privateCopy = JSON.parse(canonicalSerialize(configuration));
@@ -32,6 +33,7 @@ function preparePremiumLocalPreview(content, configuration, { eventId = EVENT_ID
             }
         });
         const result = boundary.validateForWrite({ eventId, content });
+        if (eventId === localProfile.ID && (!result.accepted || !localProfile.matchesProfile(result.content))) return { accepted: false };
         if (!result.accepted || result.content.template.slug !== TEMPLATE_SLUG
             || (eventId === EVENT_ID && (result.content.metadata?.demo !== true
                 || result.content.metadata?.purpose !== "local-only-preview"))
@@ -57,7 +59,8 @@ function preparePremiumLocalPreview(content, configuration, { eventId = EVENT_ID
         const albumSections = premium.filter(section => section.type === "collaborative-album").map(section => section.id);
         const gallerySections = Object.fromEntries(premium.filter(section => section.type === "gallery")
             .map(section => [section.id, section.data.items.map(item => item.media_id)]));
-        return { accepted: true, content: result.content, presentation: { giftFields, albumSections, gallerySections } };
+        return { accepted: true, content: result.content, presentation: { giftFields, albumSections, gallerySections,
+            ...(eventId === localProfile.ID ? { eventProfile: localProfile.PROFILE } : {}) } };
     } catch (_) {
         return { accepted: false };
     }

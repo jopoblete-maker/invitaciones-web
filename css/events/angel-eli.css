@@ -1,0 +1,100 @@
+/* Scoped artwork layout. No shared client stylesheet is changed. */
+body:has(.angel-eli-local) { background: #eeebdd; color: #344028; }
+.angel-eli-local.template-boda-fiesta-premium { width: min(100%, 540px); padding: 0 0 88px; }
+.angel-eli-local.template-boda-fiesta-premium .wedding-section {
+    display: block; min-height: 0; margin: 0 0 18px; padding: 0; border: 0;
+    border-radius: 0; background: #f9f4e8; box-shadow: 0 6px 30px #35412b18;
+    overflow: visible; scroll-margin-top: 48px;
+}
+.angel-eli-local .wedding-section::before,
+.angel-eli-local .wedding-section::after { display: none; }
+.angel-eli-local .ae-artwork { position: relative; width: 100%; container-type: inline-size; }
+.angel-eli-local .ae-artwork img,
+.angel-eli-local .ae-artwork video { display: block; width: 100%; height: auto; aspect-ratio: auto; object-fit: contain; border-radius: 0; }
+.angel-eli-local .ae-artwork video { background: #38432d; }
+.angel-eli-local .ae-artwork video::-webkit-media-controls,
+.angel-eli-local .ae-artwork video::-webkit-media-controls-start-playback-button { display: none !important; }
+html.ae-cover-locked { overflow: hidden !important; overscroll-behavior: none; }
+body.ae-cover-locked { position: fixed; inset: 0; width: 100%; overflow: hidden !important; overscroll-behavior: none; }
+.angel-eli-local .ae-cover-fallback:not([hidden]) {
+    position: fixed; z-index: 40; bottom: 80px; left: 50%; transform: translateX(-50%);
+    width: min(90vw, 460px); box-sizing: border-box; padding: 16px;
+    background: #fffaf0; color: #344028; border: 1px solid #a49159; border-radius: 12px;
+}
+.angel-eli-local .ae-cover-fallback p { margin: 0 0 12px; color: inherit; }
+.angel-eli-local .ae-cover-fallback button { min-height: 44px; padding: 10px 16px; background: #3e4931; color: #fffaf0; border: 0; border-radius: 8px; }
+.angel-eli-local .ae-cover-fallback button:focus-visible { outline: 3px solid #183b71; outline-offset: 3px; }
+.angel-eli-local .ae-artwork-action {
+    position: absolute; z-index: 2; display: flex; align-items: center; justify-content: center; gap: 3cqw; left: 25%; width: 50%;
+    top: 81.4%; height: 7.3%; min-height: 44px; padding: 0; margin: 0;
+    box-sizing: border-box; border: 3px double #e7bf70; border-radius: 100px;
+    background: linear-gradient(120deg, #687343, #344028); box-shadow: inset 0 0 0 2px #fff3cd80, 0 2px 5px #4c361e55;
+    color: #fff8e6; font: 4.6cqw/1 Georgia, serif; text-decoration: none; cursor: pointer;
+}
+.angel-eli-local .ae-artwork-action svg { width: 6cqw; height: 6cqw; flex-shrink: 0; fill: none; stroke: #f7dda0; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.angel-eli-local .ae-artwork-action > span:not(.ae-action-arrow) { border-left: 1px solid #e7bf70; padding-left: 3cqw; white-space: nowrap; }
+.angel-eli-local .ae-artwork-action .ae-action-arrow { color: #e7bf70; font: 8cqw/0.5 Georgia, serif; }
+.angel-eli-local .ae-artwork-action:hover { background: linear-gradient(120deg, #778452, #344028); transform: none; }
+.angel-eli-local .ae-artwork-action:focus-visible { outline: 4px solid #183b71; outline-offset: 3px; }
+.angel-eli-local [data-event-section="confirmacion"] .ae-artwork-action { left: 21%; width: 58%; top: 75.1%; height: 7.5%; }
+.angel-eli-local [data-event-section="regalos"] .ae-artwork-action { left: 22%; width: 56%; top: 79.5%; height: 7.4%; }
+.angel-eli-local [data-event-section="carpeta-compartida"] .ae-artwork-action { left: 24%; width: 52%; top: 77.8%; }
+.angel-eli-local .ae-artwork-action:disabled { opacity: 0.8; cursor: not-allowed; }
+.angel-eli-local .ae-text-layer { position: absolute; inset: 0; pointer-events: none; color: #344028; }
+.angel-eli-local .ae-copy {
+    position: absolute; left: 10%; width: 80%; margin: 0; padding: 0; color: inherit;
+    font: 5cqw/1.15 Georgia, 'Times New Roman', serif; text-align: center; white-space: pre-line;
+}
+.angel-eli-local .ae-copy--title,
+.angel-eli-local .ae-copy--white,
+.angel-eli-local .ae-copy--greeting,
+.angel-eli-local .ae-copy--angel,
+.angel-eli-local .ae-copy--and,
+.angel-eli-local .ae-copy--eli { font-family: 'Great Vibes', 'Pinyon Script', cursive; font-weight: 400; line-height: 1.15; }
+.angel-eli-local .ae-copy--title { top: 43.5%; font-size: 21cqw; color: #976319; text-shadow: 0 1px #f1d497; }
+.angel-eli-local [data-event-section="fiesta"] .ae-copy--title { top: 35.5%; font-size: 23cqw; }
+.angel-eli-local .ae-copy--address { top: 50.7%; font-family: 'Cinzel', Georgia, serif; font-size: 7.5cqw; font-weight: 700; letter-spacing: -0.3cqw; text-transform: uppercase; }
+.angel-eli-local .ae-copy--city { top: 61.7%; font-size: 4.7cqw; }
+.angel-eli-local .ae-copy--time { top: 73%; font-size: 4.5cqw; }
+.angel-eli-local [data-event-section="confirmacion"] .ae-copy--message { top: 59.8%; font-size: 6.2cqw; }
+.angel-eli-local [data-event-section="regalos"] .ae-copy--message { top: 60.1%; font-size: 5cqw; }
+.angel-eli-local [data-event-section="carpeta-compartida"] .ae-copy--title { top: 36%; font-size: 18cqw; line-height: 0.95; }
+.angel-eli-local [data-event-section="carpeta-compartida"] .ae-copy--message { top: 57.5%; font-size: 4.1cqw; }
+.angel-eli-local [data-event-section="vestimenta"] .ae-text-layer,
+.angel-eli-local [data-event-section="cierre"] .ae-text-layer { color: #fff3cd; }
+.angel-eli-local .ae-copy--kicker { top: 18%; font-size: 4.7cqw; letter-spacing: 0.15cqw; }
+.angel-eli-local [data-event-section="vestimenta"] .ae-copy--title { top: 22.7%; color: #fff0c6; font-size: 20cqw; }
+.angel-eli-local [data-event-section="vestimenta"] .ae-copy--message { top: 41%; font-size: 3.8cqw; }
+.angel-eli-local .ae-copy--dress { top: 53.3%; font-size: 4.2cqw; color: #344028; }
+.angel-eli-local .ae-copy--color { top: 66.5%; left: 54%; width: 20%; font-size: 3.6cqw; }
+.angel-eli-local .ae-copy--white { top: 69.4%; left: 47%; width: 31%; font-size: 9cqw; }
+.angel-eli-local .ae-copy--reserved { top: 76.7%; left: 49%; width: 29%; font-size: 3.6cqw; }
+.angel-eli-local .ae-copy--greeting { top: 20.5%; font-size: 10.5cqw; }
+.angel-eli-local .ae-copy--angel { top: 32%; font-size: 20cqw; line-height: 1.2; }
+.angel-eli-local .ae-copy--and { top: 49.5%; left: 10%; width: 80%; font-size: 5.5cqw; line-height: 1.4; }
+.angel-eli-local .ae-copy--eli { top: 55.5%; font-size: 20cqw; line-height: 1.2; }
+.angel-eli-local .ae-word { display: inline-block; }
+.angel-eli-local .ae-pending-note { color: #344028; background: #faf6e8; margin: 0; padding: 12px 24px; font-size: 14px; }
+.angel-eli-local .ae-section-nav {
+    position: sticky; top: 0; z-index: 10; display: flex; justify-content: center; gap: 2px;
+    padding: 4px; background: #f9f4e8f5; border-bottom: 1px solid #a49159;
+}
+.angel-eli-local .ae-section-nav a { display: grid; place-items: center; min-width: 30px; min-height: 40px; color: #344028; text-decoration: none; }
+.angel-eli-local .ae-section-nav a:focus-visible { outline: 3px solid #183b71; }
+.angel-eli-local .ae-sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+body:has(.angel-eli-local) #audioWidget { position: fixed; z-index: 30; bottom: 16px !important; right: 16px !important; left: auto !important; top: auto !important; }
+body:has(.angel-eli-local) #btnMusic { background: #3e4931; color: #fff7e6; border: 1px solid #d0ba79; min-height: 48px; }
+.angel-eli-local .demo-gift-dialog { color: #344028; background: #fffaf0; border: 1px solid #a49159; border-radius: 16px; width: min(90vw, 420px); padding: 24px; max-height: 85dvh; overflow-y: auto; }
+.angel-eli-local .demo-gift-dialog::backdrop { background: #17201299; }
+.angel-eli-local .demo-gift-dialog p { color: #344028; }
+.angel-eli-local .demo-gift-dialog h3 { font-family: Georgia, serif; }
+.angel-eli-local .demo-gift-dialog dd { margin: 8px 0 16px; overflow-wrap: anywhere; }
+.angel-eli-local .demo-gift-dialog button { color: #fffaf0; background: #3e4931; border: 1px solid #a49159; border-radius: 8px; padding: 10px 14px; min-height: 44px; margin: 8px 0; }
+@media (prefers-reduced-motion: reduce) {
+    .angel-eli-local *, body:has(.angel-eli-local) #audioWidget * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+    .angel-eli-local .ae-text-layer,
+    .angel-eli-local .ae-word { opacity: 1 !important; }
+}

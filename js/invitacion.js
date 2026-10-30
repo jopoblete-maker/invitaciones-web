@@ -60,12 +60,20 @@ async function initInvitation() {
             throw new Error("Invitación premium no disponible.");
         }
         if (templateConfig.slug === "boda-fiesta-premium") await loadLocalPremiumRenderers();
+        const eventArtwork = source.mode === "local-premium" && source.eventId === "angel-eli-boda";
+        if (eventArtwork) {
+            if (data.id !== source.eventId || premiumPresentation?.eventProfile !== "angel-eli-local-v1")
+                throw new Error("Local presentation unavailable.");
+            await loadAngelEliPresentation();
+            if (!AngelEliPresentation.isAuthorizedContext(source, data, premiumPresentation, window.location.hostname))
+                throw new Error("Local presentation unavailable.");
+        }
         const themeName = inferTheme(event, source.eventId, templateConfig);
 
         applyTemplateConfig(templateConfig);
         await loadTemplateStylesheet(templateConfig);
         applyTheme(themeName, event.fontFamily, event.estilos);
-        renderInvitation(event, templateConfig, premiumPresentation);
+        renderInvitation(event, templateConfig, premiumPresentation, eventArtwork);
         hideLoader();
     } catch (error) {
         console.error(error);
@@ -75,17 +83,18 @@ async function initInvitation() {
     }
 }
 
-function loadTemplateStylesheet(templateConfig) {
+function loadTemplateStylesheet(templateConfig, eventSpecific = false) {
     const href = templateConfig.stylesheet;
     if (!href) {
         return Promise.reject(new Error("El template no define un stylesheet."));
     }
 
-    let link = document.getElementById("template-stylesheet");
+    const linkId = eventSpecific ? "event-stylesheet" : "template-stylesheet";
+    let link = document.getElementById(linkId);
 
     if (!link) {
         link = document.createElement("link");
-        link.id = "template-stylesheet";
+        link.id = linkId;
         link.rel = "stylesheet";
         document.head.appendChild(link);
     }
@@ -210,6 +219,21 @@ function normalizeColor(value, fallback) {
     return /^#[0-9a-f]{6}$/i.test(String(value || "")) ? value : fallback;
 }
 
+function loadAngelEliPresentation() {
+    return Promise.all([
+        new Promise((resolve, reject) => {
+            if (globalThis.AngelEliPresentation) return resolve();
+            const script = document.createElement("script");
+            script.src = "/js/events/angel-eli-presentation.js";
+            script.onload = () => globalThis.AngelEliPresentation ? resolve() : reject(new Error("Local presentation unavailable."));
+            script.onerror = () => reject(new Error("Local presentation unavailable."));
+            document.head.append(script);
+        }),
+        // A separate link preserves the shared template stylesheet and its lifecycle.
+        loadTemplateStylesheet({ stylesheet: "/css/events/angel-eli.css", slug: "angel-eli-local" }, true)
+    ]);
+}
+
 function loadLocalPremiumRenderers() {
     return Promise.all([
         ["PremiumSectionRenderers", "/js/core/premium-section-renderers.js"],
@@ -226,7 +250,7 @@ function loadLocalPremiumRenderers() {
     }));
 }
 
-function renderInvitation(event, templateConfig, localPresentation = null) {
+function renderInvitation(event, templateConfig, localPresentation = null, eventArtwork = false) {
     const approvedPremiumPresentation = templateConfig.slug === "boda-fiesta-premium"
         && ["kaly-joha-nuestra-boda", "kaly-joha-boda-fiesta-demo"].includes(event.id);
     const b18Presentation = isB18Presentation(event, templateConfig);
@@ -235,7 +259,8 @@ function renderInvitation(event, templateConfig, localPresentation = null) {
         document.title = `${event.nombre} — ${event.identity.subtitle}`;
     }
 
-    const renderableSections = SectionRenderer.getRenderableSections(event.sections, {
+    const presentationSections = eventArtwork ? AngelEliPresentation.getPresentationSections(event.sections) : event.sections;
+    const renderableSections = SectionRenderer.getRenderableSections(presentationSections, {
         templateConfig,
         warn: (message) => console.warn(message)
     });
@@ -309,7 +334,7 @@ function renderInvitation(event, templateConfig, localPresentation = null) {
         page.style.setProperty("--content-scale", config.contentScale === "small" ? "0.88" : config.contentScale === "large" ? "1.08" : "1");
         page.classList.add(`layout-align-${config.align}`, `layout-scale-${config.contentScale}`);
     });
-    if (templateConfig.slug === "boda-fiesta-premium") {
+    if (approvedPremiumPresentation) {
         getApp().querySelectorAll(".wedding-section").forEach((page, index) => {
             page.dataset.demoSection = renderableSections[index]?.id || "";
             const content = page.querySelector(".wedding-content");
@@ -471,7 +496,8 @@ function renderInvitation(event, templateConfig, localPresentation = null) {
             }
         });
     }
-    setupMusic(event.multimedia.audios, event.multimedia.audioPlayMode, templateConfig.slug === "boda-fiesta-premium");
+    if (eventArtwork) AngelEliPresentation.apply(getApp(), event, renderableSections, document);
+    setupMusic(event.multimedia.audios, event.multimedia.audioPlayMode, templateConfig.slug === "boda-fiesta-premium" && !eventArtwork, eventArtwork);
     if (templateConfig.slug === "boda-fiesta-premium" && !event.multimedia.audios.length) {
         const pending = document.createElement("button");
         pending.type = "button";
@@ -486,6 +512,10 @@ function renderInvitation(event, templateConfig, localPresentation = null) {
     setupLocationActions();
     Rsvp.setupConfirmation();
     if (templateConfig.slug === "boda-fiesta-premium") setupLocalPremiumGifts();
+    if (eventArtwork) {
+        AngelEliPresentation.finishGifts(getApp());
+        AngelEliPresentation.startCover(getApp(), document);
+    }
     setupBranding();
     Countdown.clearTimers();
     Countdown.setupSections();
@@ -1218,7 +1248,7 @@ function normalizeWhatsAppPhone(value) {
     return phone;
 }
 
-function setupMusic(tracks, playMode, manualOnly = false) {
+function setupMusic(tracks, playMode, manualOnly = false, retryOnKeyboard = false) {
     const widget = document.getElementById("audioWidget");
     const button = document.getElementById("btnMusic");
     const audio = document.getElementById("bgMusic");
@@ -1264,10 +1294,12 @@ function setupMusic(tracks, playMode, manualOnly = false) {
         document.addEventListener("pointerdown", activate, options);
         document.addEventListener("touchstart", activate, options);
         document.addEventListener("click", activate, options);
+        if (retryOnKeyboard) document.addEventListener("keydown", activate, options);
         clearFirstInteractionActivation = () => {
             document.removeEventListener("pointerdown", activate, options);
             document.removeEventListener("touchstart", activate, options);
             document.removeEventListener("click", activate, options);
+            if (retryOnKeyboard) document.removeEventListener("keydown", activate, options);
             clearFirstInteractionActivation = () => { };
         };
     };

@@ -65,7 +65,7 @@
 
         const devDraft = params.get("devDraft");
         if (devDraft) {
-            if (["kaly-joha-boda-fiesta-demo", "kaly-joha-nuestra-boda"].includes(devDraft)) {
+            if (["kaly-joha-boda-fiesta-demo", "kaly-joha-nuestra-boda", "angel-eli-boda"].includes(devDraft)) {
                 const candidate = params.get("candidate");
                 if (candidate && (devDraft !== "kaly-joha-nuestra-boda" || !["b17-e2", "b17-e4", "b18"].includes(candidate))) return { mode: "invalid-preview" };
                 return isLoopbackHost(hostname)

@@ -5,6 +5,8 @@ const { validateEventForPersistence } = require("../js/core/event-validator");
 const { createPrivatePreviewBridge } = require("./private-preview-bridge");
 const { EVENT_ID, CANDIDATE_EVENT_ID, preparePremiumLocalPreview } = require("./premium-local-preview");
 
+const { ID: ANGEL_ELI_ID } = require("./angel-eli-preview-profile");
+const { loadAngelEliLocalInput } = require("./angel-eli-local-input");
 const ROOT = path.resolve(__dirname, "..");
 const HOST = process.env.PREVIEW_HOST || "127.0.0.1";
 const PORT = Number(process.env.PREVIEW_PORT || 4173);
@@ -66,6 +68,7 @@ function sendJson(res, status, body) {
 function createPreviewRequestHandler(options = {}) {
     // Trusted Node composition only. Tests supply synthetic JSON inputs without
     // reading commercial files; HTTP requests cannot select or replace this loader.
+    const loadAngelEliInput = options.loadAngelEliInput || loadAngelEliLocalInput;
     const loadPremiumPreviewInput = options.loadPremiumPreviewInput || (() => {
         const draftPath = path.join(ROOT, ".dev", "drafts", `${EVENT_ID}.event.json`);
         const approvalPath = path.join(ROOT, ".dev", "premium", `${EVENT_ID}.authorization.json`);
@@ -103,7 +106,8 @@ function createPreviewRequestHandler(options = {}) {
         if ([`/__premium-local-preview/${EVENT_ID}`, `/__premium-local-preview/${CANDIDATE_EVENT_ID}`,
             `/__premium-local-preview/${CANDIDATE_EVENT_ID}/b17-e2`,
             `/__premium-local-preview/${CANDIDATE_EVENT_ID}/b17-e4`,
-            `/__premium-local-preview/${CANDIDATE_EVENT_ID}/b18`].includes(pathname)) {
+            `/__premium-local-preview/${CANDIDATE_EVENT_ID}/b18`,
+            `/__premium-local-preview/${ANGEL_ELI_ID}`].includes(pathname)) {
             const address = req.socket?.remoteAddress;
             if (address && !["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(address)) {
                 sendJson(res, 403, { error: "Local preview only." }); return;
@@ -111,14 +115,15 @@ function createPreviewRequestHandler(options = {}) {
             if ((req.method || "GET") !== "GET") { sendJson(res, 405, { error: "Method not allowed." }); return; }
             try {
                 const candidate = pathname !== `/__premium-local-preview/${EVENT_ID}`;
-                const input = pathname.endsWith("/b18") ? loadPremiumB18CandidateInput()
+                const angelEli = pathname === `/__premium-local-preview/${ANGEL_ELI_ID}`;
+                const input = angelEli ? loadAngelEliInput() : pathname.endsWith("/b18") ? loadPremiumB18CandidateInput()
                     : pathname.endsWith("/b17-e4") ? loadPremiumE4CandidateInput()
                     : pathname.endsWith("/b17-e2") ? loadPremiumE2CandidateInput()
                     : candidate ? loadPremiumCandidateInput() : loadPremiumPreviewInput();
                 // Every loader, including synthetic tests, uses the same budget,
                 // private authorization and full event validation composition.
                 const result = preparePremiumLocalPreview(input.content, input.configuration,
-                    { eventId: candidate ? CANDIDATE_EVENT_ID : EVENT_ID });
+                    { eventId: angelEli ? ANGEL_ELI_ID : candidate ? CANDIDATE_EVENT_ID : EVENT_ID });
                 sendJson(res, result.accepted ? 200 : 422, result.accepted
                     ? { content: result.content, presentation: result.presentation }
                     : { error: "Premium preview unavailable." });
