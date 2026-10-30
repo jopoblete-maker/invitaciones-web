@@ -25,30 +25,34 @@ class Element extends EventTarget {
     play() { this.plays = (this.plays || 0) + 1; return Promise.resolve(); }
 }
 function cover(play) {
-    const video = new Element(), nav = new Element(), pages = [new Element(), new Element(), new Element()];
+    const video = new Element(), pages = [new Element(), new Element(), new Element()];
     if (play) video.play = play;
     pages[2].inert = true;
-    const document = { body: new Element(), documentElement: new Element(), createElement: () => new Element() };
+    const branding = new Element();
+    const document = { body: new Element(), documentElement: new Element(), createElement: () => new Element(),
+        getElementById: id => id === "ae-brand-signature" ? branding : null };
     const timers = new Map(); let sequence = 0;
     const clock = { setTimeout: fn => { timers.set(++sequence, fn); return sequence; },
         clearTimeout: id => timers.delete(id), scrollTo: () => {} };
-    const app = { querySelector: s => s === "video" ? video : nav, querySelectorAll: () => pages };
+    const app = { querySelector: s => s === "video" ? video : null, querySelectorAll: () => pages };
     startCover(app, document, clock);
     const fallback = pages[0].children[0];
-    return { video, nav, pages, document, timers, fallback, button: fallback.children[1] };
+    return { video, pages, document, branding, timers, fallback, button: fallback.children[1] };
 }
-test("cover locks scroll and navigation until ended, restores prior inert state and cleans watchdog", () => {
+test("cover locks scroll and later sections until ended, restores prior inert state and cleans watchdog", () => {
     const c = cover();
     assert.equal(c.video.plays, 1);
     assert(c.document.body.classes.has("ae-cover-locked"));
     assert(c.document.documentElement.classes.has("ae-cover-locked"));
-    assert(c.nav.inert && c.pages[1].inert);
+    assert(c.pages[1].inert);
     assert(c.fallback.hidden);
+    assert(c.branding.hidden && c.branding.inert);
     c.video.dispatchEvent(new Event("ended"));
     assert(!c.document.body.classes.has("ae-cover-locked"));
-    assert(!c.nav.inert && !c.pages[1].inert && c.pages[2].inert);
+    assert(!c.pages[1].inert && c.pages[2].inert);
     assert.equal(c.timers.size, 0);
     assert(c.fallback.removed);
+    assert(!c.branding.hidden && !c.branding.inert);
 });
 test("rejected or synchronously failing autoplay offers a keyboard-operable continuation", async () => {
     for (const play of [() => Promise.reject(new Error("blocked")), () => { throw Error("unsupported"); }]) {
@@ -56,11 +60,13 @@ test("rejected or synchronously failing autoplay offers a keyboard-operable cont
         await Promise.resolve();
         assert.equal(c.fallback.hidden, false);
         assert.equal(c.button.type, "button");
+        assert(c.branding.hidden && c.branding.inert);
         c.button.dispatchEvent(new Event("click"));
         assert(!c.document.body.classes.has("ae-cover-locked"));
         assert(c.pages[1].focused && c.pages[1].scrolled);
         assert(c.video.paused);
         assert.equal(c.timers.size, 0);
+        assert(!c.branding.hidden && !c.branding.inert);
     }
 });
 test("error, abort, pause and a stalled or pending play offer continuation without silently unlocking", () => {
@@ -71,7 +77,7 @@ test("error, abort, pause and a stalled or pending play offer continuation witho
         assert.equal(c.fallback.hidden, false);
         assert(c.document.body.classes.has("ae-cover-locked"));
         c.button.dispatchEvent(new Event("click"));
-        assert(!c.nav.inert);
+        assert(!c.pages[1].inert);
     }
 });
 test("only advancing video resets the watchdog; ended restores focus from fallback", () => {

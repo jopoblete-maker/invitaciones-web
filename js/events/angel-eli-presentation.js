@@ -192,19 +192,71 @@
         if (folderIndex < 0) throw new Error("Local presentation unavailable.");
         pages[folderIndex].after(walkingPage);
         pages.splice(folderIndex + 1, 0, walkingPage);
-        const nav = documentRef.createElement("nav");
-        nav.className = "ae-section-nav"; nav.setAttribute("aria-label", "Secciones de la invitación");
-        pages.forEach((page, index) => {
-            const link = documentRef.createElement("a");
-            link.href = "#" + page.id; link.textContent = String(index + 1);
-            link.setAttribute("aria-label", "Ir a " + page.querySelector("h1,h2").textContent);
-            nav.append(link);
-        });
-        app.prepend(nav);
         const widget = documentRef.getElementById("audioWidget");
         if (widget) { widget.dataset.premiumFloating = "true"; documentRef.body.append(widget); }
+        documentRef.querySelectorAll(".ae-brand-signature").forEach(previous => previous.remove());
+        const signature = documentRef.createElement("div");
+        signature.id = "ae-brand-signature"; signature.className = "ae-brand-signature";
+        signature.hidden = true; signature.inert = true;
+        signature.setAttribute("aria-label", "YCOR Digital");
+        // Reuse the existing branding component and handlers in one event-scoped floating instance.
+        signature.innerHTML = documentRef.defaultView.renderBranding({ ...event, branding: {
+            enabled: true,
+            badgeText: "YCOR Digital ✦ Pedí la tuya",
+            brandName: "YCOR Digital",
+            cta: "¿Querés una invitación como esta para tu evento?",
+            serviceText: "Invitaciones digitales",
+            whatsapp: "5491157339281"
+        } });
+        signature.querySelector(".branding-link").href = "https://wa.me/5491157339281";
+        documentRef.body.append(signature);
+        setupFloatingBranding(signature, app, documentRef);
         setupTextAnimations(app, documentRef);
         setupWalkingVideo(walkingVideo, documentRef);
+    }
+    function setupFloatingBranding(signature, app, documentRef, view = documentRef.defaultView) {
+        setupFloatingBranding.dispose?.();
+        let scheduled = null, lift = 0;
+        const update = () => {
+            scheduled = null;
+            if (signature.hidden) return;
+            const bounds = signature.getBoundingClientRect();
+            const base = { left: bounds.left, right: bounds.right, top: bounds.top + lift, bottom: bounds.bottom + lift };
+            const notice = documentRef.getElementById("privatePreviewBadge")?.getBoundingClientRect();
+            const limit = Math.max(0, base.top - Math.max(0, notice?.bottom || 0) - 8);
+            let nextLift = 0;
+            // Keep the dock on the left, lifting it only enough to leave underlying actions usable.
+            const actions = Array.from(app.querySelectorAll(".ae-artwork-action"))
+                .map(action => action.getBoundingClientRect()).filter(rect => rect.width && rect.height)
+                .sort((a, b) => b.top - a.top);
+            for (const action of actions) {
+                if (base.left < action.right && base.right > action.left
+                    && base.top - nextLift < action.bottom && base.bottom - nextLift > action.top) {
+                    nextLift = Math.min(limit, Math.max(nextLift, base.bottom - action.top + 8));
+                }
+            }
+            lift = nextLift;
+            signature.style.setProperty("--ae-brand-lift", lift + "px");
+        };
+        const schedule = () => { if (scheduled === null) scheduled = view.requestAnimationFrame(update); };
+        view.addEventListener("scroll", schedule, { passive: true });
+        view.addEventListener("resize", schedule);
+        signature.addEventListener("click", schedule);
+        documentRef.addEventListener("pointerdown", schedule, { passive: true });
+        documentRef.addEventListener("keydown", schedule);
+        const observer = typeof view.ResizeObserver === "function" ? new view.ResizeObserver(schedule) : null;
+        observer?.observe(signature);
+        setupFloatingBranding.refresh = schedule;
+        setupFloatingBranding.dispose = () => {
+            if (scheduled !== null) view.cancelAnimationFrame(scheduled);
+            observer?.disconnect();
+            view.removeEventListener("scroll", schedule);
+            view.removeEventListener("resize", schedule);
+            signature.removeEventListener("click", schedule);
+            documentRef.removeEventListener("pointerdown", schedule);
+            documentRef.removeEventListener("keydown", schedule);
+        };
+        schedule();
     }
     function setupWalkingVideo(video, documentRef, view = documentRef.defaultView) {
         setupWalkingVideo.dispose?.();
@@ -339,11 +391,12 @@
     function startCover(app, documentRef, clock = documentRef.defaultView) {
         const video = app.querySelector("video");
         const pages = Array.from(app.querySelectorAll(".wedding-section"));
-        const nav = app.querySelector(".ae-section-nav");
-        const blocked = [nav, ...pages.slice(1)].filter(Boolean);
+        const blocked = pages.slice(1);
         const previousInert = blocked.map(element => element.inert);
         const body = documentRef.body;
         const root = documentRef.documentElement;
+        const branding = documentRef.getElementById?.("ae-brand-signature");
+        if (branding) { branding.hidden = true; branding.inert = true; }
         const fallback = documentRef.createElement("div");
         fallback.className = "ae-cover-fallback";
         fallback.hidden = true;
@@ -378,6 +431,7 @@
             blocked.forEach((element, index) => { element.inert = previousInert[index]; });
             body.classList.remove("ae-cover-locked");
             root.classList.remove("ae-cover-locked");
+            if (branding) { branding.hidden = false; branding.inert = false; setupFloatingBranding.refresh?.(); }
             if (advance) video.pause();
             if (advance || restoreFocus) pages[1]?.focus({ preventScroll: true });
             if (advance) pages[1]?.scrollIntoView({ behavior: "instant", block: "start" });

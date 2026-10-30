@@ -1,8 +1,11 @@
 # Ángel y Eli: cierre local y preparación de publicación
 
-Auditoría local del 29 de octubre de 2026. No se ejecutaron commit, fetch, push,
+Auditoría local del 29 de octubre de 2026, actualizada para conservar los ajustes
+visuales aprobados posteriores a f55ca5e en un nuevo commit local, sin amend.
+Este cierre solo actualiza documentación y conserva los cambios existentes;
+no introduce cambios adicionales en el diseño. No se ejecutan fetch, push,
 merge, cherry-pick, despliegue, publicación editorial ni operaciones directas
-contra SQL o Supabase. No se modificó el diseño ni el código del producto.
+contra SQL o Supabase.
 
 **Resultado: versión visual local conservada y probada; publicación bloqueada
 hasta completar la habilitación pública y la preparación editorial descritas aquí.**
@@ -10,15 +13,17 @@ hasta completar la habilitación pública y la preparación editorial descritas 
 ## 1. Git y alcance
 
 - Rama: cliente/angel-eli.
-- HEAD: 85d604a6e75932c634aefd2ed173fd91255fc1f3.
-- Asunto de HEAD: feat: add 22 commercial catalog samples and responsive viewer.
-- Antes de agregar este informe: 4 archivos modificados y 27 nuevos, sin staging.
-- Este informe agrega un archivo documental: 32 archivos en total para conservar
-  el estado auditado, incluidos código, recursos, pruebas y documentación.
+- Base conservada: f55ca5e1e54495d1214ed3cc6d8561cbc6016d15,
+  feat(angel-eli): preserve approved local invitation; contiene 32 archivos.
+- El nuevo commit debe ser hijo directo de esa base e incluir únicamente los
+  cuatro archivos de ajustes indicados abajo. Su SHA se consulta con git log -1;
+  este informe se incluye en él y por eso no incorpora su propio hash.
+- No se modifica ni se reemplaza f55ca5e.
 - main local: 76c546f77ee7d7209cdb7e17dfe3d89f332cfee2.
 - Ancestro común main/HEAD: c3e4672d8e8dfdba5b4125e0e29bb777a2f167ee.
-- Esta rama contiene dos commits ausentes de main: c025024 (comercial) y
-  85d604a (catálogo). main contiene 76c546f (precondiciones editoriales), ausente
+- Esta rama contiene, además de los commits de Ángel y Eli, dos commits ajenos
+  ausentes de main: c025024 (comercial) y 85d604a (catálogo).
+  main contiene 76c546f (precondiciones editoriales), ausente
   de esta rama. **No integrar la rama completa como si solo contuviera Ángel y Eli.**
 - origin/main almacenado localmente apunta a c3e4672. No se hizo fetch:
   esto NO describe necesariamente el estado remoto actual.
@@ -27,16 +32,26 @@ hasta completar la habilitación pública y la preparación editorial descritas 
   assets/templates/boda-fiesta-premium/. No se modificaron. La integración debe
   realizarse en un worktree aparte.
 
-## 2. Archivos que debe conservar el commit local
+## 2. Archivos del nuevo commit y entrega ya conservada
 
-Los cuatro archivos compartidos modificados:
+Selección explícita del nuevo commit, sin archivos compartidos ni recursos nuevos:
+
+    css/events/angel-eli.css
+    js/events/angel-eli-presentation.js
+    test/angel-eli-playback.test.js
+    docs/angel-eli-publication-readiness.md
+
+El inventario siguiente ya está versionado en f55ca5e; no debe volver a añadirse
+como si fuera trabajo pendiente ni arrastrar commits de catálogo/comercial.
+
+Los cuatro archivos compartidos incluidos en f55ca5e:
 
     js/core/invitation-data-source.js
     js/invitacion.js
     scripts/dev-preview-server.js
     scripts/premium-local-preview.js
 
-Los diez archivos nuevos de código, pruebas y fixture:
+Los diez archivos de código, pruebas y fixture incluidos en f55ca5e:
 
     css/events/angel-eli.css
     js/events/angel-eli-presentation.js
@@ -49,7 +64,7 @@ Los diez archivos nuevos de código, pruebas y fixture:
     test/angel-eli-walking-video.test.js
     test/fixtures/angel-eli.synthetic.json
 
-Los diecisiete recursos nuevos, conservando también los originales no mostrados:
+Los diecisiete recursos conservados, incluidos los originales no mostrados:
 
     assets/events/angel-eli/angel-eli-caminata.mp4
     assets/events/angel-eli/carpeta.png
@@ -69,12 +84,11 @@ Los diecisiete recursos nuevos, conservando también los originales no mostrados
     assets/events/fondos-sin-texto/regalos-fondo.png
     assets/events/fondos-sin-texto/vestimenta-fondo.png
 
-Documentación nueva:
+Documentación incluida en ambos cierres:
 
     docs/angel-eli-publication-readiness.md
 
-Los recursos suman 43.740.317 bytes. No están versionados todavía. No basta con
-añadir solo los cuatro archivos que muestra git diff.
+Los recursos suman 43.740.317 bytes y ya están versionados en f55ca5e.
 
 Fuera del commit: node_modules, credenciales, .env y los tres archivos privados
 .dev/premium/angel-eli-boda.event.json, .authorization.json y .local-version.json.
@@ -84,7 +98,8 @@ El fixture del test es sintético y no reemplaza los datos reales.
 
 ## 3. Contenido y recursos confirmados
 
-Orden visual y navegación, con nueve destinos:
+Orden visual final: nueve secciones con desplazamiento vertical, sin barra
+numérica ni espacio reservado para ella:
 
 1. Portada: portada.mp4.
 2. Nuestra historia: historia.png.
@@ -110,6 +125,15 @@ Es un enlace con target="_blank" y rel="noopener noreferrer". No se verificaron
 los permisos de carga con otra cuenta.
 
 La portada conserva su bloqueo inicial y la salida accesible ante fallo.
+Su ancho máximo es 540 px, centrado y alineado con Nuestra historia; el video
+se muestra completo, sin recorte ni deformación y sin hueco superior.
+La firma «YCOR Digital ✦ Pedí la tuya» es una única instancia flotante abajo
+a la izquierda, fuera del Cierre. Conserva el componente comercial existente,
+formato de la referencia final local de Kaly y Joha y enlace
+https://wa.me/5491157339281 con target="_blank" y rel="noopener noreferrer".
+Permanece oculta e inerte hasta terminar la portada o usar Continuar; después
+queda disponible al recorrer la invitación. Respeta áreas seguras y evita
+solaparse con las acciones. El panel conserva apertura, cierre y Escape.
 Caminata tiene su controlador de visibilidad independiente, no bloquea scroll
 y no interviene sobre la música. Las seis capas animadas están identificadas por
 contenido, no por número: fiesta, confirmacion, vestimenta, regalos,
@@ -121,26 +145,35 @@ la aparición de la última palabra; movimiento reducido deja todo fijo.
 - Suite completa con Node 22.23.4: 117 pruebas, 117 aprobadas, 0 fallidas.
 - Comando ejecutado: node.exe --test, con el binario Node 22 indicado abajo.
 - git diff --check: salida 0; solo avisos informativos de conversión LF/CRLF.
-- Recursos originales del snapshot: hashes verificados por el loader local.
-- Autorización y preparación Premium local: aceptadas.
-- 17 recursos multimedia y el JS/CSS del evento: 19 respuestas HTTP 200 en
+- Auditoría base: recursos originales del snapshot verificados por el loader
+  local y autorización/preparación Premium local aceptadas.
+- Auditoría base: 17 recursos multimedia y el JS/CSS del evento, 19 respuestas HTTP 200 en
   la vista previa local.
-- La política estática de producción se ejercitó con Express en un puerto
+- En esa auditoría, la política estática de producción se ejercitó con Express en un puerto
   loopback temporal, sin iniciar el servidor real ni acceder a Supabase:
   los mismos 19 recursos devolvieron HTTP 404, como exige hoy la allowlist.
-- Selector devDraft=angel-eli-boda en un hostname no local: invalid-preview.
-- El último recorrido Chrome headless, anterior a esta auditoría y con el mismo
-  código del producto, comprobó los nueve enlaces en móvil y escritorio,
-  bucles naturales de Caminata, pausa, reinicio y continuidad de música.
-  Esta auditoría no repitió ese recorrido de navegador.
+- Auditoría base: selector devDraft=angel-eli-boda en hostname no local, invalid-preview.
+- Este cierre confirmó HTTP 200 para la URL de vista previa local.
+- La verificación Chrome más reciente del diseño aprobado comprobó escritorio
+  (1366 px), móvil (390 px) y 320 px: nueve secciones, sin barra numérica,
+  sin hueco superior ni desbordamiento horizontal; portada y sección siguiente
+  con idéntico ancho y alineación, antes y después de desbloquear.
+- El recorrido de firma flotante comprobó ocultación inicial, final natural,
+  fallo y Continuar, apertura/cierre/Escape y separación de acciones y música.
+  La última comprobación de portada conservó las verificaciones de firma,
+  música y animación. Los bucles, pausa y regreso de Caminata se comprobaron
+  en el recorrido anterior; su controlador no cambió desde entonces.
+- Este cierre repitió la suite completa, no los recorridos de Chrome: conserva
+  las evidencias del código aprobado, sin afirmar una nueva prueba de navegador.
 
-No hay diferencias del worktree frente a HEAD en recursos Kaly y Joha, recursos
+No hay diferencias de estos ajustes frente a f55ca5e en recursos Kaly y Joha, recursos
 y stylesheet Civil, RSVP compartido, registro de templates, backend o SQL.
 Las pruebas de Kaly y Joha, Civil, autorización y publicación forman parte de la
 suite completa aprobada. El adaptador exige ID, variante, modo local y perfil
 de Ángel y Eli; la música automática nueva solo se activa para ese contexto.
 
-Los cuatro archivos compartidos sí requieren revisión al integrar. En particular,
+Los cuatro archivos compartidos de f55ca5e sí requieren revisión al integrar.
+No se modificaron nuevamente en este cierre. En particular,
 la decoración antes aplicada a todo boda-fiesta-premium ahora se limita a los
 dos IDs de Kaly ya contemplados; se conserva su ruta, pero no debe presentarse
 este cambio como si no hubiera edición de código compartido.
@@ -165,7 +198,8 @@ con main ni una versión pública, y no se verificó el estado de producción re
    agrega la segunda. El snapshot conserva 18:30 h y no lleva data.url para
    carpeta-compartida; el horario final, Drive y fondos se definen en el adaptador.
    Antes de publicar hay que preparar un snapshot/contrato de presentación
-   versionado coherente con la versión visual final y sus recursos. No publicar
+   versionado coherente con la versión visual final y sus recursos, incluida la
+   firma flotante, ausencia de barra numérica y portada alineada a 540 px. No publicar
    el JSON actual por el simple hecho de que también tenga nueve secciones.
 5. Falta instalar y verificar la autorización Premium OPERATIVA para el digest
    exacto del contenido definitivo. La autorización de .dev es solo local.
@@ -187,23 +221,20 @@ con main ni una versión pública, y no se verificó el estado de producción re
 
 ## 6. Procedimiento futuro: conservación e integración
 
-Todo lo que sigue es una receta NO EJECUTADA, para después de autorización.
-El primer commit conservaría el trabajo local; no sería una declaración de
-que la publicación está lista.
+La conservación local de la entrega base ya se realizó en f55ca5e. El cierre
+actual autoriza únicamente un segundo commit local con los cuatro ajustes.
+Ninguno de ellos declara que la publicación esté lista.
 
 En este worktree, revisar nuevamente estado, rama y Node 22. Añadir únicamente:
 
-    git add -- js/core/invitation-data-source.js js/invitacion.js scripts/dev-preview-server.js scripts/premium-local-preview.js
-    git add -- assets/events/angel-eli assets/events/fondos-sin-texto css/events/angel-eli.css js/events/angel-eli-presentation.js
-    git add -- scripts/angel-eli-local-input.js scripts/angel-eli-preview-profile.js scripts/preview-angel-eli.js
-    git add -- test/angel-eli-local.test.js test/angel-eli-playback.test.js test/angel-eli-text-animation.test.js test/angel-eli-walking-video.test.js test/fixtures/angel-eli.synthetic.json
-    git add -- docs/angel-eli-publication-readiness.md
+    git add -- css/events/angel-eli.css js/events/angel-eli-presentation.js test/angel-eli-playback.test.js docs/angel-eli-publication-readiness.md
     git diff --cached --check
     git diff --cached --stat
     git diff --cached --name-only
-    git commit -m "feat(angel-eli): preserve approved local invitation"
+    git commit -m "fix(angel-eli): finalize cover and floating branding"
 
-Después de ese commit, guardar su SHA. Solo cuando se habiliten operaciones
+Todo el procedimiento restante es FUTURO y NO EJECUTADO. Después del segundo
+commit, guardar su SHA. Solo cuando se habiliten operaciones
 remotas: ejecutar git fetch origin y revisar nuevamente main...origin/main.
 Resolver la diferencia de la base editorial antes de definir el destino:
 no sobrescribir main ni su commit 76c546f, no mover los recursos ajenos de su
@@ -212,11 +243,15 @@ worktree y no suponer que origin/main sigue en el SHA observado hoy.
 Con una base main ya acordada, un worktree de integración separado evita
 arrastrar los commits de catálogo/comercial:
 
-    $aeCommit = (git rev-parse HEAD).Trim()
+    $aeBase = 'f55ca5e1e54495d1214ed3cc6d8561cbc6016d15'
+    $aeAdjustments = (git rev-parse cliente/angel-eli).Trim()
+    if ((git rev-parse "$aeAdjustments^").Trim() -ne $aeBase) { throw 'Revisar el rango antes de integrar' }
     git worktree add -b integracion/angel-eli ../invitaciones-web-integracion-angel-eli main
-    git -C ../invitaciones-web-integracion-angel-eli cherry-pick $aeCommit
+    git -C ../invitaciones-web-integracion-angel-eli cherry-pick $aeBase $aeAdjustments
 
-No sustituir este cherry-pick por merge de toda cliente/angel-eli. En esa rama
+Es imprescindible integrar ambos commits en ese orden: el segundo por sí solo
+no incluye la entrega base ni sus recursos. No sustituir estos cherry-picks por
+merge de toda cliente/angel-eli. En esa rama
 separada completar los bloqueos públicos sin modificar el diseño, y crear otro
 commit para esa habilitación. Revisar la diferencia frente a la base acordada,
 ejecutar la suite completa en Node 22, probar la preview editorial persistida y
@@ -312,14 +347,25 @@ Prueba ejecutada desde este checkout:
     & 'C:\Users\poble\AppData\Local\npm-cache\_npx\52027bd8fc0022aa\node_modules\node\bin\node.exe' --test
     git diff --check
 
-Log de esta suite: %TEMP%\angel-eli-release-node22.log.
-Inventario de recursos, tamaños, SHA-256 y respuestas HTTP:
+Log de la suite repetida para este cierre:
+%TEMP%\angel-eli-final-adjustments-node22.log.
+Inventario de recursos, tamaños, SHA-256 y respuestas HTTP de la auditoría base
+(los recursos multimedia no cambiaron; los hashes anteriores de JS/CSS no
+representan los ajustes actuales):
 %TEMP%\angel-eli-release-audit.json.
-Último recorrido Chrome del orden final:
+Evidencias Chrome conservadas de la versión aprobada:
+%TEMP%\angel-eli-cover-aligned-qa.log,
+%TEMP%\angel-eli-floating-brand-qa.log y
 %TEMP%\angel-eli-walking-order-qa.log.
+Capturas locales ignoradas, excluidas del commit:
+.dev/premium/review/angel-eli-cover-aligned-desktop.png,
+.dev/premium/review/angel-eli-cover-aligned-mobile.png y
+.dev/premium/review/angel-eli-cover-aligned-mobile-320.png.
 
 Vista previa local disponible:
 
     http://127.0.0.1:4175/invitacion.html?devDraft=angel-eli-boda
 
-Solo se agregó este informe durante la auditoría. Los logs están fuera del repo.
+En este cierre solo se actualizó el informe; los otros tres archivos conservan
+los ajustes visuales ya aprobados. Los logs están fuera del repo. No se envían
+mensajes de WhatsApp ni se verifican permisos de Drive con otra cuenta.
