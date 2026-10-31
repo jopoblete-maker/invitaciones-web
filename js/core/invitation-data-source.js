@@ -11,10 +11,11 @@
 
     root.InvitationDataSource = source;
 })(typeof globalThis !== "undefined" ? globalThis : this, function (templateRegistry) {
-    // Local display hints are associated with a fetched response, never read
+    // Trusted display hints are associated with a fetched response, never read
     // from permissions declared inside canonical event content.
     const localPresentation = new WeakMap();
     const publicPresentation = new WeakMap();
+    const privatePresentation = new WeakMap();
     const ALLOWED_FIXTURES = new Set(["boda-civil-esencial"]);
     const ALLOWED_DRAFTS = new Set([
         "kaly-joha-boda-civil",
@@ -131,10 +132,25 @@
                 || typeof payload.versionId !== "string" || !payload.versionId.trim()
                 || !payload.presentation?.giftFields || typeof payload.presentation.giftFields !== "object"
                 || !Array.isArray(payload.presentation.albumSections)
-                || !payload.presentation.gallerySections || typeof payload.presentation.gallerySections !== "object") {
+                || !payload.presentation.gallerySections || typeof payload.presentation.gallerySections !== "object"
+                || (source.eventId === "angel-eli-boda" && (payload.content.template.variant !== "angel-eli-v1"
+                    || payload.presentation.eventProfile !== "angel-eli-v1"))) {
                 throw new Error("Invitacion no disponible.");
             }
             publicPresentation.set(payload.content, payload.presentation);
+            return payload.content;
+        }
+        if (source.mode === "private-preview" && (payload?.eventId === "angel-eli-boda"
+            || payload?.content?.id === "angel-eli-boda" || payload?.id === "angel-eli-boda")) {
+            if (payload.eventId !== "angel-eli-boda" || payload.content?.id !== payload.eventId
+                || payload.content?.schema_version !== 2 || payload.content.template?.slug !== "boda-fiesta-premium"
+                || payload.content.template.variant !== "angel-eli-v1" || payload.presentation?.eventProfile !== "angel-eli-v1"
+                || typeof payload.versionId !== "string" || !payload.versionId.trim()
+                || (source.eventId && source.eventId !== payload.eventId)
+                || (source.versionId && source.versionId !== payload.versionId)
+                || !payload.presentation.giftFields || !Array.isArray(payload.presentation.albumSections)
+                || !payload.presentation.gallerySections) throw new Error("Vista previa no disponible.");
+            privatePresentation.set(payload.content, payload.presentation);
             return payload.content;
         }
         if (source.mode === "local-premium") {
@@ -175,6 +191,7 @@
     }
 
     return {
+        getPrivatePremiumPresentation: content => privatePresentation.get(content) || null,
         getPublicPremiumPresentation: content => publicPresentation.get(content) || null,
         getLocalPremiumPresentation: content => localPresentation.get(content) || null,
         isLoopbackHost,

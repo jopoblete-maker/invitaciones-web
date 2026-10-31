@@ -105,7 +105,9 @@
                     delete content.metadata;
                     if (/\.dev[\\/]/i.test(JSON.stringify(content))) return unavailable();
                     return { eventId, versionId: version.id, content,
-                        presentation: { giftFields, albumSections, gallerySections } };
+                        presentation: { giftFields, albumSections, gallerySections,
+                            ...(canonical.id === "angel-eli-boda"
+                                ? require("../../backend/premium/angel-eli-profile").buildPresentation(canonical) : {}) } };
                 } catch (_) { return unavailable(); }
             }
             if (!version) {

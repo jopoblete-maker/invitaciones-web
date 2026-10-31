@@ -5,6 +5,12 @@
     root.AngelEliPresentation = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
     function isAuthorizedContext(source, content, presentation, hostname) {
+        if (content?.id === "angel-eli-boda" && content.template?.slug === "boda-fiesta-premium"
+            && content.template.variant === "angel-eli-v1" && presentation?.eventProfile === "angel-eli-v1") {
+            return (source?.mode === "public" && source.eventId === content.id
+                && source.url === "/api/eventos/angel-eli-boda")
+                || (source?.mode === "private-preview" && source.url?.startsWith("/api/preview?token="));
+        }
         return ["127.0.0.1", "localhost", "::1"].includes(hostname)
             && source?.mode === "local-premium" && source.eventId === "angel-eli-boda"
             && source.url === "/__premium-local-preview/angel-eli-boda"
@@ -17,7 +23,7 @@
         "carpeta-compartida": "Carpeta compartida", cierre: "Cierre" };
     const layerDesigns = {
         fiesta: { background: "fiesta", copy: [
-            ["title", "Fiesta"], ["address", "Hernán Cortés 17"],
+            ["title", "Fiesta"], ["address", "Hernán Cortez 1710"],
             ["city", "Carlos Spegazzini,\nBuenos Aires"], ["time", "20:00 hs. a 4:00 a.m hs"]
         ] },
         confirmacion: { background: "asistencia", copy: [
@@ -61,10 +67,12 @@
         element.replaceChildren(icon, caption, arrow);
         return element;
     }
-    function addTextLayer(frame, sectionId, documentRef) {
+    function addTextLayer(frame, sectionId, documentRef, section) {
         const layer = documentRef.createElement("div");
         layer.className = "ae-text-layer";
         layerDesigns[sectionId].copy.forEach(([kind, text]) => {
+            if (sectionId === "fiesta" && kind === "time" && section?.data?.timeText) text = section.data.timeText;
+            if (sectionId === "fiesta" && kind === "address" && section?.data?.address) text = section.data.address;
             const paragraph = documentRef.createElement("p");
             paragraph.className = "ae-copy ae-copy--" + kind;
             text.split(/(\s+)/u).filter(Boolean).forEach(part => {
@@ -81,11 +89,16 @@
         frame.append(layer);
     }
     function getPresentationSections(sections) {
-        // Keep the authorized source intact; omit the duplicate before the shared renderer runs.
-        return sections.filter(section => section.id !== "fotografia-pareja");
+        // Keep the canonical snapshot intact. Walking uses its existing dedicated video renderer below.
+        // Legacy local snapshots also omit their duplicate photo.
+        return sections.filter(section => !["fotografia-pareja", "caminata"].includes(section.id));
     }
     function apply(app, event, sections, documentRef) {
         app.classList.add("angel-eli-local");
+        const finalProfile = event.template.variant === "angel-eli-v1";
+        const walkingSections = event.sections.filter(section => section.id === "caminata");
+        if (finalProfile && (event.sections.length !== 9 || walkingSections.length !== 1
+            || event.sections[7].id !== "caminata" || event.sections[6].id !== "carpeta-compartida")) throw new Error("Invalid event presentation.");
         const pages = Array.from(app.querySelectorAll(".wedding-section"));
         if (pages.length !== 8 || sections.length !== 8) throw new Error("Local presentation unavailable.");
         pages.forEach((page, index) => {
@@ -118,7 +131,7 @@
             } else {
                 const image = documentRef.createElement("img");
                 const design = layerDesigns[section.id];
-                image.src = design ? "/assets/events/fondos-sin-texto/" + design.background + "-fondo.png" : media.src;
+                image.src = finalProfile ? media.src : design ? "/assets/events/fondos-sin-texto/" + design.background + "-fondo.png" : media.src;
                 image.alt = design ? "" : section.data.alt || section.data.description || (section.id === "confirmacion"
                     ? "Asistencia. Por favor avisa si vendrás a la fiesta."
                     : section.id === "regalos" ? "Tu presencia es nuestro mejor regalo. Podés consultar los datos para un obsequio."
@@ -127,7 +140,7 @@
                 const portrait = ["vestimenta", "cierre"].includes(section.id);
                 image.width = portrait ? 1024 : 941; image.height = portrait ? 1536 : 1672;
                 frame.append(image);
-                if (design) addTextLayer(frame, section.id, documentRef);
+                if (design) addTextLayer(frame, section.id, documentRef, finalProfile ? section : null);
             }
             if (section.id === "fiesta") {
                 const link = documentRef.createElement("a");
@@ -147,7 +160,7 @@
                 return;
             }
             if (section.id === "carpeta-compartida") {
-                const url = layerDesigns[section.id].url;
+                const url = finalProfile ? section.data.url : layerDesigns[section.id].url;
                 const button = documentRef.createElement(url ? "a" : "button");
                 if (url) {
                     button.href = url; button.target = "_blank"; button.rel = "noopener noreferrer";
@@ -165,7 +178,7 @@
             }
             page.replaceChildren(title, frame);
         });
-        // This additional local media section does not change the authorized source snapshot.
+        // Render the canonical Walking entry once; legacy local snapshots retain their approved implicit entry.
         const walkingPage = documentRef.createElement("section");
         walkingPage.className = "wedding-section wedding-section--media-closing";
         walkingPage.id = "ae-caminata";
@@ -179,7 +192,7 @@
         const walkingFrame = documentRef.createElement("div");
         walkingFrame.className = "ae-artwork";
         const walkingVideo = documentRef.createElement("video");
-        walkingVideo.src = "/assets/events/angel-eli/angel-eli-caminata.mp4";
+        walkingVideo.src = finalProfile ? event.media.items[walkingSections[0].data.media_id].src : "/assets/events/angel-eli/angel-eli-caminata.mp4";
         walkingVideo.dataset.aeWalkingVideo = "true";
         walkingVideo.muted = true; walkingVideo.defaultMuted = true;
         walkingVideo.setAttribute("muted", "");

@@ -54,15 +54,16 @@ async function initInvitation() {
         const templateConfig = TemplateRegistry.resolveTemplate(event.template.slug || event.template_slug);
         const premiumPresentation = templateConfig.slug === "boda-fiesta-premium"
             ? source.mode === "local-premium" ? InvitationDataSource.getLocalPremiumPresentation(data)
-                : source.mode === "public" ? InvitationDataSource.getPublicPremiumPresentation(data) : null
+                : source.mode === "public" ? InvitationDataSource.getPublicPremiumPresentation(data)
+                    : source.mode === "private-preview" ? InvitationDataSource.getPrivatePremiumPresentation(data) : null
             : null;
         if (templateConfig.slug === "boda-fiesta-premium" && !premiumPresentation) {
             throw new Error("Invitación premium no disponible.");
         }
         if (templateConfig.slug === "boda-fiesta-premium") await loadLocalPremiumRenderers();
-        const eventArtwork = source.mode === "local-premium" && source.eventId === "angel-eli-boda";
+        const eventArtwork = data.id === "angel-eli-boda" && ["local-premium", "public", "private-preview"].includes(source.mode);
         if (eventArtwork) {
-            if (data.id !== source.eventId || premiumPresentation?.eventProfile !== "angel-eli-local-v1")
+            if (!["angel-eli-local-v1", "angel-eli-v1"].includes(premiumPresentation?.eventProfile))
                 throw new Error("Local presentation unavailable.");
             await loadAngelEliPresentation();
             if (!AngelEliPresentation.isAuthorizedContext(source, data, premiumPresentation, window.location.hostname))

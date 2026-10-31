@@ -6,6 +6,26 @@ const path = require("path");
 // Browser entrypoints, HTML script references, registered template styles/media
 // and existing legacy data. Never expose whole source or asset directories.
 const PUBLIC_FILES = new Set([
+    // Exact approved Angel/Eli resources; never expose an event directory.
+    "assets/events/angel-eli/angel-eli-caminata.mp4",
+    "assets/events/angel-eli/carpeta.png",
+    "assets/events/angel-eli/cierre.png",
+    "assets/events/angel-eli/confirmacion.png",
+    "assets/events/angel-eli/fiesta.png",
+    "assets/events/angel-eli/historia.png",
+    "assets/events/angel-eli/musica.mp3",
+    "assets/events/angel-eli/pareja.png",
+    "assets/events/angel-eli/portada.mp4",
+    "assets/events/angel-eli/regalos.png",
+    "assets/events/angel-eli/vestimenta.png",
+    "assets/events/fondos-sin-texto/asistencia-fondo.png",
+    "assets/events/fondos-sin-texto/carpeta-fondo.png",
+    "assets/events/fondos-sin-texto/cierre-fondo.png",
+    "assets/events/fondos-sin-texto/fiesta-fondo.png",
+    "assets/events/fondos-sin-texto/regalos-fondo.png",
+    "assets/events/fondos-sin-texto/vestimenta-fondo.png",
+    "css/events/angel-eli.css",
+    "js/events/angel-eli-presentation.js",
     "js/core/catalog-samples.js",
     "assets/catalogo/muestras/muestra-01-mini.webp",
     "assets/catalogo/muestras/muestra-01.webp",

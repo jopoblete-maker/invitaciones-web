@@ -343,6 +343,24 @@ app.get('/api/preview', async (req, res) => {
         if (!state.versions.some((item) => item.versionId === versionId)) {
             return res.status(403).json({ error: { code: 'VERSION_NOT_AUTHORIZED', message: 'Private preview is not available.' } });
         }
+        if (eventId === 'angel-eli-boda') {
+            if (version.eventId !== eventId || version.versionId !== versionId) {
+                return res.status(403).json({ error: { code: 'VERSION_NOT_AUTHORIZED', message: 'Private preview is not available.' } });
+            }
+            try {
+                eventVersionEditorialService.preparePremiumContent(eventId, version.content);
+                const current = await eventVersionReadRepository.getEditorialState(eventId);
+                if (current.eventStatus === 'archived' || !current.versions.some(item => item.versionId === versionId)) throw new Error();
+                const canonical = eventVersionEditorialService.preparePremiumContent(eventId, version.content);
+                const presentation = require('./backend/premium/angel-eli-profile').buildPresentation(canonical);
+                const content = JSON.parse(JSON.stringify(canonical));
+                delete content.metadata;
+                if (/\.dev[\\/]/i.test(JSON.stringify(content))) throw new Error();
+                return res.status(200).json({ eventId, versionId, content, presentation });
+            } catch (_) {
+                return res.status(403).json({ error: { code: 'VERSION_NOT_AUTHORIZED', message: 'Private preview is not available.' } });
+            }
+        }
         return res.status(200).json(version.content);
     } catch (error) {
         if (error.code === 'EVENT_NOT_FOUND' || error.code === 'VERSION_NOT_FOUND' || error.code === 'VERSION_EVENT_MISMATCH') {
