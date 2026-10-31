@@ -50,7 +50,7 @@
         RATE_LIMITED: "Too many requests."
     });
 
-    function createEventVersionEditorialHttp({ service, readRepository, adminPassword, originPolicy, rateLimiter, adminAccess, prepareCreateBody, issuePreviewToken, previewTtlSeconds = 300 }) {
+    function createEventVersionEditorialHttp({ service, readRepository, adminPassword, originPolicy, rateLimiter, adminAccess, prepareCreateBody, issuePreviewToken, previewTtlSeconds = 300, diagnosticLogger = record => console.error("EDITORIAL_READ_FAILED", record) }) {
         if (!service || !readRepository) {
             throw new TypeError("service and readRepository are required.");
         }
@@ -76,8 +76,28 @@
         }
 
         const getEditorialState = protect(async (req, res) => {
-            const result = await readRepository.getEditorialState(req.params.eventId);
-            return res.status(200).json(result);
+            try {
+                const result = await readRepository.getEditorialState(req.params.eventId);
+                return res.status(200).json(result);
+            } catch (error) {
+                if (!STATUS_BY_CODE[error?.code]) {
+                    // Only server-generated identifiers and allowlisted fields reach the log.
+                    const correlationId = require("node:crypto").randomUUID();
+                    const { getReadFailurePhase } = require("./event-version-read-repository-supabase");
+                    const phase = getReadFailurePhase(error) || "unknown";
+                    const categories = {
+                        "42P01": "schema", "42703": "schema", "PGRST200": "schema", "PGRST204": "schema", "PGRST205": "schema",
+                        "42501": "permission", "PGRST301": "configuration", "PGRST302": "configuration",
+                        "SUPABASE_TIMEOUT": "timeout", "57014": "timeout", "INVALID_RESPONSE": "invalid_response"
+                    };
+                    const known = typeof error?.code === "string" && Object.prototype.hasOwnProperty.call(categories, error.code);
+                    const record = { correlationId, phase,
+                        code: known ? error.code : "UNKNOWN", category: known ? categories[error.code] : "backend" };
+                    res.setHeader("X-Correlation-ID", correlationId);
+                    try { diagnosticLogger(record); } catch (_) { /* Logging must not change the response. */ }
+                }
+                throw error;
+            }
         });
 
         const listEvents = protect(async (req, res) => {

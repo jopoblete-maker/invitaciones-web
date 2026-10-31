@@ -10,6 +10,16 @@
     const crypto = typeof require === "function" ? require("crypto") : null;
     const preconditions = typeof module === "object" && module.exports
         ? require("./editorial-preconditions") : globalThis.EditorialPreconditions;
+    const readFailurePhases = new WeakMap();
+    const getReadFailurePhase = error => error && typeof error === "object"
+        ? readFailurePhases.get(error) : undefined;
+    async function readPhase(phase, operation) {
+        try { return await operation(); }
+        catch (error) {
+            if (error && typeof error === "object") readFailurePhases.set(error, phase);
+            throw error;
+        }
+    }
     const CURSOR_PURPOSE = "admin-events-cursor";
     function repositoryError(code, message) {
         const error = new Error(message);
@@ -63,37 +73,41 @@
             : (query) => query;
 
         async function getEditorialState(eventId) {
-            const eventResult = await execute(supabase
-                .from("admin_event_publication_state")
-                .select("id, event_status, published_version_id, current_working_version_id, publication_revision")
-                .eq("id", eventId)
-                .maybeSingle());
-            if (eventResult.error) throw eventResult.error;
+            const eventResult = await readPhase("admin_event_publication_state", async () => {
+                const result = await execute(supabase
+                    .from("admin_event_publication_state")
+                    .select("id, event_status, published_version_id, current_working_version_id, publication_revision")
+                    .eq("id", eventId)
+                    .maybeSingle());
+                if (result.error) throw result.error;
+                if (result.data && Object.prototype.hasOwnProperty.call(result.data, "publication_revision")
+                    && !preconditions.revision(result.data.publication_revision)) {
+                    throw repositoryError("INVALID_RESPONSE", "Invalid editorial revision.");
+                }
+                return result;
+            });
             if (!eventResult.data) {
                 throw repositoryError("EVENT_NOT_FOUND", "Event not found.");
             }
 
-            // This restricted SQL projection must cast bigint to text before JSON serialization.
-            // No fallback to the numeric eventos column or the old mutation signatures.
-            if (Object.prototype.hasOwnProperty.call(eventResult.data, "publication_revision")
-                && !preconditions.revision(eventResult.data.publication_revision)) {
-                throw repositoryError("INVALID_RESPONSE", "Invalid editorial revision.");
-            }
-            const versionsResult = await execute(supabase
-                .from("event_versions")
-                .select("id, version_number, workflow_status, created_at, published_at, source_version_id")
-                .eq("event_id", eventId)
-                .order("version_number", { ascending: true }));
-            if (versionsResult.error) throw versionsResult.error;
+            // The projection supplies the revision as text; never fall back to eventos.
+            return readPhase("event_versions", async () => {
+                const versionsResult = await execute(supabase
+                    .from("event_versions")
+                    .select("id, version_number, workflow_status, created_at, published_at, source_version_id")
+                    .eq("event_id", eventId)
+                    .order("version_number", { ascending: true }));
+                if (versionsResult.error) throw versionsResult.error;
 
-            return preconditions.normalizeState({
-                eventId: eventResult.data.id,
-                ...(Object.prototype.hasOwnProperty.call(eventResult.data, "publication_revision")
-                    ? { publicationRevision: eventResult.data.publication_revision } : {}),
-                eventStatus: eventResult.data.event_status,
-                publishedVersionId: eventResult.data.published_version_id,
-                currentWorkingVersionId: eventResult.data.current_working_version_id,
-                versions: (versionsResult.data || []).map(normalizeVersionMetadata)
+                return preconditions.normalizeState({
+                    eventId: eventResult.data.id,
+                    ...(Object.prototype.hasOwnProperty.call(eventResult.data, "publication_revision")
+                        ? { publicationRevision: eventResult.data.publication_revision } : {}),
+                    eventStatus: eventResult.data.event_status,
+                    publishedVersionId: eventResult.data.published_version_id,
+                    currentWorkingVersionId: eventResult.data.current_working_version_id,
+                    versions: (versionsResult.data || []).map(normalizeVersionMetadata)
+                });
             });
         }
 
@@ -165,5 +179,5 @@
         return { getEditorialState, getVersion, listEvents };
     }
 
-    return { createEventVersionReadRepository };
+    return { createEventVersionReadRepository, getReadFailurePhase };
 });
