@@ -65,6 +65,25 @@
             }));
     }
 
+    function buildSampleEntries(manifest) {
+        if (typeof manifest?.list !== "function" || typeof manifest?.categories !== "function") throw new TypeError("Manifiesto de muestras inválido.");
+        const labels = new Map(manifest.categories().map(category => [category.id, category.label]));
+        const ids = new Set();
+        return manifest.list().map(sample => {
+            if (!sample || typeof sample.number !== "string" || !/^(0[1-9]|10|12|13|14|17|18|19|20|21|22|23|24|25)$/.test(sample.number)
+                || sample.id !== "muestra-" + sample.number || ids.has(sample.id)
+                || typeof sample.name !== "string" || !sample.name.trim() || !labels.has(sample.category)) throw new TypeError("Muestra comercial inválida.");
+            for (const [key, suffix] of [["thumbnail", "-mini"], ["image", ""]]) {
+                const resource = sample[key];
+                if (!resource || resource.src !== "/assets/catalogo/muestras/" + sample.id + suffix + ".webp"
+                    || !Number.isInteger(resource.width) || resource.width <= 0
+                    || !Number.isInteger(resource.height) || resource.height <= 0) throw new TypeError("Imagen comercial inválida.");
+            }
+            ids.add(sample.id);
+            return { ...sample, kind: "visual-sample", categoryLabel: labels.get(sample.category) };
+        });
+    }
+
     function validatePreviewPayload(entry, payload) {
         return isObject(payload)
             && payload.eventId === entry.previewEventId
@@ -152,6 +171,7 @@
 
     return {
         CATEGORY_LABELS,
+        buildSampleEntries,
         buildCatalogEntries,
         filterLoadableThumbnails,
         hasValidCatalogMetadata,

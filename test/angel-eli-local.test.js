@@ -110,8 +110,8 @@ test("shared RSVP, styles, renderer and protected references remain byte-identic
         "css/templates/boda-civil-esencial.css": "e296dc1f1fa4e71b53907a51c16c3cdd0c6e3d7a2147028f84041aa2e61b059b",
         "js/core/section-renderer.js": "ce54687ef5c3901844b29955fb030bdbffe32f337ead327c7ae1061d96627710",
         "js/core/template-registry.js": "8638d7eee7cdbdca5d7151d3378f4cf471028a95355e2b0d62f4bd2a11ff3b03",
-        // Reviewed main 76c546f baseline: preserves editorial-preconditions; excludes unrelated catalog/commercial additions.
-        "backend/http/static-policy.js": "b1690c0a56ab59351883ae18839eea5c251f77454f9b17359dce1a8efb4acc66",
+        // Reviewed merged baseline: preserves active 85d604a catalog/commercial and main 76c546f editorial-preconditions.
+        "backend/http/static-policy.js": "ffcf0f9bde6a3ea3cb53edbf520b2e77d90385073e0b5b7eeefc001c626cfaf1",
     };
     for (const [file, expected] of Object.entries(protectedHashes)) {
         assert.equal(crypto.createHash("sha256").update(fs.readFileSync(path.join(__dirname, "..", file), "utf8").replace(/\r\n/g, "\n")).digest("hex"), expected);

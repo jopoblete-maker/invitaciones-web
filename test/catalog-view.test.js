@@ -18,6 +18,10 @@ class FakeNode {
         this.hidden = false;
     }
 
+    setAttribute() {}
+
+    addEventListener() {}
+
     append(...children) {
         this.children.push(...children);
     }
@@ -53,7 +57,12 @@ async function renderCatalog({ entries, loadableEntries, previewable = [] }) {
     const context = {
         console,
         document,
-        TemplateRegistry: {},
+        TemplateRegistry: { getTemplate(slug) {
+            const entry = entries.find(value => value.slug === slug);
+            return entry && { slug, name: entry.name, status: "active", catalog: { variant: { name: entry.variantName } } };
+        } },
+        CommercialContact: require("../js/core/commercial-contact"),
+        CommercialUI: require("../js/comercial"),
         ThemeRegistry: {},
         TemplateCatalog: {
             buildCatalogEntries: () => entries,
@@ -115,7 +124,7 @@ async function renderCatalog({ entries, loadableEntries, previewable = [] }) {
     assert.strictEqual(visible.root.children.length, 3);
     assert.strictEqual(visible.status.hidden, true);
     assert.strictEqual(visible.probeCalls, 3);
-    assert.strictEqual(findByTag(visible.root, "a").length, 1);
+    assert.strictEqual(findByTag(visible.root, "a").length, 4);
     assert.strictEqual(findByTag(visible.root, "a")[0].textContent, "Ver invitación");
     assert.strictEqual(
         findByTag(visible.root, "a")[0].href,
@@ -136,8 +145,10 @@ async function renderCatalog({ entries, loadableEntries, previewable = [] }) {
 
     const failedPreview = await renderCatalog({ entries: [entry], loadableEntries: [entry] });
     assert.strictEqual(failedPreview.root.children.length, 1);
-    assert.strictEqual(findByTag(failedPreview.root, "a").length, 0);
+    assert.strictEqual(findByTag(failedPreview.root, "a").length, 1);
 
+    assert.strictEqual(findByTag(visible.root, "a").filter(link => link.textContent === "Solicitar esta plantilla").length, 3);
+    assert.strictEqual(findByTag(failedPreview.root, "a")[0].textContent, "Solicitar esta plantilla");
     assert(html.includes('id="catalogStatus"'));
     assert(html.includes('role="status"'));
     assert(html.includes('/js/core/template-registry.js'));
