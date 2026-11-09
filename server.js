@@ -177,6 +177,11 @@ const eventVersionEditorialHttp = createEventVersionEditorialHttp({
     }
 });
 
+app.post('/api/admin/angel-eli-boda/first-publication', require('./backend/editorial/angel-eli-first-publication').createFirstPublicationHttp({
+    adminAccess, prepareBody: prepareCreateBody,
+    preparePremiumContent: eventVersionEditorialService.preparePremiumContent,
+    rpc: (name, parameters) => withSupabaseTimeout(supabase.rpc(name, parameters).retry(false))
+}));
 app.post('/api/admin/eventos', eventVersionEditorialHttp.createEvent);
 
 // Aumentamos el límite para permitir subir imágenes locales (Base64)

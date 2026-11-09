@@ -31,8 +31,8 @@
         ] },
         vestimenta: { background: "vestimenta", copy: [
             ["kicker", "CÓDIGO DE"], ["title", "Vestimenta"],
-            ["message", "Queremos que te sientas cómodo\ny disfrutes esta noche tan especial\njunto a nosotros."],
-            ["dress", "ELEGANTE SPORT"], ["color", "El color"], ["white", "Blanco"],
+            ["message", "Se reserva el color beige para la novia."],
+            ["dress", "ELEGANTE SPORT"], ["color", "El color"], ["white", "Beige"],
             ["reserved", "está reservado\npara la Novia."]
         ] },
         regalos: { background: "regalos", copy: [
