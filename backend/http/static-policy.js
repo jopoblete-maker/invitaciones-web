@@ -16,6 +16,8 @@ const PUBLIC_FILES = new Set([
     "assets/events/angel-eli/musica.mp3",
     "assets/events/angel-eli/pareja.png",
     "assets/events/angel-eli/portada.mp4",
+    "assets/events/angel-eli/portada-4x5-review.mp4",
+    "assets/events/angel-eli/fecha-oliva.svg",
     "assets/events/angel-eli/regalos.png",
     "assets/events/angel-eli/vestimenta.png",
     "assets/events/fondos-sin-texto/asistencia-fondo.png",

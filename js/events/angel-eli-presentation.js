@@ -6,7 +6,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
     function isAuthorizedContext(source, content, presentation, hostname) {
         if (content?.id === "angel-eli-boda" && content.template?.slug === "boda-fiesta-premium"
-            && content.template.variant === "angel-eli-v1" && presentation?.eventProfile === "angel-eli-v1") {
+            && ["angel-eli-v1", "angel-eli-2027-v2"].includes(content.template.variant) && presentation?.eventProfile === content.template.variant) {
             return (source?.mode === "public" && source.eventId === content.id
                 && source.url === "/api/eventos/angel-eli-boda")
                 || (source?.mode === "private-preview" && source.url?.startsWith("/api/preview?token="));
@@ -95,12 +95,14 @@
     }
     function apply(app, event, sections, documentRef) {
         app.classList.add("angel-eli-local");
-        const finalProfile = event.template.variant === "angel-eli-v1";
+        const revisionProfile = event.template.variant === "angel-eli-2027-v2";
+        const finalProfile = revisionProfile || event.template.variant === "angel-eli-v1";
+        if (revisionProfile) app.classList.add("angel-eli-revision-2027");
         const walkingSections = event.sections.filter(section => section.id === "caminata");
-        if (finalProfile && (event.sections.length !== 9 || walkingSections.length !== 1
-            || event.sections[7].id !== "caminata" || event.sections[6].id !== "carpeta-compartida")) throw new Error("Invalid event presentation.");
+        if (finalProfile && (event.sections.length !== (revisionProfile ? 10 : 9) || walkingSections.length !== 1
+            || event.sections[revisionProfile ? 8 : 7].id !== "caminata" || event.sections[revisionProfile ? 7 : 6].id !== "carpeta-compartida")) throw new Error("Invalid event presentation.");
         const pages = Array.from(app.querySelectorAll(".wedding-section"));
-        if (pages.length !== 8 || sections.length !== 8) throw new Error("Local presentation unavailable.");
+        if (pages.length !== (revisionProfile ? 9 : 8) || sections.length !== (revisionProfile ? 9 : 8)) throw new Error("Local presentation unavailable.");
         pages.forEach((page, index) => {
             const section = sections[index], media = event.media.items[section.id];
             page.id = "ae-" + section.id;
@@ -112,9 +114,23 @@
             const title = documentRef.createElement(index === 0 ? "h1" : "h2");
             title.className = "ae-sr-only";
             title.id = page.id + "-title";
-            title.textContent = index === 0 ? event.nombre : labels[section.id];
+            title.textContent = index === 0 ? event.nombre : section.id === "fecha-y-cuenta-regresiva" ? "Fecha y cuenta regresiva" : labels[section.id];
             page.setAttribute("aria-labelledby", title.id);
             page.tabIndex = -1;
+            if (revisionProfile && section.id === "fecha-y-cuenta-regresiva") {
+                frame.classList.add("ae-review-date-artwork");
+                const holder = documentRef.createElement("div"); holder.className = "ae-review-date-panel";
+                const date = documentRef.createElement("p"); date.className = "ae-review-date";
+                const label = section.data.footer;
+                const weekday = documentRef.createElement("span"); weekday.className = "ae-review-weekday";
+                weekday.textContent = label.split(" ")[0];
+                const main = documentRef.createElement("span"); main.className = "ae-review-date-main";
+                main.textContent = label.slice(label.indexOf(" ")+1);
+                date.append(weekday,documentRef.createTextNode(" "),main);
+                const panel = previous.querySelector(".countdown-panel");
+                panel.querySelector(".countdown-footer")?.remove();
+                holder.append(date,panel); frame.append(holder); page.replaceChildren(title,frame); return;
+            }
             if (index === 0) {
                 const video = documentRef.createElement("video");
                 video.src = media.src;
@@ -125,7 +141,7 @@
                 video.setAttribute("muted", "");
                 video.playsInline = true;
                 video.preload = "auto";
-                video.width = 854; video.height = 480;
+                video.width = revisionProfile ? 1080 : 854; video.height = revisionProfile ? 1350 : 480;
                 video.setAttribute("aria-label", "Video de portada de " + event.nombre);
                 frame.append(video);
             } else {
@@ -141,6 +157,10 @@
                 image.width = portrait ? 1024 : 941; image.height = portrait ? 1536 : 1672;
                 frame.append(image);
                 if (design) addTextLayer(frame, section.id, documentRef, finalProfile ? section : null);
+                if (revisionProfile && section.id === "fiesta") {
+                    frame.querySelector(".ae-copy--address").textContent = "Managua 1375";
+                    frame.querySelector(".ae-copy--city").textContent = "Carlos Spegazzini";
+                }
             }
             if (section.id === "fiesta") {
                 const link = documentRef.createElement("a");

@@ -34,14 +34,37 @@ function matchesProfile(content) {
         && content.modules.music.tracks[0].media_id === "musica"
         && content.modules?.rsvp?.mode === "whatsapp" && content.modules.rsvp.contacts?.length === 1;
 }
+const REVISION_PROFILE = "angel-eli-2027-v2";
+const REVISION_DATE = "Viernes 29 de enero de 2027", REVISION_TARGET = "2027-01-29T20:00:00-03:00";
+const REVISION_ADDRESS = "Managua 1375, Carlos Spegazzini";
+const REVISION_MAPS_URL = "https://maps.app.goo.gl/6tMZP4sSb8EYQARGA?g_st=ac";
+const REVISION_COVER = "/assets/events/angel-eli/portada-4x5-review.mp4";
+function matchesRevisionProfile(content) {
+    if (content?.id !== ID || content.template?.variant !== REVISION_PROFILE || content.sections?.length !== 10
+        || content.schedule?.date !== "2027-01-29" || content.schedule.date_text !== REVISION_DATE || content.schedule.time !== "20:00"
+        || content.location?.address !== REVISION_ADDRESS || content.location.maps_url !== REVISION_MAPS_URL
+        || content.media?.items?.portada?.src !== REVISION_COVER) return false;
+    const countdown = content.sections[1];
+    if (countdown.id !== "fecha-y-cuenta-regresiva" || countdown.type !== "countdown" || countdown.enabled !== true
+        || countdown.order !== 20 || countdown.data?.target_datetime !== REVISION_TARGET
+        || countdown.data.footer !== REVISION_DATE || countdown.data.eyebrow !== "FALTAN") return false;
+    if (content.sections.some((s,i)=>s.order !== (i+1)*10) || content.sections[3]?.data?.address !== REVISION_ADDRESS) return false;
+    const original = JSON.parse(JSON.stringify(content));
+    original.template.variant = PROFILE;
+    original.location.address = LOCATION_ADDRESS; original.location.maps_url = MAPS_URL;
+    original.media.items.portada.src = media.portada.src;
+    original.sections.splice(1,1); original.sections.forEach((s,i)=>s.order=(i+1)*10);
+    original.sections[2].data.address = ADDRESS;
+    return matchesProfile(original);
+}
 function buildPresentation(content) {
-    if (content.id === ID && !matchesProfile(content)) throw new Error("Invalid event presentation.");
+    if (content.id === ID && !matchesProfile(content) && !matchesRevisionProfile(content)) throw new Error("Invalid event presentation.");
     const sections = content.sections;
     return {
         giftFields: Object.fromEntries(sections.filter(s => s.type === "gifts").map(s => [s.id, Object.keys(s.data)])),
         albumSections: sections.filter(s => s.type === "collaborative-album").map(s => s.id),
         gallerySections: Object.fromEntries(sections.filter(s => s.type === "gallery").map(s => [s.id, s.data.items.map(i => i.media_id)])),
-        ...(content.id === ID ? { eventProfile: PROFILE } : {})
+        ...(content.id === ID ? { eventProfile: content.template.variant } : {})
     };
 }
-module.exports = { ID, PROFILE, TIME, DRIVE, MAPS_URL, ADDRESS, LOCATION_ADDRESS, sections, media, matchesProfile, buildPresentation };
+module.exports = { REVISION_PROFILE, REVISION_DATE, REVISION_TARGET, REVISION_ADDRESS, REVISION_MAPS_URL, REVISION_COVER, matchesRevisionProfile, ID, PROFILE, TIME, DRIVE, MAPS_URL, ADDRESS, LOCATION_ADDRESS, sections, media, matchesProfile, buildPresentation };

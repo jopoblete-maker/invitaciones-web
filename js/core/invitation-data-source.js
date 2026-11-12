@@ -133,8 +133,8 @@
                 || !payload.presentation?.giftFields || typeof payload.presentation.giftFields !== "object"
                 || !Array.isArray(payload.presentation.albumSections)
                 || !payload.presentation.gallerySections || typeof payload.presentation.gallerySections !== "object"
-                || (source.eventId === "angel-eli-boda" && (payload.content.template.variant !== "angel-eli-v1"
-                    || payload.presentation.eventProfile !== "angel-eli-v1"))) {
+                || (source.eventId === "angel-eli-boda" && (!["angel-eli-v1", "angel-eli-2027-v2"].includes(payload.content.template.variant)
+                    || payload.presentation.eventProfile !== payload.content.template.variant))) {
                 throw new Error("Invitacion no disponible.");
             }
             publicPresentation.set(payload.content, payload.presentation);
@@ -144,7 +144,7 @@
             || payload?.content?.id === "angel-eli-boda" || payload?.id === "angel-eli-boda")) {
             if (payload.eventId !== "angel-eli-boda" || payload.content?.id !== payload.eventId
                 || payload.content?.schema_version !== 2 || payload.content.template?.slug !== "boda-fiesta-premium"
-                || payload.content.template.variant !== "angel-eli-v1" || payload.presentation?.eventProfile !== "angel-eli-v1"
+                || !["angel-eli-v1", "angel-eli-2027-v2"].includes(payload.content.template.variant) || payload.presentation?.eventProfile !== payload.content.template.variant
                 || typeof payload.versionId !== "string" || !payload.versionId.trim()
                 || (source.eventId && source.eventId !== payload.eventId)
                 || (source.versionId && source.versionId !== payload.versionId)
