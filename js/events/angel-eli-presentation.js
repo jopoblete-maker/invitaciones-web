@@ -88,6 +88,32 @@
         });
         frame.append(layer);
     }
+    function installRsvpChooser(frame, first, event, documentRef) {
+        const contacts = event.contactosRSVP;
+        if (contacts?.length !== 2 || contacts[0].nombre !== "Eli" || contacts[1].nombre !== "Ángel") throw new Error("Invalid RSVP contacts.");
+        const settings = { primaryLabel: contacts[0].nombre, secondaryLabel: contacts[1].nombre,
+            secondaryWhatsApp: "https://wa.me/" + String(contacts[1].telefono).replace(/\D/g, "") };
+  const original=new URL(first.href);if(original.hostname!=='wa.me')throw new Error('Invalid RSVP contact.');
+  original.search='';original.hash='';
+  const formatPhone=url=>{const digits=new URL(url).pathname.replace(/\D/g,''),parts=/^549(\d{2})(\d{4})(\d{4})$/.exec(digits);return parts?'+54 9 '+parts[1]+' '+parts[2]+'-'+parts[3]:'+'+digits};
+  const trigger=documentRef.createElement('button');trigger.type='button';trigger.className=first.className;trigger.classList.remove('rsvp-button');trigger.append(...Array.from(first.cloneNode(true).childNodes));
+  trigger.dataset.rsvpChooserTrigger='true';trigger.setAttribute('aria-haspopup','dialog');trigger.setAttribute('aria-controls','ae-review-rsvp-chooser');trigger.setAttribute('aria-expanded','false');trigger.setAttribute('aria-label','Confirmar aquí: elegir contacto');
+  const dialog=documentRef.createElement('dialog');dialog.id='ae-review-rsvp-chooser';dialog.className='ae-review-rsvp-dialog';dialog.setAttribute('aria-labelledby','ae-review-rsvp-title');
+  const ornament=documentRef.createElement('div');ornament.className='ae-review-rsvp-ornament';ornament.textContent='✦';ornament.setAttribute('aria-hidden','true');
+  const title=documentRef.createElement('h2');title.id='ae-review-rsvp-title';title.textContent='¿Con quién querés confirmar?';
+  const choices=documentRef.createElement('div');choices.className='ae-review-rsvp-choices';
+  for(const [key,name,url] of [['eli',settings.primaryLabel,original.href],['angel',settings.secondaryLabel,settings.secondaryWhatsApp]]){
+   const link=documentRef.createElement('a');link.className='ae-review-rsvp-contact';link.dataset.rsvpContact=key;link.href=url;link.target='_blank';link.rel='noopener noreferrer';link.setAttribute('aria-label','Confirmar asistencia con '+name+' por WhatsApp');
+   const icon=first.querySelector('svg')?.cloneNode(true);if(icon)link.append(icon);
+   const text=documentRef.createElement('span');text.className='ae-review-rsvp-contact-text';const label=documentRef.createElement('strong');label.textContent=name;const number=documentRef.createElement('span');number.className='ae-review-rsvp-phone';number.textContent=formatPhone(url);text.append(label,number);
+   const arrow=documentRef.createElement('span');arrow.className='ae-review-rsvp-arrow';arrow.textContent='›';arrow.setAttribute('aria-hidden','true');link.append(text,arrow);link.addEventListener('click',()=>dialog.close());choices.append(link);
+  }
+  const close=documentRef.createElement('button');close.type='button';close.className='ae-review-rsvp-close';close.textContent='Cerrar';close.addEventListener('click',()=>dialog.close());
+  dialog.append(ornament,title,choices,close);documentRef.body.append(dialog);first.replaceWith(trigger);
+  trigger.addEventListener('click',()=>{if(!dialog.open){dialog.showModal();trigger.setAttribute('aria-expanded','true')}});
+  dialog.addEventListener('close',()=>{trigger.setAttribute('aria-expanded','false');trigger.focus({preventScroll:true})});
+  dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close()}});
+    }
     function getPresentationSections(sections) {
         // Keep the canonical snapshot intact. Walking uses its existing dedicated video renderer below.
         // Legacy local snapshots also omit their duplicate photo.
@@ -96,6 +122,8 @@
     function apply(app, event, sections, documentRef) {
         app.classList.add("angel-eli-local");
         const revisionProfile = event.template.variant === "angel-eli-2027-v2";
+        const chooserProfile = revisionProfile && event.event?.date === "2027-01-30";
+        if (chooserProfile) app.dataset.rsvpChooser = "ready";
         const finalProfile = revisionProfile || event.template.variant === "angel-eli-v1";
         if (revisionProfile) app.classList.add("angel-eli-revision-2027");
         const walkingSections = event.sections.filter(section => section.id === "caminata");
@@ -172,6 +200,7 @@
                 const link = previous?.querySelector(".rsvp-button");
                 if (!link) throw new Error("Local RSVP unavailable.");
                 frame.append(overlay(link, "Confirmar asistencia por WhatsApp (abre otra pestaña)", "Confirmar aquí", "whatsapp", documentRef));
+                if (chooserProfile) installRsvpChooser(frame, link, event, documentRef);
             }
             if (section.id === "regalos") {
                 // Preserve approved gift fields and the existing dialog/copy handlers.

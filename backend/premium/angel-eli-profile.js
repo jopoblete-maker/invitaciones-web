@@ -39,15 +39,24 @@ const REVISION_DATE = "Viernes 29 de enero de 2027", REVISION_TARGET = "2027-01-
 const REVISION_ADDRESS = "Managua 1375, Carlos Spegazzini";
 const REVISION_MAPS_URL = "https://maps.app.goo.gl/6tMZP4sSb8EYQARGA?g_st=ac";
 const REVISION_COVER = "/assets/events/angel-eli/portada-4x5-review.mp4";
+const JAN30_DATE = "Sábado 30 de enero de 2027", JAN30_TARGET = "2027-01-30T20:00:00-03:00";
 function matchesRevisionProfile(content) {
+    const jan30 = content?.schedule?.date === "2027-01-30";
+    const date = jan30 ? "2027-01-30" : "2027-01-29";
+    const dateLabel = jan30 ? JAN30_DATE : REVISION_DATE, target = jan30 ? JAN30_TARGET : REVISION_TARGET;
+    const contacts = content?.modules?.rsvp?.contacts;
+    const name = contact => contact?.name || contact?.nombre;
+    const phone = contact => String(contact?.phone || contact?.telefono || "").replace(/\D/g, "");
+    if (jan30 && (!Array.isArray(contacts) || contacts.length !== 2 || name(contacts[0]) !== "Eli"
+        || name(contacts[1]) !== "Ángel" || !/^[0-9]{10,15}$/.test(phone(contacts[0])) || phone(contacts[1]) !== "5491155853324")) return false;
     if (content?.id !== ID || content.template?.variant !== REVISION_PROFILE || content.sections?.length !== 10
-        || content.schedule?.date !== "2027-01-29" || content.schedule.date_text !== REVISION_DATE || content.schedule.time !== "20:00"
+        || content.schedule?.date !== date || content.schedule.date_text !== dateLabel || content.schedule.time !== "20:00"
         || content.location?.address !== REVISION_ADDRESS || content.location.maps_url !== REVISION_MAPS_URL
         || content.media?.items?.portada?.src !== REVISION_COVER) return false;
     const countdown = content.sections[1];
     if (countdown.id !== "fecha-y-cuenta-regresiva" || countdown.type !== "countdown" || countdown.enabled !== true
-        || countdown.order !== 20 || countdown.data?.target_datetime !== REVISION_TARGET
-        || countdown.data.footer !== REVISION_DATE || countdown.data.eyebrow !== "FALTAN") return false;
+        || countdown.order !== 20 || countdown.data?.target_datetime !== target
+        || countdown.data.footer !== dateLabel || countdown.data.eyebrow !== "FALTAN") return false;
     if (content.sections.some((s,i)=>s.order !== (i+1)*10) || content.sections[3]?.data?.address !== REVISION_ADDRESS) return false;
     const original = JSON.parse(JSON.stringify(content));
     original.template.variant = PROFILE;
@@ -55,6 +64,7 @@ function matchesRevisionProfile(content) {
     original.media.items.portada.src = media.portada.src;
     original.sections.splice(1,1); original.sections.forEach((s,i)=>s.order=(i+1)*10);
     original.sections[2].data.address = ADDRESS;
+    if (jan30) original.modules.rsvp.contacts = original.modules.rsvp.contacts.slice(0,1);
     return matchesProfile(original);
 }
 function buildPresentation(content) {
